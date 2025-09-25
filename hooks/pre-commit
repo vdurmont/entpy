@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# This file contains all the checks that run before "git commit".
+# If this script exits with a non-zero return value, then the commit will be
+# blocked.
+#
+# Before you begin to commit code to this repository, it is recommended to
+# install this as a git hook as follows:
+#
+#   cd .git/hooks
+#   ln -s ../../hooks/pre-commit .
+#
+# You can "git commit --no-verify" to bypass these checks.
+
+function run_ruff_check() {
+    echo "Running ruff check..."
+    (uv run ruff check) || {
+        echo "ruff check failed"
+        exit 1
+    }
+    echo "ruff check passed"
+}
+
+function run_ruff_format() {
+    echo "Running ruff format..."
+    (uv run ruff format --check) || {
+        echo "ruff format failed"
+        exit 1
+    }
+    echo "ruff format passed"
+}
+
+
+run_ruff_check
+run_ruff_format
