@@ -17,9 +17,10 @@ cd .git/hooks
 ln -s ../../hooks/pre-commit .
 ```
 
-Always run `ruff` before committing:
+Always run `ruff` and `mypy` before committing:
 
 ```bash
 uv run ruff format
 uv run ruff check
+uv run mypy .
 ```
