@@ -30,6 +30,16 @@ function run_ruff_format() {
     echo "ruff format passed"
 }
 
+function run_mypy() {
+    echo "Running mypy..."
+    (uv run mypy .) || {
+        echo "mypy failed"
+        exit 1
+    }
+    echo "mypy passed"
+}
+
 
 run_ruff_check
 run_ruff_format
+run_mypy
