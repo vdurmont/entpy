@@ -4,3 +4,21 @@ requires-python = ">=3.12"
 version = "0.1.0"
 description = ""
 authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
+
+[project.optional-dependencies]
+dev = [
+    "ruff==0.6.8",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
