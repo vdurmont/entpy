@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 
+from framework.ent_schema import EntSchema
 from gencode.ent_schema_generator import Config as SchemaConfig
 from gencode.ent_schema_generator import EntSchemaGenerator
 
@@ -27,20 +29,49 @@ class EntGenerator:
         # Create output directory if it doesn't exist
         self.output_path.mkdir(parents=True, exist_ok=True)
 
-        schemas = self._load_schemas()
-        print(f"Found {len(schemas)} schema(s).")
+        configs = self._load_schemas_configs()
+        print(f"Found {len(configs)} schema(s).")
 
-        for schema in schemas:
-            print(f"Processing schema: {schema.schema_path}")
-            EntSchemaGenerator(config=schema).run()
+        for config in configs:
+            print(f"Processing schema: {config.schema_class.__name__}")
+            EntSchemaGenerator(config=config).run()
 
-    def _load_schemas(self) -> list[SchemaConfig]:
+    def _load_schemas_configs(self) -> list[SchemaConfig]:
         schema_files = list(self.schemas_path.glob("ent_*_schema.py"))
-        return [
-            SchemaConfig(
-                schema_path=schema_file,
-                output_path=self.output_path
-                / f"{schema_file.stem.replace('_schema', '')}.py",
+
+        for schema_file in schema_files:
+            relative_path = schema_file.relative_to(Path.cwd())
+            module_name = str(relative_path.with_suffix("")).replace("/", ".")
+            import_module(module_name)
+
+        schemas = EntSchema.__subclasses__()
+
+        configs = []
+
+        for schema_file in schema_files:
+            schema_name = "".join(
+                part.capitalize() for part in schema_file.stem.split("_")
             )
-            for schema_file in schema_files
-        ]
+            matching_schemas = [
+                schema for schema in schemas if schema.__name__ == schema_name
+            ]
+            if not matching_schemas:
+                print(f"Warning: No matching schema class found for file {schema_file}")
+                continue
+            if len(matching_schemas) > 1:
+                print(
+                    "Warning: Multiple matching schema classes found for "
+                    + f"file {schema_file}"
+                )
+                continue
+            configs.append(
+                SchemaConfig(
+                    # Ignoring the type-abstract error because we ensure at runtime that
+                    # schema_class is indeed a concrete subclass of EntSchema
+                    schema_class=matching_schemas[0],  # type: ignore[type-abstract]
+                    output_path=self.output_path
+                    / f"{schema_file.stem.replace('_schema', '')}.py",
+                )
+            )
+
+        return configs
