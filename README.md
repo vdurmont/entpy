@@ -2,10 +2,10 @@
 
 Ent Framework for Python.
 
-Run with:
+Run the examples with:
 
 ```bash
-uv run python ent_gencode.py
+PYTHONPATH=. uv run python examples/run_gencode.py
 ```
 
 # Contributing
