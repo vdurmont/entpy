@@ -8,6 +8,7 @@ authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
 [project.optional-dependencies]
 dev = [
     "ruff==0.6.8",
+    "mypy>=1.18.2"
 ]
 
 [tool.ruff]
@@ -22,3 +23,15 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+explicit_package_bases = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+strict_optional = true
+warn_return_any = true

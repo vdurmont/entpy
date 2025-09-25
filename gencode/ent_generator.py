@@ -12,7 +12,7 @@ class Config:
 class EntGenerator:
     config: Config
 
-    def run(self):
+    def run(self) -> None:
         print("Entity Generator is running...")
         schemas_path = Path(self.config.schemas_directory).resolve()
         output_path = Path(self.config.output_directory).resolve()
