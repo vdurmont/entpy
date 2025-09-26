@@ -9,7 +9,10 @@ class EntBaseGenerator:
 
     def generate(self) -> GeneratedContent:
         return GeneratedContent(
-            imports=["from framework.viewer_context import ViewerContext"],
+            imports=[
+                "from framework.viewer_context import ViewerContext",
+                "from uuid import UUID",
+            ],
             code=f"""
 class {self.base_name}:
     vc: ViewerContext
@@ -18,5 +21,9 @@ class {self.base_name}:
     def __init__(self, vc: ViewerContext, model: {self.base_name}Model) -> None:
         self.vc = vc
         self.model = model
+
+    @staticmethod
+    def gen_nullable(vc: ViewerContext, id: UUID) -> "{self.base_name}" | None:
+        return None
 """,
         )

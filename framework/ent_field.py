@@ -9,4 +9,6 @@ class EntField(ABC):
 
 
 class StringField(EntField):
-    pass
+    def __init__(self, name: str, length: int):
+        super().__init__(name=name)
+        self.length = length

@@ -4,4 +4,4 @@ from framework.ent_schema import EntSchema
 
 class EntTestObjectSchema(EntSchema):
     def get_fields(self) -> list[EntField]:
-        return [StringField("firstname")]
+        return [StringField("firstname", 100)]

@@ -25,7 +25,11 @@ class EntSchemaGenerator:
             f"EntSchemaGenerator is running for {self.config.schema_class.__name__}..."
         )
 
-        model_content = EntModelGenerator(base_name=self.base_name).generate()
+        schema = self.config.schema_class()
+
+        model_content = EntModelGenerator(
+            schema=schema, base_name=self.base_name
+        ).generate()
         base_content = EntBaseGenerator(base_name=self.base_name).generate()
 
         imports = model_content.imports + base_content.imports

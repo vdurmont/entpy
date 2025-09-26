@@ -4,6 +4,9 @@ requires-python = ">=3.12"
 version = "0.1.0"
 description = ""
 authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
+dependencies = [
+    "sqlalchemy==2.0.43",
+]
 
 [project.optional-dependencies]
 dev = [
