@@ -35,7 +35,9 @@ class EntGenerator:
 
         for config in configs:
             print(f"Processing schema: {config.schema_class.__name__}")
-            EntSchemaGenerator(config=config).run()
+            code = EntSchemaGenerator(config=config).generate()
+            with open(config.output_path, "w") as f:
+                f.write(code)
 
         subprocess.run(
             ["uv", "run", "ruff", "format", str(self.output_path)], check=True

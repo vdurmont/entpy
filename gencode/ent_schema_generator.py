@@ -20,11 +20,7 @@ class EntSchemaGenerator:
         self.config = config
         self.base_name = self.config.schema_class.__name__.replace("Schema", "")
 
-    def run(self) -> None:
-        print(
-            f"EntSchemaGenerator is running for {self.config.schema_class.__name__}..."
-        )
-
+    def generate(self) -> str:
         schema = self.config.schema_class()
 
         model_content = EntModelGenerator(
@@ -36,14 +32,10 @@ class EntSchemaGenerator:
         imports = list(set(imports))  # Remove duplicates
         imports_code = "\n".join(imports)
 
-        content = f"""
+        return f"""
 {imports_code}
 
 {model_content.code}
 
 {base_content.code}
 """
-
-        # Write to output file
-        with open(self.config.output_path, "w") as f:
-            f.write(content)
