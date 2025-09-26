@@ -15,10 +15,12 @@ class Config:
 class EntSchemaGenerator:
     config: Config
     base_name: str
+    ent_model_import: str
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, ent_model_import: str):
         self.config = config
         self.base_name = self.config.schema_class.__name__.replace("Schema", "")
+        self.ent_model_import = ent_model_import
 
     def generate(self) -> str:
         schema = self.config.schema_class()
@@ -28,7 +30,7 @@ class EntSchemaGenerator:
         ).generate()
         base_content = EntBaseGenerator(base_name=self.base_name).generate()
 
-        imports = model_content.imports + base_content.imports
+        imports = [self.ent_model_import] + model_content.imports + base_content.imports
         imports = list(set(imports))  # Remove duplicates
         imports_code = "\n".join(imports)
 

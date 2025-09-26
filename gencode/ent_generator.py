@@ -4,6 +4,7 @@ from importlib import import_module
 from pathlib import Path
 
 from framework.ent_schema import EntSchema
+from gencode.ent_base_model_generator import EntBaseModelGenerator
 from gencode.ent_schema_generator import Config as SchemaConfig
 from gencode.ent_schema_generator import EntSchemaGenerator
 
@@ -12,6 +13,7 @@ from gencode.ent_schema_generator import EntSchemaGenerator
 class Config:
     schemas_directory: str
     output_directory: str
+    base_import: str
 
 
 class EntGenerator:
@@ -30,14 +32,25 @@ class EntGenerator:
         # Create output directory if it doesn't exist
         self.output_path.mkdir(parents=True, exist_ok=True)
 
+        base_model = EntBaseModelGenerator(
+            base_import=self.config.base_import
+        ).generate()
+        self.write_file(self.output_path / "ent_model.py", base_model)
+        base_model_import = (
+            "from"
+            + str(self.output_path / "ent_model").replace("/", ".")
+            + " import EntModel"
+        )
+
         configs = self._load_schemas_configs()
         print(f"Found {len(configs)} schema(s).")
 
         for config in configs:
             print(f"Processing schema: {config.schema_class.__name__}")
-            code = EntSchemaGenerator(config=config).generate()
-            with open(config.output_path, "w") as f:
-                f.write(code)
+            code = EntSchemaGenerator(
+                config=config, ent_model_import=base_model_import
+            ).generate()
+            self.write_file(config.output_path, code)
 
         subprocess.run(
             ["uv", "run", "ruff", "format", str(self.output_path)], check=True
@@ -85,3 +98,7 @@ class EntGenerator:
             )
 
         return configs
+
+    def write_file(self, path: Path, content: str) -> None:
+        with open(path, "w") as f:
+            f.write(content)
