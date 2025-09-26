@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from framework.ent_schema import EntSchema
+from gencode.ent_base_generator import EntBaseGenerator
+from gencode.ent_model_generator import EntModelGenerator
 
 
 @dataclass
@@ -23,7 +25,20 @@ class EntSchemaGenerator:
             f"EntSchemaGenerator is running for {self.config.schema_class.__name__}..."
         )
 
-        content = f"class {self.base_name}:\n    pass\n"
+        model_content = EntModelGenerator(base_name=self.base_name).generate()
+        base_content = EntBaseGenerator(base_name=self.base_name).generate()
+
+        imports = model_content.imports + base_content.imports
+        imports = list(set(imports))  # Remove duplicates
+        imports_code = "\n".join(imports)
+
+        content = f"""
+{imports_code}
+
+{model_content.code}
+
+{base_content.code}
+"""
 
         # Write to output file
         with open(self.config.output_path, "w") as f:

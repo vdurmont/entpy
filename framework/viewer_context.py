@@ -1,0 +1,2 @@
+class ViewerContext:
+    pass
