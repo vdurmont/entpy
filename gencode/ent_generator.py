@@ -1,3 +1,4 @@
+import subprocess
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
@@ -35,6 +36,10 @@ class EntGenerator:
         for config in configs:
             print(f"Processing schema: {config.schema_class.__name__}")
             EntSchemaGenerator(config=config).run()
+
+        subprocess.run(
+            ["uv", "run", "ruff", "format", str(self.output_path)], check=True
+        )
 
     def _load_schemas_configs(self) -> list[SchemaConfig]:
         schema_files = list(self.schemas_path.glob("ent_*_schema.py"))
