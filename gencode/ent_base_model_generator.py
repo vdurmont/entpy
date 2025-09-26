@@ -1,11 +1,5 @@
-class EntBaseModelGenerator:
-    base_name: str
-
-    def __init__(self, base_import: str):
-        self.base_import = base_import
-
-    def generate(self) -> str:
-        return f"""
+def generate(base_import: str) -> str:
+    return f"""
 from datetime import datetime
 from uuid import UUID as PYUUID
 
@@ -15,7 +9,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
-{self.base_import}
+{base_import}
 
 
 class EntModel(Base):
