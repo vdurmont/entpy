@@ -25,20 +25,17 @@ class EntTestObject:
         self.vc = vc
         self.model = model
 
+    @property
+    def firstname(self) -> str:
+        return self.model.firstname
+
     @classmethod
     async def gen_nullable(
         cls, vc: ViewerContext, ent_id: UUID
     ) -> EntTestObject | None:
-        session_gen = get_session()
-        session = next(session_gen)
-        try:
-            model = session.get(EntTestObjectModel, ent_id)
+        async for session in get_session():
+            model = await session.get(EntTestObjectModel, ent_id)
             return await cls._gen_nullable_from_model(vc, model)
-        finally:
-            try:
-                next(session_gen)
-            except StopIteration:
-                pass
 
     @classmethod
     async def _gen_nullable_from_model(

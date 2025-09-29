@@ -5,6 +5,8 @@ version = "0.1.0"
 description = ""
 authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
 dependencies = [
+    "aiosqlite>=0.21.0",
+    "greenlet>=3.2.4",
     "sqlalchemy==2.0.43",
 ]
 

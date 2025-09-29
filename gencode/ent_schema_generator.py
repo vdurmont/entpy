@@ -11,7 +11,7 @@ def generate(
 
     model_content = generate_model(schema=schema, base_name=base_name)
     base_content = generate_base(
-        base_name=base_name, session_getter_import=session_getter_import
+        schema=schema, base_name=base_name, session_getter_import=session_getter_import
     )
 
     imports = [ent_model_import] + model_content.imports + base_content.imports

@@ -1,7 +1,12 @@
+from framework.ent_schema import EntSchema
 from gencode.generated_content import GeneratedContent
 
 
-def generate(base_name: str, session_getter_import: str) -> GeneratedContent:
+def generate(
+    schema: EntSchema, base_name: str, session_getter_import: str
+) -> GeneratedContent:
+    accessors = _generate_accessors(schema)
+
     return GeneratedContent(
         imports=[
             "from framework.viewer_context import ViewerContext",
@@ -17,14 +22,15 @@ class {base_name}:
         self.vc = vc
         self.model = model
 
+{accessors}
+
     @classmethod
     async def gen_nullable(
         cls, vc: ViewerContext, ent_id: UUID
     ) -> {base_name} | None:
-        model = await get_session().get(
-            {base_name}Model, ent_id
-        )
-        return await cls._gen_nullable_from_model(vc, model)
+        async for session in get_session():
+            model = await session.get({base_name}Model, ent_id)
+            return await cls._gen_nullable_from_model(vc, model)
 
     @classmethod
     async def _gen_nullable_from_model(
@@ -37,3 +43,15 @@ class {base_name}:
         return ent
 """,
     )
+
+
+def _generate_accessors(schema: EntSchema) -> str:
+    fields = schema.get_fields()
+    accessors_code = ""
+    for field in fields:
+        accessors_code += f"""    @property
+    def {field.name}(self) -> {field.get_python_type()}:
+        return self.model.{field.name}
+
+"""
+    return accessors_code

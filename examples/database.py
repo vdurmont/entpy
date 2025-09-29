@@ -1,23 +1,24 @@
-from collections.abc import Generator
+from collections.abc import AsyncGenerator
 
-from sqlalchemy import MetaData, create_engine
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy import MetaData
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import declarative_base
 
-DATABASE_URL = "sqlite:///:memory:"
+DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_async_engine(DATABASE_URL, echo=False)
+SessionLocal = async_sessionmaker(
+    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
+)
 metadata = MetaData()
 Base = declarative_base(metadata=metadata)
 
 
-def get_session() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    async with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
 
 
-def init_db() -> None:
-    Base.metadata.create_all(bind=engine)
+async def init_db() -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
