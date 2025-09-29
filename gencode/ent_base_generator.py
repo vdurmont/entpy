@@ -3,7 +3,10 @@ from gencode.generated_content import GeneratedContent
 
 
 def generate(
-    schema: EntSchema, base_name: str, session_getter_import: str
+    schema: EntSchema,
+    base_name: str,
+    session_getter_import: str,
+    session_getter_fn_name: str,
 ) -> GeneratedContent:
     accessors = _generate_accessors(schema)
 
@@ -28,7 +31,7 @@ class {base_name}:
     async def gen_nullable(
         cls, vc: ViewerContext, ent_id: UUID
     ) -> {base_name} | None:
-        async for session in get_session():
+        async for session in {session_getter_fn_name}():
             model = await session.get({base_name}Model, ent_id)
             return await cls._gen_nullable_from_model(vc, model)
 

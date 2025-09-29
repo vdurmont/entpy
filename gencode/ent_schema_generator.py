@@ -4,14 +4,20 @@ from gencode.ent_model_generator import generate as generate_model
 
 
 def generate(
-    schema_class: type[EntSchema], ent_model_import: str, session_getter_import: str
+    schema_class: type[EntSchema],
+    ent_model_import: str,
+    session_getter_import: str,
+    session_getter_fn_name: str,
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.replace("Schema", "")
 
     model_content = generate_model(schema=schema, base_name=base_name)
     base_content = generate_base(
-        schema=schema, base_name=base_name, session_getter_import=session_getter_import
+        schema=schema,
+        base_name=base_name,
+        session_getter_import=session_getter_import,
+        session_getter_fn_name=session_getter_fn_name,
     )
 
     imports = [ent_model_import] + model_content.imports + base_content.imports

@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from examples.database import get_session
+from examples.database import generate_session
 from framework.viewer_context import ViewerContext
 
 from .ent_model import EntModel
@@ -33,7 +33,7 @@ class EntTestObject:
     async def gen_nullable(
         cls, vc: ViewerContext, ent_id: UUID
     ) -> EntTestObject | None:
-        async for session in get_session():
+        async for session in generate_session():
             model = await session.get(EntTestObjectModel, ent_id)
             return await cls._gen_nullable_from_model(vc, model)
 

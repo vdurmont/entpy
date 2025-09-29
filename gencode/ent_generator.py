@@ -12,6 +12,7 @@ def run(
     output_directory: str,
     base_import: str,
     session_getter_import: str,
+    session_getter_fn_name: str,
 ) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()
@@ -39,6 +40,7 @@ def run(
             schema_class=schema_class,
             ent_model_import="from .ent_model import EntModel",
             session_getter_import=session_getter_import,
+            session_getter_fn_name=session_getter_fn_name,
         )
         _write_file(schema_output_path, code)
 

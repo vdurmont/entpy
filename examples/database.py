@@ -14,7 +14,7 @@ metadata = MetaData()
 Base = declarative_base(metadata=metadata)
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
+async def generate_session() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as db:
         try:
             yield db
