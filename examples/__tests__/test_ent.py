@@ -35,3 +35,12 @@ async def test_ent_test_object_gen_nullable_with_existing_model(
 
     assert result is not None, "gen_nullable should not return None for a valid ID"
     assert result.firstname == "Vincent"
+
+
+async def test_ent_test_object_gen_nullable_with_unknown_model(
+    db_session: Session, vc: ViewerContext
+):
+    ent_id = uuid.uuid4()
+    result = await EntTestObject.gen_nullable(vc, ent_id)
+
+    assert result is None, "gen_nullable should return None for an invalid ID"
