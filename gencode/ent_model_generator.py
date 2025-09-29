@@ -10,10 +10,17 @@ def generate(schema: EntSchema, base_name: str) -> GeneratedContent:
 
     fields_code = ""
     for field in fields:
-        print(f"Field: {field.name}")
+        common_column_attributes = ""
+        if field.nullable:
+            common_column_attributes += ", nullable=True"
+        else:
+            common_column_attributes += ", nullable=False"
+
         if isinstance(field, StringField):
             fields_code += f"    {field.name}: Mapped[str] = "
-            fields_code += f"mapped_column(String({field.length}))\n"
+            fields_code += (
+                f"mapped_column(String({field.length}){common_column_attributes})\n"
+            )
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
 

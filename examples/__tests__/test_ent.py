@@ -1,21 +1,23 @@
 import uuid
 
 import pytest
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from examples.database import SessionLocal, init_db
-from examples.generated.ent_test_object import EntTestObject, EntTestObjectModel
+from examples.database import generate_session, init_db
+from examples.generated.ent_test_object import (
+    EntTestObject,
+    EntTestObjectModel,
+    EntTestObjectMutator,
+)
 from framework.viewer_context import ViewerContext
 
 
 @pytest.fixture
 async def db_session():
     await init_db()
-    async with SessionLocal() as db:
-        try:
-            yield db
-        finally:
-            await db.close()
+    async for session in generate_session():
+        yield session
+        break
 
 
 @pytest.fixture
@@ -24,12 +26,16 @@ def vc():
 
 
 async def test_ent_test_object_gen_with_existing_model(
-    db_session: Session, vc: ViewerContext
+    db_session: AsyncSession, vc: ViewerContext
 ):
-    ent_id = uuid.uuid4()
-    model = EntTestObjectModel(id=ent_id, firstname="Vincent")
-    db_session.add(model)
-    await db_session.commit()
+    # ent_id = uuid.uuid4()
+    # model = EntTestObjectModel(id=ent_id, firstname="Vincent")
+    # db_session.add(model)
+    # await db_session.commit()
+
+    mut = EntTestObjectMutator.create(vc=vc, firstname="Vincent", lastname="Durmont")
+    ent_id = mut.id
+    ent = await mut.gen_savex()
 
     result = await EntTestObject.gen(vc, ent_id)
 
@@ -38,7 +44,7 @@ async def test_ent_test_object_gen_with_existing_model(
 
 
 async def test_ent_test_object_gen_with_unknown_model(
-    db_session: Session, vc: ViewerContext
+    db_session: AsyncSession, vc: ViewerContext
 ):
     ent_id = uuid.uuid4()
     result = await EntTestObject.gen(vc, ent_id)
@@ -47,7 +53,7 @@ async def test_ent_test_object_gen_with_unknown_model(
 
 
 async def test_ent_test_object_genx_with_existing_model(
-    db_session: Session, vc: ViewerContext
+    db_session: AsyncSession, vc: ViewerContext
 ):
     ent_id = uuid.uuid4()
     model = EntTestObjectModel(id=ent_id, firstname="Vincent")
@@ -61,7 +67,7 @@ async def test_ent_test_object_genx_with_existing_model(
 
 
 async def test_ent_test_object_genx_with_unknown_model(
-    db_session: Session, vc: ViewerContext
+    db_session: AsyncSession, vc: ViewerContext
 ):
     ent_id = uuid.uuid4()
     with pytest.raises(ValueError):

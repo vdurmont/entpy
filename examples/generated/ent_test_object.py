@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,7 +14,8 @@ from .ent_model import EntModel
 class EntTestObjectModel(EntModel):
     __tablename__ = "test_object"
 
-    firstname: Mapped[str] = mapped_column(String(100))
+    firstname: Mapped[str] = mapped_column(String(100), nullable=False)
+    lastname: Mapped[str] = mapped_column(String(100), nullable=True)
 
 
 class EntTestObject:
@@ -26,8 +27,16 @@ class EntTestObject:
         self.model = model
 
     @property
+    def id(self) -> UUID:
+        return self.model.id
+
+    @property
     def firstname(self) -> str:
         return self.model.firstname
+
+    @property
+    def lastname(self) -> str:
+        return self.model.lastname
 
     @classmethod
     async def genx(cls, vc: ViewerContext, ent_id: UUID) -> EntTestObject:
@@ -51,3 +60,36 @@ class EntTestObject:
         ent = EntTestObject(vc=vc, model=model)
         # TODO check privacy here
         return ent
+
+
+class EntTestObjectMutator:
+    @classmethod
+    def create(
+        cls, vc: ViewerContext, firstname: str, lastname: str | None = None
+    ) -> EntTestObjectMutatorCreationAction:
+        return EntTestObjectMutatorCreationAction(vc, firstname, lastname)
+
+
+class EntTestObjectMutatorCreationAction:
+    vc: ViewerContext
+    id: UUID
+    firstname: str
+    lastname: str = None
+
+    def __init__(self, vc: ViewerContext, firstname: str, lastname: str | None) -> None:
+        self.vc = vc
+        self.id = uuid4()
+        self.firstname = firstname
+        self.lastname = lastname
+
+    async def gen_savex(self) -> EntTestObject:
+        async for session in generate_session():
+            model = EntTestObjectModel(
+                id=self.id,
+                firstname=self.firstname,
+                lastname=self.lastname,
+            )
+            session.add(model)
+            await session.commit()
+            # TODO privacy checks
+            return await EntTestObject._gen_from_model(self.vc, model)

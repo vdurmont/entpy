@@ -45,3 +45,8 @@ warn_return_any = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.2.0",
+]
