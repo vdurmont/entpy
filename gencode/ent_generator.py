@@ -7,7 +7,12 @@ from gencode.ent_base_model_generator import generate as generate_base_model
 from gencode.ent_schema_generator import generate as generate_schema
 
 
-def run(schemas_directory: str, output_directory: str, base_import: str) -> None:
+def run(
+    schemas_directory: str,
+    output_directory: str,
+    base_import: str,
+    session_getter_import: str,
+) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()
     output_path = Path(output_directory).resolve()
@@ -20,9 +25,6 @@ def run(schemas_directory: str, output_directory: str, base_import: str) -> None
     # Generate base model that all models will inherit from
     base_model = generate_base_model(base_import=base_import)
     _write_file(output_path / "ent_model.py", base_model)
-    base_model_import = (
-        "from" + str(output_path / "ent_model").replace("/", ".") + " import EntModel"
-    )
 
     # Load all schemas to process
     configs = _load_schemas_configs(schemas_path=schemas_path, output_path=output_path)
@@ -34,7 +36,9 @@ def run(schemas_directory: str, output_directory: str, base_import: str) -> None
         schema_output_path = config[1]
         print(f"Processing schema: {schema_class.__name__}")
         code = generate_schema(
-            schema_class=schema_class, ent_model_import=base_model_import
+            schema_class=schema_class,
+            ent_model_import="from .ent_model import EntModel",
+            session_getter_import=session_getter_import,
         )
         _write_file(schema_output_path, code)
 

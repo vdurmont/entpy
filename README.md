@@ -24,3 +24,9 @@ uv run ruff format
 uv run ruff check
 uv run mypy .
 ```
+
+Run the tests:
+
+```bash
+PYTHONPATH=. uv run pytest examples/__tests__
+```

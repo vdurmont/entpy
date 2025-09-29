@@ -11,7 +11,7 @@ metadata = MetaData()
 Base = declarative_base(metadata=metadata)
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_session() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db

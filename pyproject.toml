@@ -11,7 +11,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "ruff==0.6.8",
-    "mypy>=1.18.2"
+    "mypy>=1.18.2",
+    "pytest",
+    "pytest-asyncio",
 ]
 
 [tool.ruff]
@@ -38,3 +40,6 @@ disallow_untyped_defs = true
 no_implicit_optional = true
 strict_optional = true
 warn_return_any = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
