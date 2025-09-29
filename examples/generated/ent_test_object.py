@@ -30,15 +30,13 @@ class EntTestObject:
         return self.model.firstname
 
     @classmethod
-    async def gen_nullable(
-        cls, vc: ViewerContext, ent_id: UUID
-    ) -> EntTestObject | None:
+    async def gen(cls, vc: ViewerContext, ent_id: UUID) -> EntTestObject | None:
         async for session in generate_session():
             model = await session.get(EntTestObjectModel, ent_id)
-            return await cls._gen_nullable_from_model(vc, model)
+            return await cls._gen_from_model(vc, model)
 
     @classmethod
-    async def _gen_nullable_from_model(
+    async def _gen_from_model(
         cls, vc: ViewerContext, model: EntTestObjectModel | None
     ) -> EntTestObject | None:
         if not model:

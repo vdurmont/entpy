@@ -23,7 +23,7 @@ def vc():
     return ViewerContext()
 
 
-async def test_ent_test_object_gen_nullable_with_existing_model(
+async def test_ent_test_object_gen_with_existing_model(
     db_session: Session, vc: ViewerContext
 ):
     ent_id = uuid.uuid4()
@@ -31,16 +31,16 @@ async def test_ent_test_object_gen_nullable_with_existing_model(
     db_session.add(model)
     await db_session.commit()
 
-    result = await EntTestObject.gen_nullable(vc, ent_id)
+    result = await EntTestObject.gen(vc, ent_id)
 
-    assert result is not None, "gen_nullable should not return None for a valid ID"
+    assert result is not None, "gen should not return None for a valid ID"
     assert result.firstname == "Vincent"
 
 
-async def test_ent_test_object_gen_nullable_with_unknown_model(
+async def test_ent_test_object_gen_with_unknown_model(
     db_session: Session, vc: ViewerContext
 ):
     ent_id = uuid.uuid4()
-    result = await EntTestObject.gen_nullable(vc, ent_id)
+    result = await EntTestObject.gen(vc, ent_id)
 
-    assert result is None, "gen_nullable should return None for an invalid ID"
+    assert result is None, "gen should return None for an invalid ID"
