@@ -28,6 +28,15 @@ class {base_name}:
 {accessors}
 
     @classmethod
+    async def genx(
+        cls, vc: ViewerContext, ent_id: UUID
+    ) -> {base_name}:
+        ent = await cls.gen(vc, ent_id)
+        if not ent:
+            raise ValueError("No {{base_name}} found for ID {{ent_id}}")
+        return ent
+
+    @classmethod
     async def gen(
         cls, vc: ViewerContext, ent_id: UUID
     ) -> {base_name} | None:

@@ -44,3 +44,25 @@ async def test_ent_test_object_gen_with_unknown_model(
     result = await EntTestObject.gen(vc, ent_id)
 
     assert result is None, "gen should return None for an invalid ID"
+
+
+async def test_ent_test_object_genx_with_existing_model(
+    db_session: Session, vc: ViewerContext
+):
+    ent_id = uuid.uuid4()
+    model = EntTestObjectModel(id=ent_id, firstname="Vincent")
+    db_session.add(model)
+    await db_session.commit()
+
+    result = await EntTestObject.genx(vc, ent_id)
+
+    assert result is not None, "genx should not return None for a valid ID"
+    assert result.firstname == "Vincent"
+
+
+async def test_ent_test_object_genx_with_unknown_model(
+    db_session: Session, vc: ViewerContext
+):
+    ent_id = uuid.uuid4()
+    with pytest.raises(ValueError):
+        await EntTestObject.genx(vc, ent_id)
