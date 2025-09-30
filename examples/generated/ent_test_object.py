@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from examples.database import generate_session
+from examples.database import get_session
 from framework.viewer_context import ViewerContext
 
 from .ent_model import EntModel
@@ -47,9 +47,9 @@ class EntTestObject:
 
     @classmethod
     async def gen(cls, vc: ViewerContext, ent_id: UUID) -> EntTestObject | None:
-        async for session in generate_session():
-            model = await session.get(EntTestObjectModel, ent_id)
-            return await cls._gen_from_model(vc, model)
+        session = get_session()
+        model = await session.get(EntTestObjectModel, ent_id)
+        return await cls._gen_from_model(vc, model)
 
     @classmethod
     async def _gen_from_model(
@@ -83,13 +83,13 @@ class EntTestObjectMutatorCreationAction:
         self.lastname = lastname
 
     async def gen_savex(self) -> EntTestObject:
-        async for session in generate_session():
-            model = EntTestObjectModel(
-                id=self.id,
-                firstname=self.firstname,
-                lastname=self.lastname,
-            )
-            session.add(model)
-            await session.commit()
-            # TODO privacy checks
-            return await EntTestObject._gen_from_model(self.vc, model)
+        session = get_session()
+        model = EntTestObjectModel(
+            id=self.id,
+            firstname=self.firstname,
+            lastname=self.lastname,
+        )
+        session.add(model)
+        await session.flush()
+        # TODO privacy checks
+        return await EntTestObject._gen_from_model(self.vc, model)

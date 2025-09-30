@@ -1,5 +1,3 @@
-from collections.abc import AsyncGenerator
-
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
@@ -14,12 +12,11 @@ metadata = MetaData()
 Base = declarative_base(metadata=metadata)
 
 
-async def generate_session() -> AsyncGenerator[AsyncSession, None]:
-    async with SessionLocal() as db:
-        try:
-            yield db
-        finally:
-            await db.close()
+session = SessionLocal()
+
+
+def get_session() -> AsyncSession:
+    return session
 
 
 async def init_db() -> None:

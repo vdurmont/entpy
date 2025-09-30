@@ -119,14 +119,14 @@ class {base_name}MutatorCreationAction:
 {local_variables_assignments}
 
     async def gen_savex(self) -> {base_name}:
-        async for session in {session_getter_fn_name}():
-            model = EntTestObjectModel(
-                id=self.id,
+        session = {session_getter_fn_name}()
+        model = EntTestObjectModel(
+            id=self.id,
 {model_assignments}
-            )
-            session.add(model)
-            await session.flush()
-            # TODO privacy checks
-            return await {base_name}._gen_from_model(self.vc, model)
+        )
+        session.add(model)
+        await session.flush()
+        # TODO privacy checks
+        return await {base_name}._gen_from_model(self.vc, model)
 """,
     )

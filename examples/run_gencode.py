@@ -7,6 +7,6 @@ if __name__ == "__main__":
         schemas_directory="./examples",
         output_directory="./examples/generated",
         base_import="from examples.database import Base",
-        session_getter_import="from examples.database import generate_session",
-        session_getter_fn_name="generate_session",
+        session_getter_import="from examples.database import get_session",
+        session_getter_fn_name="get_session",
     )

@@ -42,9 +42,9 @@ class {base_name}:
     async def gen(
         cls, vc: ViewerContext, ent_id: UUID
     ) -> {base_name} | None:
-        async for session in {session_getter_fn_name}():
-            model = await session.get({base_name}Model, ent_id)
-            return await cls._gen_from_model(vc, model)
+        session = {session_getter_fn_name}()
+        model = await session.get({base_name}Model, ent_id)
+        return await cls._gen_from_model(vc, model)
 
     @classmethod
     async def _gen_from_model(
