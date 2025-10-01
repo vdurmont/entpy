@@ -17,7 +17,8 @@ def generate(schema: EntSchema, base_name: str) -> GeneratedContent:
             common_column_attributes += ", nullable=False"
 
         if isinstance(field, StringField):
-            fields_code += f"    {field.name}: Mapped[str] = "
+            mapped_type = "str | None" if field.nullable else "str"
+            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += (
                 f"mapped_column(String({field.length}){common_column_attributes})\n"
             )

@@ -8,7 +8,7 @@ from examples.generated.ent_test_object import (
 from framework.viewer_context import ViewerContext
 
 
-async def test_create(db_session: AsyncSession, vc: ViewerContext):
+async def test_create(db_session: AsyncSession, vc: ViewerContext) -> None:
     ent = await EntTestObjectMutator.create(vc=vc, firstname="Vincent").gen_savex()
 
     assert ent is not None, "create should create the ent"
@@ -20,7 +20,7 @@ async def test_create(db_session: AsyncSession, vc: ViewerContext):
     assert ent.firstname == "Vincent"
 
 
-async def test_update(db_session: AsyncSession, vc: ViewerContext):
+async def test_update(db_session: AsyncSession, vc: ViewerContext) -> None:
     name = "Chris"
 
     ent = await EntTestObjectExample.gen_create(vc=vc)

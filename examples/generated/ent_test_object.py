@@ -16,8 +16,8 @@ class EntTestObjectModel(EntModel):
     __tablename__ = "test_object"
 
     firstname: Mapped[str] = mapped_column(String(100), nullable=False)
-    lastname: Mapped[str] = mapped_column(String(100), nullable=True)
-    city: Mapped[str] = mapped_column(String(100), nullable=True)
+    lastname: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
 class EntTestObject:
@@ -37,11 +37,11 @@ class EntTestObject:
         return self.model.firstname
 
     @property
-    def lastname(self) -> str:
+    def lastname(self) -> str | None:
         return self.model.lastname
 
     @property
-    def city(self) -> str:
+    def city(self) -> str | None:
         return self.model.city
 
     @classmethod

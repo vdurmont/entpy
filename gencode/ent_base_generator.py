@@ -71,8 +71,9 @@ def _generate_accessors(schema: EntSchema) -> str:
     fields = schema.get_fields()
     accessors_code = ""
     for field in fields:
+        accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
         accessors_code += f"""    @property
-    def {field.name}(self) -> {field.get_python_type()}:
+    def {field.name}(self) -> {accessor_type}:
         return self.model.{field.name}
 
 """

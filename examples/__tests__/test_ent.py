@@ -12,7 +12,7 @@ from framework.viewer_context import ViewerContext
 
 async def test_ent_test_object_gen_with_existing_model(
     db_session: AsyncSession, vc: ViewerContext
-):
+) -> None:
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
     result = await EntTestObject.gen(vc, ent.id)
@@ -23,7 +23,7 @@ async def test_ent_test_object_gen_with_existing_model(
 
 async def test_ent_test_object_gen_with_unknown_model(
     db_session: AsyncSession, vc: ViewerContext
-):
+) -> None:
     ent_id = uuid.uuid4()
     result = await EntTestObject.gen(vc, ent_id)
 
@@ -32,7 +32,7 @@ async def test_ent_test_object_gen_with_unknown_model(
 
 async def test_ent_test_object_genx_with_existing_model(
     db_session: AsyncSession, vc: ViewerContext
-):
+) -> None:
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
     result = await EntTestObject.genx(vc, ent.id)
@@ -43,7 +43,7 @@ async def test_ent_test_object_genx_with_existing_model(
 
 async def test_ent_test_object_genx_with_unknown_model(
     db_session: AsyncSession, vc: ViewerContext
-):
+) -> None:
     ent_id = uuid.uuid4()
     with pytest.raises(ValueError):
         await EntTestObject.genx(vc, ent_id)
