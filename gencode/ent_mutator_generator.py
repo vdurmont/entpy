@@ -18,9 +18,20 @@ def generate(
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
     )
+    deletion = _generate_deletion(
+        schema=schema,
+        base_name=base_name,
+        session_getter_fn_name=session_getter_fn_name,
+    )
     return GeneratedContent(
-        imports=base.imports + creation.imports,
-        code=base.code + "\n\n" + creation.code + "\n\n" + update.code,
+        imports=base.imports + creation.imports + deletion.imports,
+        code=base.code
+        + "\n\n"
+        + creation.code
+        + "\n\n"
+        + update.code
+        + "\n\n"
+        + deletion.code,
     )
 
 
@@ -62,6 +73,12 @@ class {base_name}Mutator:
         cls, vc: ViewerContext, ent: {base_name}
     ) -> {base_name}MutatorUpdateAction:
         return {base_name}MutatorUpdateAction(vc=vc, ent=ent)
+
+    @classmethod
+    def delete(
+        cls, vc: ViewerContext, ent: {base_name}
+    ) -> {base_name}MutatorDeletionAction:
+        return {base_name}MutatorDeletionAction(vc=vc, ent=ent)
 """,
     )
 
@@ -213,5 +230,31 @@ class {base_name}MutatorUpdateAction:
         await session.flush()
         # TODO privacy checks
         return await {base_name}._genx_from_model(self.vc, model)
+""",
+    )
+
+
+def _generate_deletion(
+    schema: EntSchema, base_name: str, session_getter_fn_name: str
+) -> GeneratedContent:
+    return GeneratedContent(
+        imports=[
+            "from framework.viewer_context import ViewerContext",
+        ],
+        code=f"""
+class {base_name}MutatorDeletionAction:
+    vc: ViewerContext
+    ent: {base_name}
+
+    def __init__(self, vc: ViewerContext, ent: {base_name}) -> None:
+        self.vc = vc
+        self.ent = ent
+
+    async def gen_save(self) -> None:
+        session = {session_getter_fn_name}()
+        model = self.ent.model
+        # TODO privacy checks
+        await session.delete(model)
+        await session.flush()
 """,
     )

@@ -95,6 +95,12 @@ class EntTestObjectMutator:
     ) -> EntTestObjectMutatorUpdateAction:
         return EntTestObjectMutatorUpdateAction(vc=vc, ent=ent)
 
+    @classmethod
+    def delete(
+        cls, vc: ViewerContext, ent: EntTestObject
+    ) -> EntTestObjectMutatorDeletionAction:
+        return EntTestObjectMutatorDeletionAction(vc=vc, ent=ent)
+
 
 class EntTestObjectMutatorCreationAction:
     vc: ViewerContext
@@ -151,6 +157,22 @@ class EntTestObjectMutatorUpdateAction:
         await session.flush()
         # TODO privacy checks
         return await EntTestObject._genx_from_model(self.vc, model)
+
+
+class EntTestObjectMutatorDeletionAction:
+    vc: ViewerContext
+    ent: EntTestObject
+
+    def __init__(self, vc: ViewerContext, ent: EntTestObject) -> None:
+        self.vc = vc
+        self.ent = ent
+
+    async def gen_save(self) -> None:
+        session = get_session()
+        model = self.ent.model
+        # TODO privacy checks
+        await session.delete(model)
+        await session.flush()
 
 
 class EntTestObjectExample:
