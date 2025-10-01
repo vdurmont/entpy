@@ -10,11 +10,10 @@ def generate(schema: EntSchema, base_name: str) -> GeneratedContent:
 
     fields_code = ""
     for field in fields:
-        common_column_attributes = ""
-        if field.nullable:
-            common_column_attributes += ", nullable=True"
-        else:
-            common_column_attributes += ", nullable=False"
+        common_column_attributes = ", nullable=" + (
+            "True" if field.nullable else "False"
+        )
+        common_column_attributes += ", unique=True" if field.is_unique else ""
 
         if isinstance(field, StringField):
             mapped_type = "str | None" if field.nullable else "str"

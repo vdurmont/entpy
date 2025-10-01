@@ -9,7 +9,9 @@ from framework.viewer_context import ViewerContext
 
 
 async def test_creation(db_session: AsyncSession, vc: ViewerContext) -> None:
-    ent = await EntTestObjectMutator.create(vc=vc, firstname="Vincent").gen_savex()
+    ent = await EntTestObjectMutator.create(
+        vc=vc, username="vdurmont", firstname="Vincent"
+    ).gen_savex()
 
     assert ent is not None, "create should create the ent"
     assert ent.firstname == "Vincent"

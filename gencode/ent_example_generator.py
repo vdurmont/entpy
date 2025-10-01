@@ -1,4 +1,4 @@
-from framework.ent_field import EntFieldWithExample
+from framework.ent_field import EntFieldWithDynamicExample, EntFieldWithExample
 from framework.ent_schema import EntSchema
 from gencode.generated_content import GeneratedContent
 
@@ -33,23 +33,36 @@ def generate(
     arguments_assignments = ""
     for field in non_nullable_fields + nullable_fields:
         if isinstance(field, EntFieldWithExample):
-            if field.has_example():
+            example = field.get_example_as_string()
+            if example:
                 arguments_assignments += (
                     "        "
                     + field.name
                     + " = "
-                    + field.get_example_as_string()
-                    + f" if isinstance({field.name}, Sentinel) else {field.name}\n"
+                    + example
+                    + f" if isinstance({field.name}, Sentinel) else {field.name}\n\n"
                 )
-            elif not field.nullable:
-                raise ValueError(
-                    f"In {base_name}, mandatory field '{field.name}' must have an example."
-                )
+        if isinstance(field, EntFieldWithDynamicExample):
+            generator = field.get_example_generator()
+            if generator:
+                arguments_assignments += f"""
+        if isinstance({field.name}, Sentinel):
+            field = cls._get_field("{field.name}")
+            if not isinstance(field, EntFieldWithDynamicExample):
+                raise TypeError("Internal ent error: "+f"field {{field.name}} must support dynamic examples.")
+            generator = field.get_example_generator()
+            {field.name} = generator()
+
+"""
+
+        # TODO check that mandatory fields have either an example or a dynamic example
 
     return GeneratedContent(
         imports=[
             "from framework.viewer_context import ViewerContext",
+            "from framework.ent_field import EntField, EntFieldWithDynamicExample",
             "from sentinels import NOTHING, Sentinel  # type: ignore",
+            f"from {schema.__class__.__module__} import {schema.__class__.__name__}",
         ],
         code=f"""
 class {base_name}Example:
@@ -62,5 +75,19 @@ class {base_name}Example:
 {arguments_assignments}
 
         return await {base_name}Mutator.create(vc=vc{arguments_usage}).gen_savex()
+
+    @classmethod
+    def _get_field(cls, field_name: str) -> EntField:
+        schema = {base_name}Schema()
+        fields = schema.get_fields()
+        field = list(
+            filter(
+                lambda field: field.name == field_name,
+                fields,
+            )
+        )[0]
+        if not field:
+            raise ValueError(f"Unknown field: {{field_name}}")
+        return field
 """,
     )
