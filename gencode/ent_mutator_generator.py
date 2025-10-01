@@ -36,8 +36,8 @@ def _generate_base(schema: EntSchema, base_name: str) -> GeneratedContent:
 
     # Build up the list of arguments the create function takes
     arguments_usage = "".join(
-        [f", {field.name}" for field in non_nullable_fields]
-        + [f", {field.name}" for field in nullable_fields]
+        [f", {field.name}={field.name}" for field in non_nullable_fields]
+        + [f", {field.name}={field.name}" for field in nullable_fields]
     )
 
     return GeneratedContent(
@@ -50,7 +50,7 @@ class {base_name}Mutator:
     def create(
         cls, vc: ViewerContext{arguments_definition}
     ) -> {base_name}MutatorCreationAction:
-        return {base_name}MutatorCreationAction(vc{arguments_usage})
+        return {base_name}MutatorCreationAction(vc=vc{arguments_usage})
 """,
     )
 

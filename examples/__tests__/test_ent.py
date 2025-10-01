@@ -6,8 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from examples.database import get_session, init_db
 from examples.generated.ent_test_object import (
     EntTestObject,
-    EntTestObjectModel,
-    EntTestObjectMutator,
+    EntTestObjectExample,
 )
 from framework.viewer_context import ViewerContext
 
@@ -26,9 +25,7 @@ def vc():
 async def test_ent_test_object_gen_with_existing_model(
     db_session: AsyncSession, vc: ViewerContext
 ):
-    ent = await EntTestObjectMutator.create(
-        vc=vc, firstname="Vincent", lastname="Durmont"
-    ).gen_savex()
+    ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
     result = await EntTestObject.gen(vc, ent.id)
 
@@ -48,12 +45,9 @@ async def test_ent_test_object_gen_with_unknown_model(
 async def test_ent_test_object_genx_with_existing_model(
     db_session: AsyncSession, vc: ViewerContext
 ):
-    ent_id = uuid.uuid4()
-    model = EntTestObjectModel(id=ent_id, firstname="Vincent")
-    db_session.add(model)
-    await db_session.commit()
+    ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
-    result = await EntTestObject.genx(vc, ent_id)
+    result = await EntTestObject.genx(vc, ent.id)
 
     assert result is not None, "genx should not return None for a valid ID"
     assert result.firstname == "Vincent"

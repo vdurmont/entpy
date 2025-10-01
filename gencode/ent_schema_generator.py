@@ -1,5 +1,6 @@
 from framework.ent_schema import EntSchema
 from gencode.ent_base_generator import generate as generate_base
+from gencode.ent_example_generator import generate as generate_example
 from gencode.ent_model_generator import generate as generate_model
 from gencode.ent_mutator_generator import generate as generate_mutator
 
@@ -24,12 +25,14 @@ def generate(
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
     )
+    example_content = generate_example(schema=schema, base_name=base_name)
 
     imports = (
         [ent_model_import]
         + model_content.imports
         + base_content.imports
         + mutator_content.imports
+        + example_content.imports
     )
     imports = list(set(imports))  # Remove duplicates
     imports_code = "\n".join(imports)
@@ -44,4 +47,6 @@ from __future__ import annotations
 {base_content.code}
 
 {mutator_content.code}
+
+{example_content.code}
 """

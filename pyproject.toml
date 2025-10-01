@@ -7,6 +7,7 @@ authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
 dependencies = [
     "aiosqlite>=0.21.0",
     "greenlet>=3.2.4",
+    "sentinels>=1.1.1",
     "sqlalchemy==2.0.43",
 ]
 
