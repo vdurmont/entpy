@@ -3,23 +3,11 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from examples.database import get_session, init_db
 from examples.generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
 )
 from framework.viewer_context import ViewerContext
-
-
-@pytest.fixture
-async def db_session():
-    await init_db()
-    return get_session()
-
-
-@pytest.fixture
-def vc():
-    return ViewerContext()
 
 
 async def test_ent_test_object_gen_with_existing_model(
