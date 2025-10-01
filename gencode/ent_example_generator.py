@@ -49,7 +49,7 @@ def generate(
     return GeneratedContent(
         imports=[
             "from framework.viewer_context import ViewerContext",
-            "from sentinels import NOTHING, Sentinel",
+            "from sentinels import NOTHING, Sentinel  # type: ignore",
         ],
         code=f"""
 class {base_name}Example:

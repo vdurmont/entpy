@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from sentinels import NOTHING, Sentinel
+from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
