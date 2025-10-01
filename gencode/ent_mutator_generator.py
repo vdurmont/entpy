@@ -13,9 +13,14 @@ def generate(
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
     )
+    update = _generate_update(
+        schema=schema,
+        base_name=base_name,
+        session_getter_fn_name=session_getter_fn_name,
+    )
     return GeneratedContent(
         imports=base.imports + creation.imports,
-        code=base.code + "\n\n" + creation.code,
+        code=base.code + "\n\n" + creation.code + "\n\n" + update.code,
     )
 
 
@@ -51,6 +56,12 @@ class {base_name}Mutator:
         cls, vc: ViewerContext{arguments_definition}
     ) -> {base_name}MutatorCreationAction:
         return {base_name}MutatorCreationAction(vc=vc{arguments_usage})
+
+    @classmethod
+    def update(
+        cls, vc: ViewerContext, ent: {base_name}
+    ) -> {base_name}MutatorUpdateAction:
+        return {base_name}MutatorUpdateAction(vc=vc, ent=ent)
 """,
     )
 
@@ -72,7 +83,7 @@ def _generate_creation(
             for field in non_nullable_fields
         ]
         + [
-            f"    {field.name}: {field.get_python_type()} = None"
+            f"    {field.name}: {field.get_python_type()} | None = None"
             for field in nullable_fields
         ]
     )
@@ -127,6 +138,80 @@ class {base_name}MutatorCreationAction:
         session.add(model)
         await session.flush()
         # TODO privacy checks
-        return await {base_name}._gen_from_model(self.vc, model)
+        return await {base_name}._genx_from_model(self.vc, model)
+""",
+    )
+
+
+def _generate_update(
+    schema: EntSchema, base_name: str, session_getter_fn_name: str
+) -> GeneratedContent:
+    # Separate nullable and non-nullable fields
+    # We always process the mandatory fields first
+    nullable_fields = [f for f in schema.get_fields() if f.nullable]
+    nullable_fields.sort(key=lambda f: f.name)
+    non_nullable_fields = [f for f in schema.get_fields() if not f.nullable]
+    non_nullable_fields.sort(key=lambda f: f.name)
+
+    # Build up the list of local variables we will store in the class
+    local_variables = "\n".join(
+        [
+            f"    {field.name}: {field.get_python_type()}"
+            for field in non_nullable_fields
+        ]
+        + [
+            f"    {field.name}: {field.get_python_type()} | None = None"
+            for field in nullable_fields
+        ]
+    )
+
+    # Build up the list of arguments the create function takes
+    arguments = ""
+    for field in non_nullable_fields:
+        arguments += f", {field.name}: {field.get_python_type()}"
+    for field in nullable_fields:
+        arguments += f", {field.name}: {field.get_python_type()} | None"
+
+    # Build up the list of assignments in the constructor
+    local_variables_assignments = "\n".join(
+        [
+            f"        self.{field.name} = ent.{field.name}"
+            for field in non_nullable_fields + nullable_fields
+        ]
+    )
+
+    # Build up the list of variables to assign to the model
+    model_assignments = "\n".join(
+        [
+            f"        model.{field.name}=self.{field.name}"
+            for field in non_nullable_fields + nullable_fields
+        ]
+    )
+
+    return GeneratedContent(
+        imports=[
+            "from framework.viewer_context import ViewerContext",
+            "from uuid import UUID, uuid4",
+        ],
+        code=f"""
+class {base_name}MutatorUpdateAction:
+    vc: ViewerContext
+    ent: {base_name}
+    id: UUID
+{local_variables}
+
+    def __init__(self, vc: ViewerContext, ent: {base_name}) -> None:
+        self.vc = vc
+        self.ent = ent
+{local_variables_assignments}
+
+    async def gen_savex(self) -> {base_name}:
+        session = {session_getter_fn_name}()
+        model = self.ent.model
+{model_assignments}
+        session.add(model)
+        await session.flush()
+        # TODO privacy checks
+        return await {base_name}._genx_from_model(self.vc, model)
 """,
     )

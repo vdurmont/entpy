@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from examples.generated.ent_test_object import (
     EntTestObject,
+    EntTestObjectExample,
     EntTestObjectMutator,
 )
 from framework.viewer_context import ViewerContext
@@ -17,3 +18,17 @@ async def test_create(db_session: AsyncSession, vc: ViewerContext):
 
     assert ent is not None, "created ents should be loadable"
     assert ent.firstname == "Vincent"
+
+
+async def test_update(db_session: AsyncSession, vc: ViewerContext):
+    name = "Chris"
+
+    ent = await EntTestObjectExample.gen_create(vc=vc)
+
+    assert ent.firstname != name, "In the setup, we have a different name."
+
+    mut = EntTestObjectMutator.update(vc, ent)
+    mut.firstname = name
+    ent = await mut.gen_savex()
+
+    assert ent.firstname == name, "Name should have been updated"

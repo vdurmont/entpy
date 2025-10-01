@@ -67,6 +67,14 @@ class EntTestObject:
         # TODO check privacy here
         return ent
 
+    @classmethod
+    async def _genx_from_model(
+        cls, vc: ViewerContext, model: EntTestObjectModel
+    ) -> EntTestObject:
+        ent = EntTestObject(vc=vc, model=model)
+        # TODO check privacy here
+        return ent
+
 
 class EntTestObjectMutator:
     @classmethod
@@ -81,13 +89,19 @@ class EntTestObjectMutator:
             vc=vc, firstname=firstname, lastname=lastname, city=city
         )
 
+    @classmethod
+    def update(
+        cls, vc: ViewerContext, ent: EntTestObject
+    ) -> EntTestObjectMutatorUpdateAction:
+        return EntTestObjectMutatorUpdateAction(vc=vc, ent=ent)
+
 
 class EntTestObjectMutatorCreationAction:
     vc: ViewerContext
     id: UUID
     firstname: str
-    city: str = None
-    lastname: str = None
+    city: str | None = None
+    lastname: str | None = None
 
     def __init__(
         self, vc: ViewerContext, firstname: str, city: str | None, lastname: str | None
@@ -109,7 +123,34 @@ class EntTestObjectMutatorCreationAction:
         session.add(model)
         await session.flush()
         # TODO privacy checks
-        return await EntTestObject._gen_from_model(self.vc, model)
+        return await EntTestObject._genx_from_model(self.vc, model)
+
+
+class EntTestObjectMutatorUpdateAction:
+    vc: ViewerContext
+    ent: EntTestObject
+    id: UUID
+    firstname: str
+    city: str | None = None
+    lastname: str | None = None
+
+    def __init__(self, vc: ViewerContext, ent: EntTestObject) -> None:
+        self.vc = vc
+        self.ent = ent
+        self.firstname = ent.firstname
+        self.city = ent.city
+        self.lastname = ent.lastname
+
+    async def gen_savex(self) -> EntTestObject:
+        session = get_session()
+        model = self.ent.model
+        model.firstname = self.firstname
+        model.city = self.city
+        model.lastname = self.lastname
+        session.add(model)
+        await session.flush()
+        # TODO privacy checks
+        return await EntTestObject._genx_from_model(self.vc, model)
 
 
 class EntTestObjectExample:

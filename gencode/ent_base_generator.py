@@ -55,6 +55,14 @@ class {base_name}:
         ent = {base_name}(vc=vc, model=model)
         # TODO check privacy here
         return ent
+
+    @classmethod
+    async def _genx_from_model(
+        cls, vc: ViewerContext, model: {base_name}Model
+    ) -> {base_name}:
+        ent = {base_name}(vc=vc, model=model)
+        # TODO check privacy here
+        return ent
 """,
     )
 
