@@ -3,8 +3,8 @@ from importlib import import_module
 from pathlib import Path
 
 from framework.schema import Schema
-from gencode.ent_base_model_generator import generate as generate_base_model
-from gencode.ent_schema_generator import generate as generate_schema
+from gencode.model_base_template import generate as generate_base_model
+from gencode.schema_generator import generate as generate_schema
 
 
 def run(

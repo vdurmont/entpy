@@ -1,8 +1,8 @@
 from framework.schema import Schema
-from gencode.ent_base_generator import generate as generate_base
-from gencode.ent_example_generator import generate as generate_example
-from gencode.ent_model_generator import generate as generate_model
-from gencode.ent_mutator_generator import generate as generate_mutator
+from gencode.base_generator import generate as generate_base
+from gencode.example_generator import generate as generate_example
+from gencode.model_generator import generate as generate_model
+from gencode.mutator_generator import generate as generate_mutator
 
 
 def generate(
