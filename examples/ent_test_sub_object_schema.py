@@ -1,5 +1,6 @@
 from framework.ent_schema import EntSchema
-from framework.fields.field import Field, StringField
+from framework.fields.core import Field
+from framework.fields.string_field import StringField
 
 
 class EntTestSubObjectSchema(EntSchema):

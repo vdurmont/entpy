@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from framework.fields.field import Field
+from framework.fields.core import Field
 
 
 class EntSchema(ABC):

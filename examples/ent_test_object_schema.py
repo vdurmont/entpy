@@ -2,7 +2,9 @@ import uuid
 
 from examples.ent_test_sub_object_schema import EntTestSubObjectSchema
 from framework.ent_schema import EntSchema
-from framework.fields.field import EdgeField, Field, StringField
+from framework.fields.core import Field
+from framework.fields.edge_field import EdgeField
+from framework.fields.string_field import StringField
 
 
 class EntTestObjectSchema(EntSchema):

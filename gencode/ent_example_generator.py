@@ -1,9 +1,9 @@
 from framework.ent_schema import EntSchema
-from framework.fields.field import (
-    EdgeField,
-    EntFieldWithDynamicExample,
-    EntFieldWithExample,
+from framework.fields.core import (
+    FieldWithDynamicExample,
+    FieldWithExample,
 )
+from framework.fields.edge_field import EdgeField
 from gencode.generated_content import GeneratedContent
 from gencode.utils import to_snake_case
 
@@ -23,7 +23,7 @@ def generate(
     arguments_assignments = ""
     edges_imports = []
     for field in schema.get_sorted_fields():
-        if isinstance(field, EntFieldWithExample):
+        if isinstance(field, FieldWithExample):
             example = field.get_example_as_string()
             if example:
                 arguments_assignments += (
@@ -33,13 +33,13 @@ def generate(
                     + example
                     + f" if isinstance({field.name}, Sentinel) else {field.name}\n\n"
                 )
-        if isinstance(field, EntFieldWithDynamicExample):
+        if isinstance(field, FieldWithDynamicExample):
             generator = field.get_example_generator()
             if generator:
                 arguments_assignments += f"""
         if isinstance({field.name}, Sentinel):
             field = cls._get_field("{field.name}")
-            if not isinstance(field, EntFieldWithDynamicExample):
+            if not isinstance(field, FieldWithDynamicExample):
                 raise TypeError("Internal ent error: "+f"field {{field.name}} must support dynamic examples.")
             generator = field.get_example_generator()
             if generator:
@@ -68,7 +68,7 @@ def generate(
     return GeneratedContent(
         imports=[
             "from framework.viewer_context import ViewerContext",
-            "from framework.fields.field import Field, EntFieldWithDynamicExample",
+            "from framework.fields.core import Field, FieldWithDynamicExample",
             "from sentinels import NOTHING, Sentinel  # type: ignore",
             f"from {schema.__class__.__module__} import {schema.__class__.__name__}",
         ]
