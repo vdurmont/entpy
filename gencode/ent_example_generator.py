@@ -51,7 +51,8 @@ def generate(
             if not isinstance(field, EntFieldWithDynamicExample):
                 raise TypeError("Internal ent error: "+f"field {{field.name}} must support dynamic examples.")
             generator = field.get_example_generator()
-            {field.name} = generator()
+            if generator:
+                {field.name} = generator()
 
 """
 

@@ -214,7 +214,8 @@ class EntTestObjectExample:
                     + f"field {field.name} must support dynamic examples."
                 )
             generator = field.get_example_generator()
-            username = generator()
+            if generator:
+                username = generator()
 
         firstname = "Vincent" if isinstance(firstname, Sentinel) else firstname
 

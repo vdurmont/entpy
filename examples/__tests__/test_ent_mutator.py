@@ -41,6 +41,6 @@ async def test_deletion(db_session: AsyncSession, vc: ViewerContext) -> None:
 
     await EntTestObjectMutator.delete(vc, ent).gen_save()
 
-    ent = await EntTestObject.gen(vc, ent.id)
+    reloaded_ent = await EntTestObject.gen(vc, ent.id)
 
-    assert ent is None, "Ent should have been deleted"
+    assert reloaded_ent is None, "Ent should have been deleted"
