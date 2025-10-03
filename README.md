@@ -36,6 +36,50 @@ optional_ent = await EntMyObject.gen(vc, ent_id)
 ent = await EntMyObject.genx(vc, ent_id)
 ```
 
+## Creating an Ent
+
+```python
+ent = await EntMyObjectMutator.create(
+    vc=vc,
+    field1=val1,
+    field2=val2,
+).gen_savex()
+print(f"Created ent {ent.id}")
+```
+
+Note that in order to make testing easier, Ents generate an "example" class that can be used like this:
+```python
+ent = await EntMyObjectExample.gen_create(vc)
+# Boom!
+# An ent has been created, all it's fields have been populated appropriately, any edge has been created recursively, you are ready to use it fully.
+```
+
+You can also choose to customize one or more fields:
+```python
+ent = await EntMyObjectExample.gen_create(
+    vc=vc,
+    field42=value,
+)
+```
+
+## Updating an Ent
+
+```python
+mut = await EntMyObjectMutator.update(vc, ent)
+mut.field1 = new_value
+ent = await mut.gen_savex()
+print(f"Updated ent {ent.id}")
+```
+
+## Deleting an Ent
+
+At the moment, we only support "HARD" deletes, meaning that the record is dropped from the DB.
+
+```python
+await EntMyObjectMutator.delete(vc, ent).gen_save()
+print(f"It's gone!")
+```
+
 # Contributing
 
 Before contributing to this repository, it is recommended to add the pre-commit hook:
