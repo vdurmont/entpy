@@ -2,7 +2,7 @@ import subprocess
 from importlib import import_module
 from pathlib import Path
 
-from framework.ent_schema import EntSchema
+from framework.schema import Schema
 from gencode.ent_base_model_generator import generate as generate_base_model
 from gencode.ent_schema_generator import generate as generate_schema
 
@@ -56,7 +56,7 @@ def run(
 
 def _load_schemas_configs(
     schemas_path: Path, output_path: Path
-) -> list[tuple[type[EntSchema], Path]]:
+) -> list[tuple[type[Schema], Path]]:
     schema_files = list(schemas_path.glob("ent_*_schema.py"))
 
     for schema_file in schema_files:
@@ -64,7 +64,7 @@ def _load_schemas_configs(
         module_name = str(relative_path.with_suffix("")).replace("/", ".")
         import_module(module_name)
 
-    schemas = EntSchema.__subclasses__()
+    schemas = Schema.__subclasses__()
 
     configs = []
 

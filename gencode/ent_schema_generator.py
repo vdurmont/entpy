@@ -1,4 +1,4 @@
-from framework.ent_schema import EntSchema
+from framework.schema import Schema
 from gencode.ent_base_generator import generate as generate_base
 from gencode.ent_example_generator import generate as generate_example
 from gencode.ent_model_generator import generate as generate_model
@@ -6,7 +6,7 @@ from gencode.ent_mutator_generator import generate as generate_mutator
 
 
 def generate(
-    schema_class: type[EntSchema],
+    schema_class: type[Schema],
     ent_model_import: str,
     session_getter_import: str,
     session_getter_fn_name: str,

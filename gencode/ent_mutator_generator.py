@@ -1,9 +1,9 @@
-from framework.ent_schema import EntSchema
+from framework.schema import Schema
 from gencode.generated_content import GeneratedContent
 
 
 def generate(
-    schema: EntSchema,
+    schema: Schema,
     base_name: str,
     session_getter_fn_name: str,
 ) -> GeneratedContent:
@@ -35,7 +35,7 @@ def generate(
     )
 
 
-def _generate_base(schema: EntSchema, base_name: str) -> GeneratedContent:
+def _generate_base(schema: Schema, base_name: str) -> GeneratedContent:
     # Build up the list of arguments the create function takes
     arguments_definition = ""
     for field in schema.get_sorted_fields():
@@ -75,7 +75,7 @@ class {base_name}Mutator:
 
 
 def _generate_creation(
-    schema: EntSchema,
+    schema: Schema,
     base_name: str,
     session_getter_fn_name: str,
 ) -> GeneratedContent:
@@ -140,7 +140,7 @@ class {base_name}MutatorCreationAction:
 
 
 def _generate_update(
-    schema: EntSchema, base_name: str, session_getter_fn_name: str
+    schema: Schema, base_name: str, session_getter_fn_name: str
 ) -> GeneratedContent:
     # Separate nullable and non-nullable fields
     # We always process the mandatory fields first
@@ -214,7 +214,7 @@ class {base_name}MutatorUpdateAction:
 
 
 def _generate_deletion(
-    schema: EntSchema, base_name: str, session_getter_fn_name: str
+    schema: Schema, base_name: str, session_getter_fn_name: str
 ) -> GeneratedContent:
     return GeneratedContent(
         imports=[

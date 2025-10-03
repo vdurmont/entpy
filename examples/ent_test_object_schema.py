@@ -1,13 +1,13 @@
 import uuid
 
 from examples.ent_test_sub_object_schema import EntTestSubObjectSchema
-from framework.ent_schema import EntSchema
 from framework.fields.core import Field
 from framework.fields.edge_field import EdgeField
 from framework.fields.string_field import StringField
+from framework.schema import Schema
 
 
-class EntTestObjectSchema(EntSchema):
+class EntTestObjectSchema(Schema):
     def get_fields(self) -> list[Field]:
         return [
             StringField("username", 100)

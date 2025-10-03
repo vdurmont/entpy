@@ -1,10 +1,10 @@
-from framework.ent_schema import EntSchema
 from framework.fields.edge_field import EdgeField
+from framework.schema import Schema
 from gencode.generated_content import GeneratedContent
 
 
 def generate(
-    schema: EntSchema,
+    schema: Schema,
     base_name: str,
     session_getter_fn_name: str,
 ) -> GeneratedContent:
@@ -68,7 +68,7 @@ class {base_name}:
     )
 
 
-def _generate_accessors(schema: EntSchema) -> str:
+def _generate_accessors(schema: Schema) -> str:
     fields = schema.get_sorted_fields()
     accessors_code = ""
     for field in fields:

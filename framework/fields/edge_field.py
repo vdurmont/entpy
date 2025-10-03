@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Self
 from framework.fields.core import Field
 
 if TYPE_CHECKING:
-    from framework.ent_schema import EntSchema
+    from framework.schema import Schema
 
 
 class EdgeField(Field):
-    edge_class: type[EntSchema]
+    edge_class: type[Schema]
     should_generate_example: bool = True
 
-    def __init__(self, name: str, edge_class: type[EntSchema]):
+    def __init__(self, name: str, edge_class: type[Schema]):
         super().__init__(name=name, actual_name=name + "_id")
         self.edge_class = edge_class
 

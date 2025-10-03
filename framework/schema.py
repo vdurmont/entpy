@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from framework.fields.core import Field
 
 
-class EntSchema(ABC):
+class Schema(ABC):
     @abstractmethod
     def get_fields(self) -> list[Field]:
         pass
