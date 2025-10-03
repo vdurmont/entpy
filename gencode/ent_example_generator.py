@@ -1,37 +1,28 @@
-from framework.ent_field import EntFieldWithDynamicExample, EntFieldWithExample
+from framework.ent_field import (
+    EdgeField,
+    EntFieldWithDynamicExample,
+    EntFieldWithExample,
+)
 from framework.ent_schema import EntSchema
 from gencode.generated_content import GeneratedContent
+from gencode.utils import to_snake_case
 
 
 def generate(
     schema: EntSchema,
     base_name: str,
 ) -> GeneratedContent:
-    # Separate nullable and non-nullable fields
-    # We always process the mandatory fields first
-    nullable_fields = [f for f in schema.get_fields() if f.nullable]
-    non_nullable_fields = [f for f in schema.get_fields() if not f.nullable]
-
-    # Build up the list of arguments the create function takes
+    # Build up the list of arguments the gen_create function takes
     arguments_definition = ""
-    for field in non_nullable_fields:
-        arguments_definition += (
-            f", {field.name}: {field.get_python_type()} | Sentinel = NOTHING"
-        )
-    for field in nullable_fields:
-        arguments_definition += (
-            f", {field.name}: {field.get_python_type()} | None = None"
-        )
-
-    # Build up the list of arguments the create function takes
-    arguments_usage = "".join(
-        [f", {field.name}={field.name}" for field in non_nullable_fields]
-        + [f", {field.name}={field.name}" for field in nullable_fields]
-    )
+    for field in schema.get_sorted_fields():
+        typehint = field.get_python_type()
+        typehint += " | None = None" if field.nullable else " | Sentinel = NOTHING"
+        arguments_definition += f", {field.name}: {typehint}"
 
     # Build up the list of variables that will be passed to the mutator
     arguments_assignments = ""
-    for field in non_nullable_fields + nullable_fields:
+    edges_imports = []
+    for field in schema.get_sorted_fields():
         if isinstance(field, EntFieldWithExample):
             example = field.get_example_as_string()
             if example:
@@ -54,9 +45,25 @@ def generate(
             if generator:
                 {field.name} = generator()
 
+"""  # noqa: E501
+
+        if isinstance(field, EdgeField) and field.should_generate_example:
+            edge_base_name = field.edge_class.__name__.replace("Schema", "")
+            edge_filename = to_snake_case(edge_base_name)
+            edges_imports.append(
+                f"from .{edge_filename} import {edge_base_name}Example"
+            )
+            arguments_assignments += f"""
+        {field.name}_ent = await {edge_base_name}Example.gen_create(vc)
+        {field.name} = {field.name}_ent.id
 """
 
         # TODO check that mandatory fields have either an example or a dynamic example
+
+    # Build up the list of arguments the Mutator.create function takes
+    mutator_arguments = "\n".join(
+        [f", {field.name}={field.name}" for field in schema.get_sorted_fields()]
+    )
 
     return GeneratedContent(
         imports=[
@@ -64,7 +71,8 @@ def generate(
             "from framework.ent_field import EntField, EntFieldWithDynamicExample",
             "from sentinels import NOTHING, Sentinel  # type: ignore",
             f"from {schema.__class__.__module__} import {schema.__class__.__name__}",
-        ],
+        ]
+        + edges_imports,
         code=f"""
 class {base_name}Example:
     @classmethod
@@ -75,7 +83,7 @@ class {base_name}Example:
 
 {arguments_assignments}
 
-        return await {base_name}Mutator.create(vc=vc{arguments_usage}).gen_savex()
+        return await {base_name}Mutator.create(vc=vc{mutator_arguments}).gen_savex()
 
     @classmethod
     def _get_field(cls, field_name: str) -> EntField:

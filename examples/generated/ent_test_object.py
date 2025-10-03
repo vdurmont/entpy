@@ -3,7 +3,8 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 
 from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import String
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from examples.database import get_session
@@ -12,6 +13,7 @@ from framework.ent_field import EntField, EntFieldWithDynamicExample
 from framework.viewer_context import ViewerContext
 
 from .ent_model import EntModel
+from .ent_test_sub_object import EntTestSubObject, EntTestSubObjectExample
 
 
 class EntTestObjectModel(EntModel):
@@ -21,6 +23,15 @@ class EntTestObjectModel(EntModel):
     firstname: Mapped[str] = mapped_column(String(100), nullable=False)
     lastname: Mapped[str | None] = mapped_column(String(100), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    required_sub_object_id: Mapped[UUID] = mapped_column(
+        DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=False
+    )
+    optional_sub_object_id: Mapped[UUID | None] = mapped_column(
+        DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=True
+    )
+    optional_sub_object_no_ex_id: Mapped[UUID | None] = mapped_column(
+        DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=True
+    )
 
 
 class EntTestObject:
@@ -36,20 +47,49 @@ class EntTestObject:
         return self.model.id
 
     @property
+    def firstname(self) -> str:
+        return self.model.firstname
+
+    @property
+    def required_sub_object_id(self) -> UUID:
+        return self.model.required_sub_object_id
+
+    async def gen_required_sub_object(self) -> EntTestSubObject:
+        return await EntTestSubObject.genx(self.vc, self.model.required_sub_object_id)
+
+    @property
     def username(self) -> str:
         return self.model.username
 
     @property
-    def firstname(self) -> str:
-        return self.model.firstname
+    def city(self) -> str | None:
+        return self.model.city
 
     @property
     def lastname(self) -> str | None:
         return self.model.lastname
 
     @property
-    def city(self) -> str | None:
-        return self.model.city
+    def optional_sub_object_id(self) -> UUID | None:
+        return self.model.optional_sub_object_id
+
+    async def gen_optional_sub_object(self) -> EntTestSubObject | None:
+        if self.model.optional_sub_object_id:
+            return await EntTestSubObject.gen(
+                self.vc, self.model.optional_sub_object_id
+            )
+        return None
+
+    @property
+    def optional_sub_object_no_ex_id(self) -> UUID | None:
+        return self.model.optional_sub_object_no_ex_id
+
+    async def gen_optional_sub_object_no_ex(self) -> EntTestSubObject | None:
+        if self.model.optional_sub_object_no_ex_id:
+            return await EntTestSubObject.gen(
+                self.vc, self.model.optional_sub_object_no_ex_id
+            )
+        return None
 
     @classmethod
     async def genx(cls, vc: ViewerContext, ent_id: UUID) -> EntTestObject:
@@ -88,13 +128,23 @@ class EntTestObjectMutator:
     def create(
         cls,
         vc: ViewerContext,
-        username: str,
         firstname: str,
-        lastname: str | None = None,
+        required_sub_object_id: UUID,
+        username: str,
         city: str | None = None,
+        lastname: str | None = None,
+        optional_sub_object_id: UUID | None = None,
+        optional_sub_object_no_ex_id: UUID | None = None,
     ) -> EntTestObjectMutatorCreationAction:
         return EntTestObjectMutatorCreationAction(
-            vc=vc, username=username, firstname=firstname, lastname=lastname, city=city
+            vc=vc,
+            firstname=firstname,
+            required_sub_object_id=required_sub_object_id,
+            username=username,
+            city=city,
+            lastname=lastname,
+            optional_sub_object_id=optional_sub_object_id,
+            optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
         )
 
     @classmethod
@@ -114,33 +164,45 @@ class EntTestObjectMutatorCreationAction:
     vc: ViewerContext
     id: UUID
     firstname: str
+    required_sub_object_id: UUID
     username: str
     city: str | None = None
     lastname: str | None = None
+    optional_sub_object_id: UUID | None = None
+    optional_sub_object_no_ex_id: UUID | None = None
 
     def __init__(
         self,
         vc: ViewerContext,
         firstname: str,
+        required_sub_object_id: UUID,
         username: str,
         city: str | None,
         lastname: str | None,
+        optional_sub_object_id: UUID | None,
+        optional_sub_object_no_ex_id: UUID | None,
     ) -> None:
         self.vc = vc
         self.id = uuid4()
         self.firstname = firstname
+        self.required_sub_object_id = required_sub_object_id
         self.username = username
         self.city = city
         self.lastname = lastname
+        self.optional_sub_object_id = optional_sub_object_id
+        self.optional_sub_object_no_ex_id = optional_sub_object_no_ex_id
 
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
         model = EntTestObjectModel(
             id=self.id,
             firstname=self.firstname,
+            required_sub_object_id=self.required_sub_object_id,
             username=self.username,
             city=self.city,
             lastname=self.lastname,
+            optional_sub_object_id=self.optional_sub_object_id,
+            optional_sub_object_no_ex_id=self.optional_sub_object_no_ex_id,
         )
         session.add(model)
         await session.flush()
@@ -153,25 +215,34 @@ class EntTestObjectMutatorUpdateAction:
     ent: EntTestObject
     id: UUID
     firstname: str
+    required_sub_object_id: UUID
     username: str
     city: str | None = None
     lastname: str | None = None
+    optional_sub_object_id: UUID | None = None
+    optional_sub_object_no_ex_id: UUID | None = None
 
     def __init__(self, vc: ViewerContext, ent: EntTestObject) -> None:
         self.vc = vc
         self.ent = ent
         self.firstname = ent.firstname
+        self.required_sub_object_id = ent.required_sub_object_id
         self.username = ent.username
         self.city = ent.city
         self.lastname = ent.lastname
+        self.optional_sub_object_id = ent.optional_sub_object_id
+        self.optional_sub_object_no_ex_id = ent.optional_sub_object_no_ex_id
 
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
         model = self.ent.model
         model.firstname = self.firstname
+        model.required_sub_object_id = self.required_sub_object_id
         model.username = self.username
         model.city = self.city
         model.lastname = self.lastname
+        model.optional_sub_object_id = self.optional_sub_object_id
+        model.optional_sub_object_no_ex_id = self.optional_sub_object_no_ex_id
         session.add(model)
         await session.flush()
         # TODO privacy checks
@@ -199,12 +270,20 @@ class EntTestObjectExample:
     async def gen_create(
         cls,
         vc: ViewerContext,
-        username: str | Sentinel = NOTHING,
         firstname: str | Sentinel = NOTHING,
-        lastname: str | None = None,
+        required_sub_object_id: UUID | Sentinel = NOTHING,
+        username: str | Sentinel = NOTHING,
         city: str | None = None,
+        lastname: str | None = None,
+        optional_sub_object_id: UUID | None = None,
+        optional_sub_object_no_ex_id: UUID | None = None,
     ) -> EntTestObject:
         # TODO make sure we only use this in test mode
+
+        firstname = "Vincent" if isinstance(firstname, Sentinel) else firstname
+
+        required_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
+        required_sub_object_id = required_sub_object_id_ent.id
 
         if isinstance(username, Sentinel):
             field = cls._get_field("username")
@@ -217,12 +296,20 @@ class EntTestObjectExample:
             if generator:
                 username = generator()
 
-        firstname = "Vincent" if isinstance(firstname, Sentinel) else firstname
-
         city = "Los Angeles" if isinstance(city, Sentinel) else city
 
+        optional_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
+        optional_sub_object_id = optional_sub_object_id_ent.id
+
         return await EntTestObjectMutator.create(
-            vc=vc, username=username, firstname=firstname, lastname=lastname, city=city
+            vc=vc,
+            firstname=firstname,
+            required_sub_object_id=required_sub_object_id,
+            username=username,
+            city=city,
+            lastname=lastname,
+            optional_sub_object_id=optional_sub_object_id,
+            optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
         ).gen_savex()
 
     @classmethod

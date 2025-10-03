@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from examples.generated.ent_test_object import (
@@ -5,12 +7,16 @@ from examples.generated.ent_test_object import (
     EntTestObjectExample,
     EntTestObjectMutator,
 )
+from examples.generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
 from framework.viewer_context import ViewerContext
 
 
 async def test_creation(db_session: AsyncSession, vc: ViewerContext) -> None:
     ent = await EntTestObjectMutator.create(
-        vc=vc, username="vdurmont", firstname="Vincent"
+        vc=vc,
+        username="vdurmont",
+        firstname="Vincent",
+        required_sub_object_id=uuid.uuid4(),
     ).gen_savex()
 
     assert ent is not None, "create should create the ent"

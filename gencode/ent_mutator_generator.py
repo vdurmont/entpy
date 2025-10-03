@@ -36,24 +36,15 @@ def generate(
 
 
 def _generate_base(schema: EntSchema, base_name: str) -> GeneratedContent:
-    # Separate nullable and non-nullable fields
-    # We always process the mandatory fields first
-    nullable_fields = [f for f in schema.get_fields() if f.nullable]
-    non_nullable_fields = [f for f in schema.get_fields() if not f.nullable]
-
     # Build up the list of arguments the create function takes
     arguments_definition = ""
-    for field in non_nullable_fields:
-        arguments_definition += f", {field.name}: {field.get_python_type()}"
-    for field in nullable_fields:
-        arguments_definition += (
-            f", {field.name}: {field.get_python_type()} | None = None"
-        )
+    for field in schema.get_sorted_fields():
+        or_not = " | None = None" if field.nullable else ""
+        arguments_definition += f", {field.name}: {field.get_python_type()}{or_not}"
 
     # Build up the list of arguments the create function takes
     arguments_usage = "".join(
-        [f", {field.name}={field.name}" for field in non_nullable_fields]
-        + [f", {field.name}={field.name}" for field in nullable_fields]
+        [f", {field.name}={field.name}" for field in schema.get_sorted_fields()]
     )
 
     return GeneratedContent(
@@ -84,39 +75,27 @@ class {base_name}Mutator:
 
 
 def _generate_creation(
-    schema: EntSchema, base_name: str, session_getter_fn_name: str
+    schema: EntSchema,
+    base_name: str,
+    session_getter_fn_name: str,
 ) -> GeneratedContent:
-    # Separate nullable and non-nullable fields
-    # We always process the mandatory fields first
-    nullable_fields = [f for f in schema.get_fields() if f.nullable]
-    nullable_fields.sort(key=lambda f: f.name)
-    non_nullable_fields = [f for f in schema.get_fields() if not f.nullable]
-    non_nullable_fields.sort(key=lambda f: f.name)
-
     # Build up the list of local variables we will store in the class
-    local_variables = "\n".join(
-        [
-            f"    {field.name}: {field.get_python_type()}"
-            for field in non_nullable_fields
-        ]
-        + [
-            f"    {field.name}: {field.get_python_type()} | None = None"
-            for field in nullable_fields
-        ]
-    )
+    local_variables = ""
+    for field in schema.get_sorted_fields():
+        or_not = " | None = None" if field.nullable else ""
+        local_variables += f"    {field.name}: {field.get_python_type()}{or_not}\n"
 
-    # Build up the list of arguments the create function takes
-    arguments = ""
-    for field in non_nullable_fields:
-        arguments += f", {field.name}: {field.get_python_type()}"
-    for field in nullable_fields:
-        arguments += f", {field.name}: {field.get_python_type()} | None"
+    # Build up the list of arguments the __init__ function takes
+    constructor_arguments = ""
+    for field in schema.get_sorted_fields():
+        or_not = " | None" if field.nullable else ""
+        constructor_arguments += f", {field.name}: {field.get_python_type()}{or_not}"
 
     # Build up the list of assignments in the constructor
-    local_variables_assignments = "\n".join(
+    constructor_assignments = "\n".join(
         [
             f"        self.{field.name} = {field.name}"
-            for field in non_nullable_fields + nullable_fields
+            for field in schema.get_sorted_fields()
         ]
     )
 
@@ -124,7 +103,7 @@ def _generate_creation(
     model_assignments = "\n".join(
         [
             f"                {field.name}=self.{field.name},"
-            for field in non_nullable_fields + nullable_fields
+            for field in schema.get_sorted_fields()
         ]
     )
 
@@ -141,10 +120,10 @@ class {base_name}MutatorCreationAction:
     id: UUID
 {local_variables}
 
-    def __init__(self, vc: ViewerContext{arguments}) -> None:
+    def __init__(self, vc: ViewerContext{constructor_arguments}) -> None:
         self.vc = vc
         self.id = uuid4()
-{local_variables_assignments}
+{constructor_assignments}
 
     async def gen_savex(self) -> {base_name}:
         session = {session_getter_fn_name}()

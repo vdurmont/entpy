@@ -1,3 +1,4 @@
+from framework.ent_field import EdgeField
 from framework.ent_schema import EntSchema
 from gencode.generated_content import GeneratedContent
 
@@ -68,7 +69,7 @@ class {base_name}:
 
 
 def _generate_accessors(schema: EntSchema) -> str:
-    fields = schema.get_fields()
+    fields = schema.get_sorted_fields()
     accessors_code = ""
     for field in fields:
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
@@ -77,4 +78,22 @@ def _generate_accessors(schema: EntSchema) -> str:
         return self.model.{field.name}
 
 """
+
+        # If the field is an edge, we want to generate a utility function to
+        # load the edge directly
+        if isinstance(field, EdgeField):
+            if field.nullable:
+                accessors_code += f"""
+    async def gen_{field.original_name}(self) -> {field.get_edge_type()} | None:
+        if self.model.{field.name}:
+            return await {field.get_edge_type()}.gen(self.vc, self.model.{field.name})
+        return None
+
+"""  # noqa: E501
+            else:
+                accessors_code += f"""
+    async def gen_{field.original_name}(self) -> {field.get_edge_type()}:
+        return await {field.get_edge_type()}.genx(self.vc, self.model.{field.name})
+
+"""  # noqa: E501
     return accessors_code
