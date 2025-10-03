@@ -148,7 +148,7 @@ class {base_name}MutatorCreationAction:
 
     async def gen_savex(self) -> {base_name}:
         session = {session_getter_fn_name}()
-        model = EntTestObjectModel(
+        model = {base_name}Model(
             id=self.id,
 {model_assignments}
         )
