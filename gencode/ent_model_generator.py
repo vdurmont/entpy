@@ -1,7 +1,7 @@
 import re
 
-from framework.ent_field import EdgeField, StringField
 from framework.ent_schema import EntSchema
+from framework.fields.field import EdgeField, StringField
 from gencode.generated_content import GeneratedContent
 from gencode.utils import to_snake_case
 

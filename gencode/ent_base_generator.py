@@ -1,5 +1,5 @@
-from framework.ent_field import EdgeField
 from framework.ent_schema import EntSchema
+from framework.fields.field import EdgeField
 from gencode.generated_content import GeneratedContent
 
 

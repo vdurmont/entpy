@@ -1,9 +1,9 @@
-from framework.ent_field import (
+from framework.ent_schema import EntSchema
+from framework.fields.field import (
     EdgeField,
     EntFieldWithDynamicExample,
     EntFieldWithExample,
 )
-from framework.ent_schema import EntSchema
 from gencode.generated_content import GeneratedContent
 from gencode.utils import to_snake_case
 
@@ -68,7 +68,7 @@ def generate(
     return GeneratedContent(
         imports=[
             "from framework.viewer_context import ViewerContext",
-            "from framework.ent_field import EntField, EntFieldWithDynamicExample",
+            "from framework.fields.field import Field, EntFieldWithDynamicExample",
             "from sentinels import NOTHING, Sentinel  # type: ignore",
             f"from {schema.__class__.__module__} import {schema.__class__.__name__}",
         ]
@@ -86,7 +86,7 @@ class {base_name}Example:
         return await {base_name}Mutator.create(vc=vc{mutator_arguments}).gen_savex()
 
     @classmethod
-    def _get_field(cls, field_name: str) -> EntField:
+    def _get_field(cls, field_name: str) -> Field:
         schema = {base_name}Schema()
         fields = schema.get_fields()
         field = list(

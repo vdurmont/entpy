@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from examples.database import get_session
 from examples.ent_test_sub_object_schema import EntTestSubObjectSchema
-from framework.ent_field import EntField
+from framework.fields.field import Field
 from framework.viewer_context import ViewerContext
 
 from .ent_model import EntModel
@@ -159,7 +159,7 @@ class EntTestSubObjectExample:
         return await EntTestSubObjectMutator.create(vc=vc, email=email).gen_savex()
 
     @classmethod
-    def _get_field(cls, field_name: str) -> EntField:
+    def _get_field(cls, field_name: str) -> Field:
         schema = EntTestSubObjectSchema()
         fields = schema.get_fields()
         field = list(

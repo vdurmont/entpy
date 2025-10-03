@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from examples.database import get_session
 from examples.ent_test_object_schema import EntTestObjectSchema
-from framework.ent_field import EntField, EntFieldWithDynamicExample
+from framework.fields.field import EntFieldWithDynamicExample, Field
 from framework.viewer_context import ViewerContext
 
 from .ent_model import EntModel
@@ -313,7 +313,7 @@ class EntTestObjectExample:
         ).gen_savex()
 
     @classmethod
-    def _get_field(cls, field_name: str) -> EntField:
+    def _get_field(cls, field_name: str) -> Field:
         schema = EntTestObjectSchema()
         fields = schema.get_fields()
         field = list(

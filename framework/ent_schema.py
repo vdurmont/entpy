@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
 
-from framework.ent_field import EntField
+from framework.fields.field import Field
 
 
 class EntSchema(ABC):
     @abstractmethod
-    def get_fields(self) -> list[EntField]:
+    def get_fields(self) -> list[Field]:
         pass
 
-    def get_sorted_fields(self) -> list[EntField]:
+    def get_sorted_fields(self) -> list[Field]:
         # Separate nullable and non-nullable fields
         # We always process the mandatory fields first
         nullable_fields = [f for f in self.get_fields() if f.nullable]

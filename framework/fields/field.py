@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from framework.ent_schema import EntSchema
 
 
-class EntField(ABC):
+class Field(ABC):
     name: str
     original_name: str
     nullable: bool = True
@@ -60,7 +60,7 @@ class EntFieldWithDynamicExample(ABC, Generic[T]):
         return self._generator
 
 
-class StringField(EntField, EntFieldWithExample[str], EntFieldWithDynamicExample[str]):
+class StringField(Field, EntFieldWithExample[str], EntFieldWithDynamicExample[str]):
     def __init__(self, name: str, length: int):
         super().__init__(name=name)
         self.length = length
@@ -72,7 +72,7 @@ class StringField(EntField, EntFieldWithExample[str], EntFieldWithDynamicExample
         return f'"{self._example}"' if self._example else None
 
 
-class EdgeField(EntField):
+class EdgeField(Field):
     edge_class: type[EntSchema]
     should_generate_example: bool = True
 
