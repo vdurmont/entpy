@@ -1,6 +1,7 @@
 from framework.fields.edge_field import EdgeField
 from framework.schema import Schema
 from gencode.generated_content import GeneratedContent
+from gencode.utils import to_snake_case
 
 
 def generate(
@@ -10,9 +11,25 @@ def generate(
 ) -> GeneratedContent:
     accessors = _generate_accessors(schema)
 
+    extends = ",".join(
+        ["Ent"]
+        + [
+            f"I{pattern.__class__.__name__.replace("Pattern", "")}"
+            for pattern in schema.get_patterns()
+        ]
+    )
+
+    imports = []
+    for pattern in schema.get_patterns():
+        pattern_base_name = pattern.__class__.__name__.replace("Pattern", "")
+        class_name = f"I{pattern_base_name}"
+        module_name = "." + to_snake_case(pattern_base_name)
+        imports.append(f"from {module_name} import {class_name}")
+
     return GeneratedContent(
+        imports=imports,
         code=f"""
-class {base_name}(Ent):
+class {base_name}({extends}):
     vc: ViewerContext
     model: {base_name}Model
 

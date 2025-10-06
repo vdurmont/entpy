@@ -2,8 +2,10 @@ import subprocess
 from importlib import import_module
 from pathlib import Path
 
+from framework.pattern import Pattern
 from framework.schema import Schema
 from gencode.model_base_template import generate as generate_base_model
+from gencode.pattern_generator import generate as generate_pattern
 from gencode.schema_generator import generate as generate_schema
 
 
@@ -27,22 +29,29 @@ def run(
     base_model = generate_base_model(base_import=base_import)
     _write_file(output_path / "ent_model.py", base_model)
 
-    # Load all schemas to process
-    configs = _load_schemas_configs(schemas_path=schemas_path, output_path=output_path)
-    print(f"Found {len(configs)} schema(s).")
+    # Load all descriptors to process
+    configs = _load_descriptors_configs(
+        schemas_path=schemas_path, output_path=output_path
+    )
+    print(f"Found {len(configs)} schema(s) and pattern(s).")
 
     # Gencode all the things!
     for config in configs:
-        schema_class = config[0]
-        schema_output_path = config[1]
-        print(f"Processing schema: {schema_class.__name__}")
-        code = generate_schema(
-            schema_class=schema_class,
-            ent_model_import="from .ent_model import EntModel",
-            session_getter_import=session_getter_import,
-            session_getter_fn_name=session_getter_fn_name,
-        )
-        _write_file(schema_output_path, code)
+        descriptor_class = config[0]
+        descriptor_output_path = config[1]
+        print(f"Processing: {descriptor_class.__name__}")
+        if issubclass(descriptor_class, Schema):
+            code = generate_schema(
+                schema_class=descriptor_class,
+                ent_model_import="from .ent_model import EntModel",
+                session_getter_import=session_getter_import,
+                session_getter_fn_name=session_getter_fn_name,
+            )
+        elif issubclass(descriptor_class, Pattern):
+            code = generate_pattern(pattern_class=descriptor_class)
+        else:
+            raise TypeError(f"Unknown descriptor type: {descriptor_class}")
+        _write_file(descriptor_output_path, code)
 
     # Format the code before returning
     # TODO make this a config, not everyone uses ruff
@@ -54,38 +63,45 @@ def run(
     print("EntGenerator has finished.")
 
 
-def _load_schemas_configs(
+def _load_descriptors_configs(
     schemas_path: Path, output_path: Path
-) -> list[tuple[type[Schema], Path]]:
+) -> list[tuple[type[Schema] | type[Pattern], Path]]:
     schema_files = list(schemas_path.glob("ent_*_schema.py"))
+    pattern_files = list(schemas_path.glob("ent_*_pattern.py"))
 
-    for schema_file in schema_files:
-        relative_path = schema_file.relative_to(Path.cwd())
+    for descriptor_file in schema_files + pattern_files:
+        relative_path = descriptor_file.relative_to(Path.cwd())
         module_name = str(relative_path.with_suffix("")).replace("/", ".")
         import_module(module_name)
 
     schemas = Schema.__subclasses__()
+    patterns = Pattern.__subclasses__()
 
     configs = []
 
-    for schema_file in schema_files:
-        schema_name = "".join(part.capitalize() for part in schema_file.stem.split("_"))
-        matching_schemas = [
-            schema for schema in schemas if schema.__name__ == schema_name
-        ]
-        if not matching_schemas:
-            print(f"Warning: No matching schema class found for file {schema_file}")
-            continue
-        if len(matching_schemas) > 1:
+    for descriptor_file in schema_files + pattern_files:
+        descriptor_name = "".join(
+            part.capitalize() for part in descriptor_file.stem.split("_")
+        )
+        matching_descriptors = [
+            schema for schema in schemas if schema.__name__ == descriptor_name
+        ] + [pattern for pattern in patterns if pattern.__name__ == descriptor_name]
+        if not matching_descriptors:
             print(
-                "Warning: Multiple matching schema classes found for "
-                + f"file {schema_file}"
+                f"Warning: No matching schema or pattern class found for file {descriptor_file}"
+            )
+            continue
+        if len(matching_descriptors) > 1:
+            print(
+                "Warning: Multiple matching schema or pattern classes found for "
+                + f"file {descriptor_file}"
             )
             continue
         configs.append(
             (
-                matching_schemas[0],
-                output_path / f"{schema_file.stem.replace('_schema', '')}.py",
+                matching_descriptors[0],
+                output_path
+                / f"{descriptor_file.stem.replace('_schema', '').replace('_pattern', '')}.py",
             )
         )
 

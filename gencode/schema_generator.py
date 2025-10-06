@@ -40,7 +40,7 @@ def generate(
     return f"""
 from __future__ import annotations
 from framework import ViewerContext, Ent
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime
 
 {session_getter_import}

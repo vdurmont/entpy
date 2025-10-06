@@ -20,16 +20,22 @@ class Descriptor(ABC):
     def get_patterns(self) -> list["Pattern"]:
         return []
 
+    def get_sorted_fields(self) -> list[Field]:
+        return _sort_fields(self.get_fields())
+
     def get_all_fields(self) -> list[Field]:
         # First gather all the fields
         fields = self.get_fields()
         for pattern in self.get_patterns():
             fields += pattern.get_all_fields()
+        return _sort_fields(fields)
 
-        # Separate nullable and non-nullable fields
-        # We always process the mandatory fields first
-        nullable_fields = [f for f in fields if f.nullable]
-        nullable_fields.sort(key=lambda f: f.name)
-        non_nullable_fields = [f for f in fields if not f.nullable]
-        non_nullable_fields.sort(key=lambda f: f.name)
-        return non_nullable_fields + nullable_fields
+
+def _sort_fields(fields: list[Field]) -> list[Field]:
+    # Separate nullable and non-nullable fields
+    # We always process the mandatory fields first
+    nullable_fields = [f for f in fields if f.nullable]
+    nullable_fields.sort(key=lambda f: f.name)
+    non_nullable_fields = [f for f in fields if not f.nullable]
+    non_nullable_fields.sort(key=lambda f: f.name)
+    return non_nullable_fields + nullable_fields

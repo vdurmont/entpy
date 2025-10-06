@@ -48,7 +48,6 @@ def _generate_base(schema: Schema, base_name: str) -> GeneratedContent:
     )
 
     return GeneratedContent(
-        imports=[],
         code=f"""
 class {base_name}Mutator:
     @classmethod
@@ -108,9 +107,6 @@ def _generate_creation(
     # TODO support UUID factory
 
     return GeneratedContent(
-        imports=[
-            "from uuid import UUID, uuid4",
-        ],
         code=f"""
 class {base_name}MutatorCreationAction:
     vc: ViewerContext
@@ -161,9 +157,6 @@ def _generate_update(
     )
 
     return GeneratedContent(
-        imports=[
-            "from uuid import UUID, uuid4",
-        ],
         code=f"""
 class {base_name}MutatorUpdateAction:
     vc: ViewerContext
@@ -192,7 +185,6 @@ def _generate_deletion(
     schema: Schema, base_name: str, session_getter_fn_name: str
 ) -> GeneratedContent:
     return GeneratedContent(
-        imports=[],
         code=f"""
 class {base_name}MutatorDeletionAction:
     vc: ViewerContext

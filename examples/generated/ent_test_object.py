@@ -14,6 +14,7 @@ from framework import Ent, Field, FieldWithDynamicExample, ViewerContext
 
 from .ent_model import EntModel
 from .ent_test_sub_object import EntTestSubObject, EntTestSubObjectExample
+from .ent_test_thing import IEntTestThing
 
 
 class EntTestObjectModel(EntModel):
@@ -35,7 +36,7 @@ class EntTestObjectModel(EntModel):
     )
 
 
-class EntTestObject(Ent):
+class EntTestObject(Ent, IEntTestThing):
     vc: ViewerContext
     model: EntTestObjectModel
 
