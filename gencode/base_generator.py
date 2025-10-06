@@ -11,9 +11,8 @@ def generate(
     accessors = _generate_accessors(schema)
 
     return GeneratedContent(
-        imports=[],
         code=f"""
-class {base_name}:
+class {base_name}(Ent):
     vc: ViewerContext
     model: {base_name}Model
 
@@ -24,6 +23,14 @@ class {base_name}:
     @property
     def id(self) -> UUID:
         return self.model.id
+
+    @property
+    def created_at(self) -> datetime:
+        return self.model.created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self.model.updated_at
 
 {accessors}
 

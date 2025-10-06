@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID, uuid4
 
 from sentinels import NOTHING, Sentinel  # type: ignore
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from examples.database import get_session
 from examples.ent_test_object_schema import EntTestObjectSchema
-from framework import Field, FieldWithDynamicExample, ViewerContext
+from framework import Ent, Field, FieldWithDynamicExample, ViewerContext
 
 from .ent_model import EntModel
 from .ent_test_sub_object import EntTestSubObject, EntTestSubObjectExample
@@ -34,7 +35,7 @@ class EntTestObjectModel(EntModel):
     )
 
 
-class EntTestObject:
+class EntTestObject(Ent):
     vc: ViewerContext
     model: EntTestObjectModel
 
@@ -45,6 +46,14 @@ class EntTestObject:
     @property
     def id(self) -> UUID:
         return self.model.id
+
+    @property
+    def created_at(self) -> datetime:
+        return self.model.created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self.model.updated_at
 
     @property
     def a_good_thing(self) -> str:
