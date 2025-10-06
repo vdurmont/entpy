@@ -11,10 +11,7 @@ def generate(
     accessors = _generate_accessors(schema)
 
     return GeneratedContent(
-        imports=[
-            "from framework.viewer_context import ViewerContext",
-            "from uuid import UUID",
-        ],
+        imports=[],
         code=f"""
 class {base_name}:
     vc: ViewerContext

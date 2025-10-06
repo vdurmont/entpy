@@ -8,7 +8,7 @@ from examples.generated.ent_test_object import (
     EntTestObjectMutator,
 )
 from examples.generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
-from framework.viewer_context import ViewerContext
+from framework import ViewerContext
 
 
 async def test_creation(db_session: AsyncSession, vc: ViewerContext) -> None:

@@ -48,9 +48,7 @@ def _generate_base(schema: Schema, base_name: str) -> GeneratedContent:
     )
 
     return GeneratedContent(
-        imports=[
-            "from framework.viewer_context import ViewerContext",
-        ],
+        imports=[],
         code=f"""
 class {base_name}Mutator:
     @classmethod
@@ -111,7 +109,6 @@ def _generate_creation(
 
     return GeneratedContent(
         imports=[
-            "from framework.viewer_context import ViewerContext",
             "from uuid import UUID, uuid4",
         ],
         code=f"""
@@ -186,7 +183,6 @@ def _generate_update(
 
     return GeneratedContent(
         imports=[
-            "from framework.viewer_context import ViewerContext",
             "from uuid import UUID, uuid4",
         ],
         code=f"""
@@ -217,9 +213,7 @@ def _generate_deletion(
     schema: Schema, base_name: str, session_getter_fn_name: str
 ) -> GeneratedContent:
     return GeneratedContent(
-        imports=[
-            "from framework.viewer_context import ViewerContext",
-        ],
+        imports=[],
         code=f"""
 class {base_name}MutatorDeletionAction:
     vc: ViewerContext

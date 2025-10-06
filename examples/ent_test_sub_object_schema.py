@@ -1,6 +1,4 @@
-from framework.fields.core import Field
-from framework.fields.string_field import StringField
-from framework.schema import Schema
+from framework import Field, Schema, StringField
 
 
 class EntTestSubObjectSchema(Schema):

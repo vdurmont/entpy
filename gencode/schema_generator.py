@@ -39,6 +39,9 @@ def generate(
 
     return f"""
 from __future__ import annotations
+from framework import ViewerContext
+from uuid import UUID
+
 {session_getter_import}
 {imports_code}
 

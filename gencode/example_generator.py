@@ -67,8 +67,7 @@ def generate(
 
     return GeneratedContent(
         imports=[
-            "from framework.viewer_context import ViewerContext",
-            "from framework.fields.core import Field, FieldWithDynamicExample",
+            "from framework import Field, FieldWithDynamicExample",
             "from sentinels import NOTHING, Sentinel  # type: ignore",
             f"from {schema.__class__.__module__} import {schema.__class__.__name__}",
         ]

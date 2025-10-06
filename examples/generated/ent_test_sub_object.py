@@ -8,8 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from examples.database import get_session
 from examples.ent_test_sub_object_schema import EntTestSubObjectSchema
-from framework.fields.core import Field
-from framework.viewer_context import ViewerContext
+from framework import Field, ViewerContext
 
 from .ent_model import EntModel
 

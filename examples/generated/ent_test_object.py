@@ -9,8 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from examples.database import get_session
 from examples.ent_test_object_schema import EntTestObjectSchema
-from framework.fields.core import Field, FieldWithDynamicExample
-from framework.viewer_context import ViewerContext
+from framework import Field, FieldWithDynamicExample, ViewerContext
 
 from .ent_model import EntModel
 from .ent_test_sub_object import EntTestSubObject, EntTestSubObjectExample
