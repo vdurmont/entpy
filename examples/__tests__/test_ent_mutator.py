@@ -14,6 +14,7 @@ from framework import ViewerContext
 async def test_creation(db_session: AsyncSession, vc: ViewerContext) -> None:
     ent = await EntTestObjectMutator.create(
         vc=vc,
+        a_good_thing="Eating cheese",
         username="vdurmont",
         firstname="Vincent",
         required_sub_object_id=uuid.uuid4(),

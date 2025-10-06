@@ -8,7 +8,7 @@ from gencode.utils import to_snake_case
 
 
 def generate(schema: Schema, base_name: str) -> GeneratedContent:
-    fields = schema.get_fields()
+    fields = schema.get_all_fields()
 
     fields_code = ""
     edges_imports = []

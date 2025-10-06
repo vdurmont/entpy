@@ -73,3 +73,14 @@ async def test_edges_work_well(db_session: AsyncSession, vc: ViewerContext) -> N
     assert (
         opt_edge_2 is None
     ), "We should not be able to load the optional edge with no example"
+
+
+async def test_pattern_fields_are_written_properly(
+    db_session: AsyncSession, vc: ViewerContext
+) -> None:
+    good = "Taking a nap"
+    ent = await EntTestObjectExample.gen_create(vc, a_good_thing=good)
+
+    result = await EntTestObject.genx(vc, ent.id)
+
+    assert result.a_good_thing == good

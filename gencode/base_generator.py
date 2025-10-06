@@ -66,7 +66,7 @@ class {base_name}:
 
 
 def _generate_accessors(schema: Schema) -> str:
-    fields = schema.get_sorted_fields()
+    fields = schema.get_all_fields()
     accessors_code = ""
     for field in fields:
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")

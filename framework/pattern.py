@@ -1,5 +1,5 @@
 from framework.descriptor import Descriptor
 
 
-class Schema(Descriptor):
+class Pattern(Descriptor):
     pass

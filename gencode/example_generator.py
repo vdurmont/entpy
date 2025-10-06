@@ -14,7 +14,7 @@ def generate(
 ) -> GeneratedContent:
     # Build up the list of arguments the gen_create function takes
     arguments_definition = ""
-    for field in schema.get_sorted_fields():
+    for field in schema.get_all_fields():
         typehint = field.get_python_type()
         typehint += " | None = None" if field.nullable else " | Sentinel = NOTHING"
         arguments_definition += f", {field.name}: {typehint}"
@@ -22,7 +22,7 @@ def generate(
     # Build up the list of variables that will be passed to the mutator
     arguments_assignments = ""
     edges_imports = []
-    for field in schema.get_sorted_fields():
+    for field in schema.get_all_fields():
         if isinstance(field, FieldWithExample):
             example = field.get_example_as_string()
             if example:
@@ -62,7 +62,7 @@ def generate(
 
     # Build up the list of arguments the Mutator.create function takes
     mutator_arguments = "\n".join(
-        [f", {field.name}={field.name}" for field in schema.get_sorted_fields()]
+        [f", {field.name}={field.name}" for field in schema.get_all_fields()]
     )
 
     return GeneratedContent(

@@ -1,0 +1,35 @@
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+from framework.fields.core import Field
+
+if TYPE_CHECKING:
+    from framework.pattern import Pattern
+
+
+class Descriptor(ABC):
+    """
+    A descriptor is a class that describes how an Ent should be handled.
+    It might be abstract (Pattern) or concrete (Schema).
+    """
+
+    @abstractmethod
+    def get_fields(self) -> list[Field]:
+        pass
+
+    def get_patterns(self) -> list["Pattern"]:
+        return []
+
+    def get_all_fields(self) -> list[Field]:
+        # First gather all the fields
+        fields = self.get_fields()
+        for pattern in self.get_patterns():
+            fields += pattern.get_all_fields()
+
+        # Separate nullable and non-nullable fields
+        # We always process the mandatory fields first
+        nullable_fields = [f for f in fields if f.nullable]
+        nullable_fields.sort(key=lambda f: f.name)
+        non_nullable_fields = [f for f in fields if not f.nullable]
+        non_nullable_fields.sort(key=lambda f: f.name)
+        return non_nullable_fields + nullable_fields

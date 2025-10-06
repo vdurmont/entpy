@@ -18,13 +18,14 @@ from .ent_test_sub_object import EntTestSubObject, EntTestSubObjectExample
 class EntTestObjectModel(EntModel):
     __tablename__ = "test_object"
 
-    username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    a_good_thing: Mapped[str] = mapped_column(String(100), nullable=False)
     firstname: Mapped[str] = mapped_column(String(100), nullable=False)
-    lastname: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     required_sub_object_id: Mapped[UUID] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=False
     )
+    username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    lastname: Mapped[str | None] = mapped_column(String(100), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=True
     )
@@ -44,6 +45,10 @@ class EntTestObject:
     @property
     def id(self) -> UUID:
         return self.model.id
+
+    @property
+    def a_good_thing(self) -> str:
+        return self.model.a_good_thing
 
     @property
     def firstname(self) -> str:
@@ -127,6 +132,7 @@ class EntTestObjectMutator:
     def create(
         cls,
         vc: ViewerContext,
+        a_good_thing: str,
         firstname: str,
         required_sub_object_id: UUID,
         username: str,
@@ -137,6 +143,7 @@ class EntTestObjectMutator:
     ) -> EntTestObjectMutatorCreationAction:
         return EntTestObjectMutatorCreationAction(
             vc=vc,
+            a_good_thing=a_good_thing,
             firstname=firstname,
             required_sub_object_id=required_sub_object_id,
             username=username,
@@ -162,6 +169,7 @@ class EntTestObjectMutator:
 class EntTestObjectMutatorCreationAction:
     vc: ViewerContext
     id: UUID
+    a_good_thing: str
     firstname: str
     required_sub_object_id: UUID
     username: str
@@ -173,6 +181,7 @@ class EntTestObjectMutatorCreationAction:
     def __init__(
         self,
         vc: ViewerContext,
+        a_good_thing: str,
         firstname: str,
         required_sub_object_id: UUID,
         username: str,
@@ -183,6 +192,7 @@ class EntTestObjectMutatorCreationAction:
     ) -> None:
         self.vc = vc
         self.id = uuid4()
+        self.a_good_thing = a_good_thing
         self.firstname = firstname
         self.required_sub_object_id = required_sub_object_id
         self.username = username
@@ -195,6 +205,7 @@ class EntTestObjectMutatorCreationAction:
         session = get_session()
         model = EntTestObjectModel(
             id=self.id,
+            a_good_thing=self.a_good_thing,
             firstname=self.firstname,
             required_sub_object_id=self.required_sub_object_id,
             username=self.username,
@@ -213,6 +224,7 @@ class EntTestObjectMutatorUpdateAction:
     vc: ViewerContext
     ent: EntTestObject
     id: UUID
+    a_good_thing: str
     firstname: str
     required_sub_object_id: UUID
     username: str
@@ -224,6 +236,7 @@ class EntTestObjectMutatorUpdateAction:
     def __init__(self, vc: ViewerContext, ent: EntTestObject) -> None:
         self.vc = vc
         self.ent = ent
+        self.a_good_thing = ent.a_good_thing
         self.firstname = ent.firstname
         self.required_sub_object_id = ent.required_sub_object_id
         self.username = ent.username
@@ -235,6 +248,7 @@ class EntTestObjectMutatorUpdateAction:
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
         model = self.ent.model
+        model.a_good_thing = self.a_good_thing
         model.firstname = self.firstname
         model.required_sub_object_id = self.required_sub_object_id
         model.username = self.username
@@ -269,6 +283,7 @@ class EntTestObjectExample:
     async def gen_create(
         cls,
         vc: ViewerContext,
+        a_good_thing: str | Sentinel = NOTHING,
         firstname: str | Sentinel = NOTHING,
         required_sub_object_id: UUID | Sentinel = NOTHING,
         username: str | Sentinel = NOTHING,
@@ -278,6 +293,10 @@ class EntTestObjectExample:
         optional_sub_object_no_ex_id: UUID | None = None,
     ) -> EntTestObject:
         # TODO make sure we only use this in test mode
+
+        a_good_thing = (
+            "A sunny day" if isinstance(a_good_thing, Sentinel) else a_good_thing
+        )
 
         firstname = "Vincent" if isinstance(firstname, Sentinel) else firstname
 
@@ -302,6 +321,7 @@ class EntTestObjectExample:
 
         return await EntTestObjectMutator.create(
             vc=vc,
+            a_good_thing=a_good_thing,
             firstname=firstname,
             required_sub_object_id=required_sub_object_id,
             username=username,

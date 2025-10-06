@@ -38,13 +38,13 @@ def generate(
 def _generate_base(schema: Schema, base_name: str) -> GeneratedContent:
     # Build up the list of arguments the create function takes
     arguments_definition = ""
-    for field in schema.get_sorted_fields():
+    for field in schema.get_all_fields():
         or_not = " | None = None" if field.nullable else ""
         arguments_definition += f", {field.name}: {field.get_python_type()}{or_not}"
 
     # Build up the list of arguments the create function takes
     arguments_usage = "".join(
-        [f", {field.name}={field.name}" for field in schema.get_sorted_fields()]
+        [f", {field.name}={field.name}" for field in schema.get_all_fields()]
     )
 
     return GeneratedContent(
@@ -79,13 +79,13 @@ def _generate_creation(
 ) -> GeneratedContent:
     # Build up the list of local variables we will store in the class
     local_variables = ""
-    for field in schema.get_sorted_fields():
+    for field in schema.get_all_fields():
         or_not = " | None = None" if field.nullable else ""
         local_variables += f"    {field.name}: {field.get_python_type()}{or_not}\n"
 
     # Build up the list of arguments the __init__ function takes
     constructor_arguments = ""
-    for field in schema.get_sorted_fields():
+    for field in schema.get_all_fields():
         or_not = " | None" if field.nullable else ""
         constructor_arguments += f", {field.name}: {field.get_python_type()}{or_not}"
 
@@ -93,7 +93,7 @@ def _generate_creation(
     constructor_assignments = "\n".join(
         [
             f"        self.{field.name} = {field.name}"
-            for field in schema.get_sorted_fields()
+            for field in schema.get_all_fields()
         ]
     )
 
@@ -101,7 +101,7 @@ def _generate_creation(
     model_assignments = "\n".join(
         [
             f"                {field.name}=self.{field.name},"
-            for field in schema.get_sorted_fields()
+            for field in schema.get_all_fields()
         ]
     )
 
@@ -139,7 +139,7 @@ class {base_name}MutatorCreationAction:
 def _generate_update(
     schema: Schema, base_name: str, session_getter_fn_name: str
 ) -> GeneratedContent:
-    fields = schema.get_sorted_fields()
+    fields = schema.get_all_fields()
 
     # Build up the list of local variables we will store in the class
     local_variables = "\n".join(
