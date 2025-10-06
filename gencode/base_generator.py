@@ -57,7 +57,7 @@ class {base_name}({extends}):
     ) -> {base_name}:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise ValueError("No {{base_name}} found for ID {{ent_id}}")
+            raise ValueError(f"No {base_name} found for ID {{ent_id}}")
         return ent
 
     @classmethod

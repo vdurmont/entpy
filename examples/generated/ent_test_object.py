@@ -109,7 +109,7 @@ class EntTestObject(Ent, IEntTestThing):
     async def genx(cls, vc: ViewerContext, ent_id: UUID) -> EntTestObject:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise ValueError("No {base_name} found for ID {ent_id}")
+            raise ValueError(f"No EntTestObject found for ID {ent_id}")
         return ent
 
     @classmethod

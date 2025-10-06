@@ -9,10 +9,18 @@ from examples.generated.ent_test_thing import IEntTestThing
 from framework import ViewerContext
 
 
-async def test_load_from_pattern(db_session: AsyncSession, vc: ViewerContext) -> None:
+async def test_gen_from_pattern(db_session: AsyncSession, vc: ViewerContext) -> None:
     ent = await EntTestObjectExample.gen_create(vc)
 
     result = await IEntTestThing.gen(vc, ent.id)
 
     assert result is not None, "gen should not return None for a valid ID"
+    assert isinstance(result, EntTestObject), "we should get the right type"
+
+
+async def test_genx_from_pattern(db_session: AsyncSession, vc: ViewerContext) -> None:
+    ent = await EntTestObjectExample.gen_create(vc)
+
+    result = await IEntTestThing.genx(vc, ent.id)
+
     assert isinstance(result, EntTestObject), "we should get the right type"

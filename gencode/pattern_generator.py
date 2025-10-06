@@ -20,16 +20,12 @@ def generate(
 """
 
     # We are trying to load the various subclasses of ents
-    loaders = ""
-    for schema_class in children_schema_classes:
-        schema_base_name = schema_class.__name__.replace("Schema", "")
-        lower_schema = to_snake_case(schema_base_name)
-        loaders += f"""
-        from .{lower_schema} import {schema_base_name}
-        {lower_schema} = await {schema_base_name}.gen(vc, ent_id)
-        if {lower_schema}:
-            return {lower_schema}
-"""
+    loaders_gen = _get_loaders(
+        required=False, children_schema_classes=children_schema_classes
+    )
+    loaders_genx = _get_loaders(
+        required=True, children_schema_classes=children_schema_classes
+    )
 
     return f"""
 from abc import ABC, abstractmethod
@@ -43,6 +39,26 @@ class I{base_name}(ABC):
     @classmethod
     async def gen(cls, vc: ViewerContext, ent_id: UUID) -> I{base_name} | None:
         # TODO refactor this to read the bytes from the UUID
-        {loaders}
+        {loaders_gen}
         return None
+
+    @classmethod
+    async def genx(cls, vc: ViewerContext, ent_id: UUID) -> I{base_name}:
+        # TODO refactor this to read the bytes from the UUID
+        {loaders_genx}
+        raise ValueError(f"No {base_name} found for ID {{ent_id}}")
 """
+
+
+def _get_loaders(required: bool, children_schema_classes: list[type[Schema]]) -> str:
+    loaders = ""
+    for schema_class in children_schema_classes:
+        schema_base_name = schema_class.__name__.replace("Schema", "")
+        lower_schema = to_snake_case(schema_base_name)
+        loaders += f"""
+        from .{lower_schema} import {schema_base_name}
+        {lower_schema} = await {schema_base_name}.gen{"x" if required else ""}(vc, ent_id)
+        if {lower_schema}:
+            return {lower_schema}
+"""
+    return loaders
