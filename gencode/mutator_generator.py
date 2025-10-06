@@ -139,46 +139,25 @@ class {base_name}MutatorCreationAction:
 def _generate_update(
     schema: Schema, base_name: str, session_getter_fn_name: str
 ) -> GeneratedContent:
-    # Separate nullable and non-nullable fields
-    # We always process the mandatory fields first
-    nullable_fields = [f for f in schema.get_fields() if f.nullable]
-    nullable_fields.sort(key=lambda f: f.name)
-    non_nullable_fields = [f for f in schema.get_fields() if not f.nullable]
-    non_nullable_fields.sort(key=lambda f: f.name)
+    fields = schema.get_sorted_fields()
 
     # Build up the list of local variables we will store in the class
     local_variables = "\n".join(
         [
             f"    {field.name}: {field.get_python_type()}"
-            for field in non_nullable_fields
-        ]
-        + [
-            f"    {field.name}: {field.get_python_type()} | None = None"
-            for field in nullable_fields
+            + (" | None = None" if field.nullable else "")
+            for field in fields
         ]
     )
 
-    # Build up the list of arguments the create function takes
-    arguments = ""
-    for field in non_nullable_fields:
-        arguments += f", {field.name}: {field.get_python_type()}"
-    for field in nullable_fields:
-        arguments += f", {field.name}: {field.get_python_type()} | None"
-
     # Build up the list of assignments in the constructor
     local_variables_assignments = "\n".join(
-        [
-            f"        self.{field.name} = ent.{field.name}"
-            for field in non_nullable_fields + nullable_fields
-        ]
+        [f"        self.{field.name} = ent.{field.name}" for field in fields]
     )
 
     # Build up the list of variables to assign to the model
     model_assignments = "\n".join(
-        [
-            f"        model.{field.name}=self.{field.name}"
-            for field in non_nullable_fields + nullable_fields
-        ]
+        [f"        model.{field.name}=self.{field.name}" for field in fields]
     )
 
     return GeneratedContent(
