@@ -21,7 +21,38 @@ session = await generate_session()
 model = await session.get(EntMyObjectModel, ent_id)
 ```
 
+# Getting started
+
+To get started with EntPy, you should first create an Ent. In order to do so, you need to create the definition file (or Ent Schema). Here is a short example, and you can see all the details in the `Schema API` section.
+
+
+```python
+# In `./schemas/ent_my_object_schema.py`
+from entpy.framework import Field, Schema, StringField
+
+class EntMyObjectSchema(Schema):
+    def get_fields(self) -> list[Field]:
+        return [
+            StringField("my_field", length=100).not_null(),
+        ]
+```
+
+Run the gencode script (see `Gencode` section below for details):
+
+```bash
+uv run python ent_gencode.py
+```
+
+The framework will generate a file in `./entities/ent_my_object.py` that contains:
+- `EntMyObject`, the main class you will use to access the data
+- `EntMyObjectMutator`, a utility class to handle mutations (creation, update, deletion) for your ent in a safe way
+- `EntMyObjectExample`, a utility class for your tests to generate ents pre-popualted with test/example data
+
 # Using Ents
+
+## ViewerContext
+
+// TODO write me
 
 ## Reading an Ent
 
@@ -80,6 +111,35 @@ await EntMyObjectMutator.delete(vc, ent).gen_save()
 print(f"It's gone!")
 ```
 
+# Schema API
+
+## Descriptors
+
+EntPy expects you to write "descriptors" for your data objects. It then uses those descriptors to generate all the code necessary to define and access the data in the database, to handle privacy, to handle session management, etc.
+
+Descriptors can be `Schemas`, which are essentially concrete classes, or `Patterns`, which are abstract classes that schemas can implement.
+
+At the minimum, a descriptor will require you to implement the `get_fields` function where you return the list of fields that this object has.
+
+## Fields
+
+Fields have a set of common attributes, such as:
+- `not_null()`, which indicates that the field is not optional
+- `example(...)`, which enables the developer to provide an example for what the data for this field will look like. It is used in the `EntExample` when generating data for the tests and is mandatory for required fields (that have been marked `not_null`).
+- `dynamic_example(lambda: ...)`, which is a more advanced version of `example()` that enables the developer to provide a dyanamically set example. It is useful for mandatory fields that have to be unique to make sure that each example has a different value.
+- `unique()`, which sets a unique index on that field and generates additional functions to get an Ent from that field. # TODO implement this
+
+Then, we have a list of field types that are provided by the framework:
+- `StringField` that stores a string. You need to pass the length of the string.
+
+```python
+StringField("my_string", 100).example("Hello!")
+```
+
+# Gencode
+
+// TODO write me: explain how the gencode works, and how to configure your gencode script
+
 # Contributing
 
 Before contributing to this repository, it is recommended to add the pre-commit hook:
@@ -109,4 +169,20 @@ Run the examples with:
 PYTHONPATH=. uv run python examples/run_gencode.py
 ```
 
-# 
+Build the project:
+
+```bash
+uv build
+```
+
+The artifacts (tar.gz for the source distribution and wheel) are available in `./dist`.
+
+It can be installed in another project with:
+
+```bash
+uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
+```
+
+# Todolist
+
+- validation for field names
