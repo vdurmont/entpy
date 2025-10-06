@@ -1,8 +1,10 @@
 from framework.pattern import Pattern
+from framework.schema import Schema
+from gencode.utils import to_snake_case
 
 
 def generate(
-    pattern_class: type[Pattern],
+    pattern_class: type[Pattern], children_schema_classes: list[type[Schema]]
 ) -> str:
     pattern = pattern_class()
     base_name = pattern_class.__name__.replace("Pattern", "")
@@ -17,10 +19,30 @@ def generate(
         pass
 """
 
+    # We are trying to load the various subclasses of ents
+    loaders = ""
+    for schema_class in children_schema_classes:
+        schema_base_name = schema_class.__name__.replace("Schema", "")
+        lower_schema = to_snake_case(schema_base_name)
+        loaders += f"""
+        from .{lower_schema} import {schema_base_name}
+        {lower_schema} = await {schema_base_name}.gen(vc, ent_id)
+        if {lower_schema}:
+            return {lower_schema}
+"""
+
     return f"""
 from abc import ABC, abstractmethod
 from __future__ import annotations
+from uuid import UUID
+from framework import ViewerContext
 
 class I{base_name}(ABC):
     {properties}
+
+    @classmethod
+    async def gen(cls, vc: ViewerContext, ent_id: UUID) -> I{base_name} | None:
+        # TODO refactor this to read the bytes from the UUID
+        {loaders}
+        return None
 """

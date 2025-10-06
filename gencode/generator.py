@@ -48,7 +48,12 @@ def run(
                 session_getter_fn_name=session_getter_fn_name,
             )
         elif issubclass(descriptor_class, Pattern):
-            code = generate_pattern(pattern_class=descriptor_class)
+            code = generate_pattern(
+                pattern_class=descriptor_class,
+                children_schema_classes=get_children_schema_classes(
+                    pattern_class=descriptor_class,
+                ),
+            )
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
         _write_file(descriptor_output_path, code)
@@ -111,3 +116,17 @@ def _load_descriptors_configs(
 def _write_file(path: Path, content: str) -> None:
     with open(path, "w") as f:
         f.write(content)
+
+
+def get_children_schema_classes(pattern_class: type[Pattern]) -> list[type[Schema]]:
+    schema_classes = Schema.__subclasses__()
+    result = []
+    for schema_class in schema_classes:
+        # Safe to ignore the typing error here: we're not instantiating the base
+        # class and all subclasses implement the right functions
+        sch = schema_class()  # type: ignore
+        patterns = sch.get_patterns()
+        for pattern in patterns:
+            if isinstance(pattern, pattern_class):
+                result.append(schema_class)
+    return result
