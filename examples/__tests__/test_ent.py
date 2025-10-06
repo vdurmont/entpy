@@ -84,3 +84,26 @@ async def test_pattern_fields_are_written_properly(
     result = await EntTestObject.genx(vc, ent.id)
 
     assert result.a_good_thing == good
+
+
+async def test_gen_and_genx_from_unique_field(
+    db_session: AsyncSession, vc: ViewerContext
+) -> None:
+    username = "vdurmont_" + str(uuid.uuid4())
+    other_username = "vdurmont_" + str(uuid.uuid4())
+
+    ent = await EntTestObjectExample.gen_create(vc, username=username)
+    assert ent.username == username
+
+    result = await EntTestObject.gen_from_username(vc, username)
+    assert result is not None
+    assert result.username == username
+
+    result = await EntTestObject.gen_from_username(vc, other_username)
+    assert result is None
+
+    resultx = await EntTestObject.genx_from_username(vc, username)
+    assert resultx.username == username
+
+    with pytest.raises(ValueError):
+        await EntTestObject.genx_from_username(vc, other_username)

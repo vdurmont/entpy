@@ -127,7 +127,7 @@ Fields have a set of common attributes, such as:
 - `not_null()`, which indicates that the field is not optional
 - `example(...)`, which enables the developer to provide an example for what the data for this field will look like. It is used in the `EntExample` when generating data for the tests and is mandatory for required fields (that have been marked `not_null`).
 - `dynamic_example(lambda: ...)`, which is a more advanced version of `example()` that enables the developer to provide a dyanamically set example. It is useful for mandatory fields that have to be unique to make sure that each example has a different value.
-- `unique()`, which sets a unique index on that field and generates additional functions to get an Ent from that field. # TODO implement this
+- `unique()`, which sets a unique index on that field and generates additional functions to get an Ent from that field: `gen_from_xxxx` and `genx_from_xxxx`.
 
 Then, we have a list of field types that are provided by the framework:
 - `StringField` that stores a string. You need to pass the length of the string.
@@ -212,4 +212,4 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 # Todolist
 
 - validation for field names
-- gen_from_xxx for unique index
+- support gen(x)_from_XXXX for unique fields in patterns

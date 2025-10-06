@@ -9,8 +9,6 @@ def generate(
     base_name: str,
     session_getter_fn_name: str,
 ) -> GeneratedContent:
-    accessors = _generate_accessors(schema)
-
     extends = ",".join(
         ["Ent"]
         + [
@@ -19,7 +17,16 @@ def generate(
         ]
     )
 
+    accessors = _generate_accessors(schema)
+
+    unique_gens = _generate_unique_gens(schema=schema, base_name=base_name)
+
     imports = []
+
+    if unique_gens:
+        # only add this import if we have unique gens :)
+        imports += ["from sqlalchemy import select"]
+
     for pattern in schema.get_patterns():
         pattern_base_name = pattern.__class__.__name__.replace("Pattern", "")
         class_name = f"I{pattern_base_name}"
@@ -67,6 +74,8 @@ class {base_name}({extends}):
         session = {session_getter_fn_name}()
         model = await session.get({base_name}Model, ent_id)
         return await cls._gen_from_model(vc, model)
+
+    {unique_gens}
 
     @classmethod
     async def _gen_from_model(
@@ -118,3 +127,28 @@ def _generate_accessors(schema: Schema) -> str:
 
 """  # noqa: E501
     return accessors_code
+
+
+def _generate_unique_gens(schema: Schema, base_name: str) -> str:
+    unique_gens = ""
+    for field in schema.get_all_fields():
+        if field.is_unique:
+            unique_gens += f"""
+    @classmethod
+    async def gen_from_{field.name}(cls, vc: ViewerContext, {field.name}: {field.get_python_type()}) -> {base_name} | None:
+        session = get_session()
+        result = await session.execute(
+            select({base_name}Model)
+            .where({base_name}Model.{field.name} == {field.name})
+        )
+        model = result.scalar_one_or_none()
+        return await cls._gen_from_model(vc, model)
+
+    @classmethod
+    async def genx_from_{field.name}(cls, vc: ViewerContext, {field.name}: {field.get_python_type()}) -> {base_name}:
+        result = await cls.gen_from_{field.name}(vc, {field.name})
+        if not result:
+            raise ValueError(f"No EntTestObject found for {field.name} {{{field.name}}}")
+        return result
+"""
+    return unique_gens

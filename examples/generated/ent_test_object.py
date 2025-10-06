@@ -4,7 +4,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, select
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -117,6 +117,26 @@ class EntTestObject(Ent, IEntTestThing):
         session = get_session()
         model = await session.get(EntTestObjectModel, ent_id)
         return await cls._gen_from_model(vc, model)
+
+    @classmethod
+    async def gen_from_username(
+        cls, vc: ViewerContext, username: str
+    ) -> EntTestObject | None:
+        session = get_session()
+        result = await session.execute(
+            select(EntTestObjectModel).where(EntTestObjectModel.username == username)
+        )
+        model = result.scalar_one_or_none()
+        return await cls._gen_from_model(vc, model)
+
+    @classmethod
+    async def genx_from_username(
+        cls, vc: ViewerContext, username: str
+    ) -> EntTestObject:
+        result = await cls.gen_from_username(vc, username)
+        if not result:
+            raise ValueError(f"No EntTestObject found for username {username}")
+        return result
 
     @classmethod
     async def _gen_from_model(
