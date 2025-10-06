@@ -140,6 +140,32 @@ StringField("my_string", 100).example("Hello!")
 
 // TODO write me: explain how the gencode works, and how to configure your gencode script
 
+When you add EntPy to your project, you should write your own "gencode" file. It is the script that will get executed to generate the code based on your schemas and patterns.
+
+Here is a sample file:
+
+```python
+#!/usr/bin/env python3
+
+from gencode.generator import run
+
+if __name__ == "__main__":
+    run(
+        schemas_directory="./examples",
+        output_directory="./examples/generated",
+        base_import="from examples.database import Base",
+        session_getter_import="from examples.database import get_session",
+        session_getter_fn_name="get_session",
+    )
+```
+
+Here are some details for the arguments:
+- `schemas_directory`: the directory in which the schemas and patterns will be stored. This is what EntPy will scan when trying to generate the code.
+- `output_directory`: the directory in which the generated code will be stored.
+- `base_import`: an import statement to be used to import the `Base` model from SQLAlchemy in your project. See `examples/database.py` for an example.
+- `session_getter_import`: an import statement used to import a function that will enable the framework to obtain a database session. See `examples/database.py` for an example.
+- `session_getter_fn_name`: the name of the function imported above.
+
 # Contributing
 
 Before contributing to this repository, it is recommended to add the pre-commit hook:
@@ -186,3 +212,4 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 # Todolist
 
 - validation for field names
+- gen_from_xxx for unique index
