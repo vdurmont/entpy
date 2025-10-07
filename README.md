@@ -213,3 +213,4 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 
 - validation for field names
 - support gen(x)_from_XXXX for unique fields in patterns
+- check that the provided VC extends VC

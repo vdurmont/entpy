@@ -45,7 +45,7 @@ def generate(
 
     return f"""
 from __future__ import annotations
-from entpy import ViewerContext, Ent
+from entpy import Ent
 from uuid import UUID, uuid4
 from datetime import datetime
 {vc_import}

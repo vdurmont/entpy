@@ -4,17 +4,17 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from evc import ExampleViewerContext
 from database import get_session
-from ent_test_object_schema import EntTestObjectSchema
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy.orm import Mapped, mapped_column
-from .ent_test_sub_object import EntTestSubObjectExample
-from .ent_test_thing import IEntTestThing
-from entpy import Field, FieldWithDynamicExample
-from .ent_model import EntModel
-from sqlalchemy import ForeignKey, String
-from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy import select
+from .ent_test_thing import IEntTestThing
+from sentinels import NOTHING, Sentinel  # type: ignore
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column
+from .ent_model import EntModel
+from ent_test_object_schema import EntTestObjectSchema
+from .ent_test_sub_object import EntTestSubObjectExample
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from .ent_test_sub_object import EntTestSubObject
 
 
 class EntTestObjectModel(EntModel):
