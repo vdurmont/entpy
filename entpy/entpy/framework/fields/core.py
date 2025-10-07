@@ -60,3 +60,15 @@ class FieldWithDynamicExample(ABC, Generic[T]):
 
     def get_example_generator(self: Self) -> Callable[..., T] | None:
         return self._generator
+
+
+class FieldWithDefault(ABC, Generic[T]):
+    _default_value: T | None = None
+
+    def default(self: Self, default_value: T) -> Self:
+        self._default_value = default_value
+        return self
+
+    @abstractmethod
+    def generate_default(self: Self) -> str | None:
+        pass

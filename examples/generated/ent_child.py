@@ -5,18 +5,18 @@ from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_parent import EntParent
-from sqlalchemy.sql.expression import ColumnElement
+from typing import Any
+from sqlalchemy import ForeignKey
 from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import select, Select
+from ent_child_schema import EntChildSchema
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from sqlalchemy import String
 from .ent_model import EntModel
-from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from ent_child_schema import EntChildSchema
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import select, Select
 from entpy import Field
-from typing import Any
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_parent import EntParent
 from .ent_parent import EntParentExample
 
 

@@ -6,26 +6,26 @@ from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import select
 from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import String
-from sqlalchemy import Enum as DBEnum
-from .ent_test_thing import IEntTestThing
-from sqlalchemy import DateTime
-from sqlalchemy import Select
-from .ent_model import EntModel
-from ent_test_object_schema import Status
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import Text
-from typing import Any
 from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import JSON
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import DateTime
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import ForeignKey
+from sqlalchemy import select
+from .ent_test_thing import IEntTestThing
 from entpy import Field, FieldWithDynamicExample
+from typing import Any
+from sqlalchemy import Text
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy import String
+from .ent_model import EntModel
+from sqlalchemy import Select
+from sqlalchemy import JSON
+from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import Integer
+from ent_test_object_schema import Status
 
 
 class EntTestObjectModel(EntModel):
@@ -39,12 +39,17 @@ class EntTestObjectModel(EntModel):
     username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     context: Mapped[str | None] = mapped_column(Text(), nullable=True)
-    lastname: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    lastname: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, server_default="Doe"
+    )
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=True
     )
     optional_sub_object_no_ex_id: Mapped[UUID | None] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=True
+    )
+    sadness: Mapped[Status | None] = mapped_column(
+        DBEnum(Status, native_enum=True), nullable=True, server_default=Status.SAD.value
     )
     self_id: Mapped[UUID | None] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_object.id"), nullable=True
@@ -138,6 +143,10 @@ class EntTestObject(Ent, IEntTestThing):
                 self.vc, self.model.optional_sub_object_no_ex_id
             )
         return None
+
+    @property
+    def sadness(self) -> Status | None:
+        return self.model.sadness
 
     @property
     def self_id(self) -> UUID | None:
@@ -272,6 +281,7 @@ class EntTestObjectMutator:
         lastname: str | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
+        sadness: Status | None = None,
         self_id: UUID | None = None,
         some_json: list[str] | None = None,
         status: Status | None = None,
@@ -293,6 +303,7 @@ class EntTestObjectMutator:
             lastname=lastname,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
+            sadness=sadness,
             self_id=self_id,
             some_json=some_json,
             status=status,
@@ -325,6 +336,7 @@ class EntTestObjectMutatorCreationAction:
     lastname: str | None = None
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
+    sadness: Status | None = None
     self_id: UUID | None = None
     some_json: list[str] | None = None
     status: Status | None = None
@@ -345,6 +357,7 @@ class EntTestObjectMutatorCreationAction:
         lastname: str | None,
         optional_sub_object_id: UUID | None,
         optional_sub_object_no_ex_id: UUID | None,
+        sadness: Status | None,
         self_id: UUID | None,
         some_json: list[str] | None,
         status: Status | None,
@@ -363,6 +376,7 @@ class EntTestObjectMutatorCreationAction:
         self.lastname = lastname
         self.optional_sub_object_id = optional_sub_object_id
         self.optional_sub_object_no_ex_id = optional_sub_object_no_ex_id
+        self.sadness = sadness
         self.self_id = self_id
         self.some_json = some_json
         self.status = status
@@ -383,6 +397,7 @@ class EntTestObjectMutatorCreationAction:
             lastname=self.lastname,
             optional_sub_object_id=self.optional_sub_object_id,
             optional_sub_object_no_ex_id=self.optional_sub_object_no_ex_id,
+            sadness=self.sadness,
             self_id=self.self_id,
             some_json=self.some_json,
             status=self.status,
@@ -408,6 +423,7 @@ class EntTestObjectMutatorUpdateAction:
     lastname: str | None = None
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
+    sadness: Status | None = None
     self_id: UUID | None = None
     some_json: list[str] | None = None
     status: Status | None = None
@@ -426,6 +442,7 @@ class EntTestObjectMutatorUpdateAction:
         self.lastname = ent.lastname
         self.optional_sub_object_id = ent.optional_sub_object_id
         self.optional_sub_object_no_ex_id = ent.optional_sub_object_no_ex_id
+        self.sadness = ent.sadness
         self.self_id = ent.self_id
         self.some_json = ent.some_json
         self.status = ent.status
@@ -444,6 +461,7 @@ class EntTestObjectMutatorUpdateAction:
         model.lastname = self.lastname
         model.optional_sub_object_id = self.optional_sub_object_id
         model.optional_sub_object_no_ex_id = self.optional_sub_object_no_ex_id
+        model.sadness = self.sadness
         model.self_id = self.self_id
         model.some_json = self.some_json
         model.status = self.status
@@ -486,6 +504,7 @@ class EntTestObjectExample:
         lastname: str | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
+        sadness: Status | None = None,
         self_id: UUID | None = None,
         some_json: list[str] | None = None,
         status: Status | None = None,
@@ -559,6 +578,7 @@ class EntTestObjectExample:
             lastname=lastname,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
+            sadness=sadness,
             self_id=self_id,
             some_json=some_json,
             status=status,

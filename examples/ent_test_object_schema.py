@@ -37,7 +37,7 @@ class EntTestObjectSchema(Schema):
             .documentation("This is the username that you will use on the platform.")
             .dynamic_example(lambda: str(uuid.uuid4())),
             StringField("firstname", 100).not_null().example("Vincent"),
-            StringField("lastname", 100),
+            StringField("lastname", 100).default("Doe"),
             StringField("city", 100).example("Los Angeles"),
             EdgeField("self", EntTestObjectSchema),
             EdgeField("required_sub_object", EntTestSubObjectSchema).not_null(),
@@ -45,6 +45,7 @@ class EntTestObjectSchema(Schema):
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),
             TextField("context").example("This is some good context."),
             EnumField("status", Status).example(Status.HAPPY),
+            EnumField("sadness", Status).default(Status.SAD),
             DatetimeField("when_is_it_cool").dynamic_example(
                 lambda: datetime.now(tz=UTC)
             ),

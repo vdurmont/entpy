@@ -5,15 +5,15 @@ from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.sql.expression import ColumnElement
+from typing import Any
 from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import select, Select
+from ent_test_sub_object_schema import EntTestSubObjectSchema
 from sqlalchemy import String
 from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import select, Select
 from entpy import Field
-from ent_test_sub_object_schema import EntTestSubObjectSchema
-from typing import Any
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import ColumnElement
 
 
 class EntTestSubObjectModel(EntModel):

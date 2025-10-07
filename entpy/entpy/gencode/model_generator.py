@@ -10,6 +10,7 @@ from entpy import (
     StringField,
     TextField,
 )
+from entpy.framework.fields.core import FieldWithDefault
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import to_snake_case
 
@@ -25,6 +26,10 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
             "True" if field.nullable else "False"
         )
         common_column_attributes += ", unique=True" if field.is_unique else ""
+        if isinstance(field, FieldWithDefault):
+            default = field.generate_default()
+            if default:
+                common_column_attributes += f", server_default={default}"
 
         mapped_type = (
             field.get_python_type() + " | None"

@@ -116,3 +116,17 @@ async def test_enum_field(db_session: AsyncSession, vc: ExampleViewerContext) ->
     status = Status.SAD
     ent = await EntTestObjectExample.gen_create(vc, status=status)
     assert ent.status == status
+
+
+async def test_string_field_with_default(
+    db_session: AsyncSession, vc: ExampleViewerContext
+) -> None:
+    ent = await EntTestObjectExample.gen_create(vc)
+    assert ent.lastname == "Doe"
+
+
+async def test_enum_field_with_default(
+    db_session: AsyncSession, vc: ExampleViewerContext
+) -> None:
+    ent = await EntTestObjectExample.gen_create(vc)
+    assert ent.sadness == Status.SAD
