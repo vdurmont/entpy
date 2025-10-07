@@ -6,18 +6,18 @@ from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_parent import EntParent
-from sqlalchemy import ForeignKey
-from typing import Any
-from ent_child_schema import EntChildSchema
-from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import select, Select
-from .ent_parent import EntParentExample
-from entpy import Field
 from sqlalchemy.sql.expression import ColumnElement
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import select, Select
 from sqlalchemy import String
+from .ent_model import EntModel
+from sqlalchemy import ForeignKey
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from ent_child_schema import EntChildSchema
+from sqlalchemy.orm import Mapped, mapped_column
+from entpy import Field
+from typing import Any
+from .ent_parent import EntParentExample
 
 
 class EntChildModel(EntModel):

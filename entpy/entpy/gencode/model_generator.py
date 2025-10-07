@@ -26,9 +26,14 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
         )
         common_column_attributes += ", unique=True" if field.is_unique else ""
 
+        mapped_type = (
+            field.get_python_type() + " | None"
+            if field.nullable
+            else field.get_python_type()
+        )
+
         if isinstance(field, DatetimeField):
             types_imports.append("from sqlalchemy import DateTime")
-            mapped_type = "datetime | None" if field.nullable else "datetime"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += (
                 f"mapped_column(DateTime(timezone=True){common_column_attributes})\n"
@@ -44,28 +49,20 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
             fields_code += f"{common_column_attributes})\n"
         elif isinstance(field, IntField):
             types_imports.append("from sqlalchemy import Integer")
-            mapped_type = "int | None" if field.nullable else "int"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(Integer(){common_column_attributes})\n"
         elif isinstance(field, JsonField):
             types_imports.append("from sqlalchemy import JSON")
-            mapped_type = (
-                field.get_python_type() + " | None"
-                if field.nullable
-                else field.get_python_type()
-            )
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(JSON(){common_column_attributes})\n"
         elif isinstance(field, StringField):
             types_imports.append("from sqlalchemy import String")
-            mapped_type = "str | None" if field.nullable else "str"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += (
                 f"mapped_column(String({field.length}){common_column_attributes})\n"
             )
         elif isinstance(field, TextField):
             types_imports.append("from sqlalchemy import Text")
-            mapped_type = "str | None" if field.nullable else "str"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(Text(){common_column_attributes})\n"
         elif isinstance(field, EdgeField):
@@ -74,8 +71,6 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
             edge_filename = to_snake_case(edge_base_name)
             if edge_base_name != base_name:
                 edges_imports.append(f"from .{edge_filename} import {edge_base_name}")
-
-            mapped_type = "UUID | None" if field.nullable else "UUID"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += "mapped_column(DBUUID(as_uuid=True), "
             fields_code += f'ForeignKey("{_get_table_name(edge_base_name)}.id")'

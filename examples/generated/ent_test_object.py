@@ -5,26 +5,27 @@ from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from typing import Any
-from .ent_model import EntModel
-from sqlalchemy import DateTime
-from .ent_test_sub_object import EntTestSubObjectExample
 from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import select, Select
+from sqlalchemy import select
 from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_test_thing import IEntTestThing
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import Text
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer
 from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import String
-from sqlalchemy import ForeignKey
-from sqlalchemy import JSON
 from sqlalchemy import Enum as DBEnum
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from .ent_test_thing import IEntTestThing
+from sqlalchemy import DateTime
+from sqlalchemy import Select
+from .ent_model import EntModel
 from ent_test_object_schema import Status
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy import Text
+from typing import Any
+from .ent_test_sub_object import EntTestSubObjectExample
+from sqlalchemy import JSON
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import ForeignKey
+from entpy import Field, FieldWithDynamicExample
 
 
 class EntTestObjectModel(EntModel):
