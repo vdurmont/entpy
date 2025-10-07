@@ -4,17 +4,19 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import select
-from .ent_test_thing import IEntTestThing
-from sentinels import NOTHING, Sentinel  # type: ignore
 from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
 from .ent_model import EntModel
-from ent_test_object_schema import EntTestObjectSchema
-from .ent_test_sub_object import EntTestSubObjectExample
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import Text
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import select
+from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_test_thing import IEntTestThing
+from .ent_test_sub_object import EntTestSubObjectExample
 
 
 class EntTestObjectModel(EntModel):
@@ -27,6 +29,7 @@ class EntTestObjectModel(EntModel):
     )
     username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    context: Mapped[str | None] = mapped_column(Text(), nullable=True)
     lastname: Mapped[str | None] = mapped_column(String(100), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=True
@@ -78,6 +81,10 @@ class EntTestObject(Ent, IEntTestThing):
     @property
     def city(self) -> str | None:
         return self.model.city
+
+    @property
+    def context(self) -> str | None:
+        return self.model.context
 
     @property
     def lastname(self) -> str | None:
@@ -167,6 +174,7 @@ class EntTestObjectMutator:
         required_sub_object_id: UUID,
         username: str,
         city: str | None = None,
+        context: str | None = None,
         lastname: str | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
@@ -178,6 +186,7 @@ class EntTestObjectMutator:
             required_sub_object_id=required_sub_object_id,
             username=username,
             city=city,
+            context=context,
             lastname=lastname,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
@@ -204,6 +213,7 @@ class EntTestObjectMutatorCreationAction:
     required_sub_object_id: UUID
     username: str
     city: str | None = None
+    context: str | None = None
     lastname: str | None = None
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
@@ -216,6 +226,7 @@ class EntTestObjectMutatorCreationAction:
         required_sub_object_id: UUID,
         username: str,
         city: str | None,
+        context: str | None,
         lastname: str | None,
         optional_sub_object_id: UUID | None,
         optional_sub_object_no_ex_id: UUID | None,
@@ -227,6 +238,7 @@ class EntTestObjectMutatorCreationAction:
         self.required_sub_object_id = required_sub_object_id
         self.username = username
         self.city = city
+        self.context = context
         self.lastname = lastname
         self.optional_sub_object_id = optional_sub_object_id
         self.optional_sub_object_no_ex_id = optional_sub_object_no_ex_id
@@ -240,6 +252,7 @@ class EntTestObjectMutatorCreationAction:
             required_sub_object_id=self.required_sub_object_id,
             username=self.username,
             city=self.city,
+            context=self.context,
             lastname=self.lastname,
             optional_sub_object_id=self.optional_sub_object_id,
             optional_sub_object_no_ex_id=self.optional_sub_object_no_ex_id,
@@ -259,6 +272,7 @@ class EntTestObjectMutatorUpdateAction:
     required_sub_object_id: UUID
     username: str
     city: str | None = None
+    context: str | None = None
     lastname: str | None = None
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
@@ -271,6 +285,7 @@ class EntTestObjectMutatorUpdateAction:
         self.required_sub_object_id = ent.required_sub_object_id
         self.username = ent.username
         self.city = ent.city
+        self.context = ent.context
         self.lastname = ent.lastname
         self.optional_sub_object_id = ent.optional_sub_object_id
         self.optional_sub_object_no_ex_id = ent.optional_sub_object_no_ex_id
@@ -283,6 +298,7 @@ class EntTestObjectMutatorUpdateAction:
         model.required_sub_object_id = self.required_sub_object_id
         model.username = self.username
         model.city = self.city
+        model.context = self.context
         model.lastname = self.lastname
         model.optional_sub_object_id = self.optional_sub_object_id
         model.optional_sub_object_no_ex_id = self.optional_sub_object_no_ex_id
@@ -318,6 +334,7 @@ class EntTestObjectExample:
         required_sub_object_id: UUID | Sentinel = NOTHING,
         username: str | Sentinel = NOTHING,
         city: str | None = None,
+        context: str | None = None,
         lastname: str | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
@@ -346,6 +363,10 @@ class EntTestObjectExample:
 
         city = "Los Angeles" if isinstance(city, Sentinel) else city
 
+        context = (
+            "This is some good context." if isinstance(context, Sentinel) else context
+        )
+
         optional_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
         optional_sub_object_id = optional_sub_object_id_ent.id
 
@@ -356,6 +377,7 @@ class EntTestObjectExample:
             required_sub_object_id=required_sub_object_id,
             username=username,
             city=city,
+            context=context,
             lastname=lastname,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,

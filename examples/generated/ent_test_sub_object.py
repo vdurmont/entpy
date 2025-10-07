@@ -4,12 +4,12 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from evc import ExampleViewerContext
 from database import get_session
-from sentinels import NOTHING, Sentinel  # type: ignore
 from entpy import Field
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-from ent_test_sub_object_schema import EntTestSubObjectSchema
 from .ent_model import EntModel
+from sqlalchemy.orm import Mapped, mapped_column
+from sentinels import NOTHING, Sentinel  # type: ignore
+from ent_test_sub_object_schema import EntTestSubObjectSchema
 
 
 class EntTestSubObjectModel(EntModel):

@@ -1,6 +1,6 @@
 import re
 
-from entpy import EdgeField, Schema, StringField
+from entpy import EdgeField, Schema, StringField, TextField
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import to_snake_case
 
@@ -10,6 +10,7 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
 
     fields_code = ""
     edges_imports = []
+    types_imports = []
     for field in fields:
         common_column_attributes = ", nullable=" + (
             "True" if field.nullable else "False"
@@ -17,12 +18,19 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
         common_column_attributes += ", unique=True" if field.is_unique else ""
 
         if isinstance(field, StringField):
+            types_imports.append("from sqlalchemy import String")
             mapped_type = "str | None" if field.nullable else "str"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += (
                 f"mapped_column(String({field.length}){common_column_attributes})\n"
             )
+        elif isinstance(field, TextField):
+            types_imports.append("from sqlalchemy import Text")
+            mapped_type = "str | None" if field.nullable else "str"
+            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
+            fields_code += f"mapped_column(Text(){common_column_attributes})\n"
         elif isinstance(field, EdgeField):
+            types_imports.append("from sqlalchemy import ForeignKey")
             edge_base_name = field.edge_class.__name__.replace("Schema", "")
             edge_filename = to_snake_case(edge_base_name)
             edges_imports.append(f"from .{edge_filename} import {edge_base_name}")
@@ -37,10 +45,10 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
 
     return GeneratedContent(
         imports=[
-            "from sqlalchemy import ForeignKey, String",
             "from sqlalchemy.orm import Mapped, mapped_column",
             "from sqlalchemy.dialects.postgresql import UUID as DBUUID",
         ]
+        + types_imports
         + edges_imports,
         code=f"""
 class {base_name}Model(EntModel):

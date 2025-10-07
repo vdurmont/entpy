@@ -2,7 +2,7 @@ import uuid
 
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from ent_test_thing_pattern import EntTestThingPattern
-from entpy import EdgeField, Field, Pattern, Schema, StringField
+from entpy import EdgeField, Field, Pattern, Schema, StringField, TextField
 
 
 class EntTestObjectSchema(Schema):
@@ -21,4 +21,5 @@ class EntTestObjectSchema(Schema):
             EdgeField("required_sub_object", EntTestSubObjectSchema).not_null(),
             EdgeField("optional_sub_object", EntTestSubObjectSchema),
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),
+            TextField("context").example("This is some good context."),
         ]
