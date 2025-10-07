@@ -6,23 +6,23 @@ from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
-from sqlalchemy import ForeignKey
-from sqlalchemy import String
-from sqlalchemy import Enum as DBEnum
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from typing import Any
-from .ent_test_sub_object import EntTestSubObjectExample
-from .ent_test_thing import IEntTestThing
-from ent_test_object_schema import Status
+from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import select
-from sqlalchemy import Select
 from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import Text
+from sqlalchemy import ForeignKey
 from .ent_test_sub_object import EntTestSubObject
 from sqlalchemy.orm import Mapped, mapped_column
-from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_test_thing import IEntTestThing
+from sqlalchemy import Text
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy import Select
+from sqlalchemy import String
 from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.sql.expression import ColumnElement
+from .ent_test_sub_object import EntTestSubObjectExample
+from sentinels import NOTHING, Sentinel  # type: ignore
+from ent_test_object_schema import Status
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 
 class EntTestObjectModel(EntModel):
@@ -204,6 +204,10 @@ class EntTestObjectQuery:
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
         self.query = select(EntTestObjectModel)
+
+    def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
+        self.query = self.query.join(model_class, predicate)
+        return self
 
     def where(self, predicate: ColumnElement[bool]) -> Self:
         self.query = self.query.where(predicate)
@@ -437,8 +441,12 @@ class EntTestObjectExample:
 
         firstname = "Vincent" if isinstance(firstname, Sentinel) else firstname
 
-        required_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
-        required_sub_object_id = required_sub_object_id_ent.id
+        if (
+            isinstance(required_sub_object_id, Sentinel)
+            or required_sub_object_id is None
+        ):
+            required_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
+            required_sub_object_id = required_sub_object_id_ent.id
 
         if isinstance(username, Sentinel):
             field = cls._get_field("username")
@@ -457,8 +465,12 @@ class EntTestObjectExample:
             "This is some good context." if isinstance(context, Sentinel) else context
         )
 
-        optional_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
-        optional_sub_object_id = optional_sub_object_id_ent.id
+        if (
+            isinstance(optional_sub_object_id, Sentinel)
+            or optional_sub_object_id is None
+        ):
+            optional_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
+            optional_sub_object_id = optional_sub_object_id_ent.id
         status = Status.HAPPY if isinstance(status, Sentinel) else status
 
         return await EntTestObjectMutator.create(

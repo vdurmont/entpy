@@ -9,24 +9,31 @@ from .ent_model import EntModel
 from typing import Any
 from sqlalchemy.sql.expression import ColumnElement
 from entpy import Field
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
+from .ent_grand_parent import EntGrandParent
+from ent_parent_schema import EntParentSchema
 from sqlalchemy import select, Select
 from sqlalchemy import String
-from ent_test_sub_object_schema import EntTestSubObjectSchema
 from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_grand_parent import EntGrandParentExample
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 
-class EntTestSubObjectModel(EntModel):
-    __tablename__ = "test_sub_object"
+class EntParentModel(EntModel):
+    __tablename__ = "parent"
 
-    email: Mapped[str] = mapped_column(String(100), nullable=False)
+    grand_parent_id: Mapped[UUID] = mapped_column(
+        DBUUID(as_uuid=True), ForeignKey("grand_parent.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
-class EntTestSubObject(Ent):
+class EntParent(Ent):
     vc: ExampleViewerContext
-    model: EntTestSubObjectModel
+    model: EntParentModel
 
-    def __init__(self, vc: ExampleViewerContext, model: EntTestSubObjectModel) -> None:
+    def __init__(self, vc: ExampleViewerContext, model: EntParentModel) -> None:
         self.vc = vc
         self.model = model
 
@@ -43,54 +50,59 @@ class EntTestSubObject(Ent):
         return self.model.updated_at
 
     @property
-    def email(self) -> str:
-        return self.model.email
+    def grand_parent_id(self) -> UUID:
+        return self.model.grand_parent_id
+
+    async def gen_grand_parent(self) -> EntGrandParent:
+        return await EntGrandParent.genx(self.vc, self.model.grand_parent_id)
+
+    @property
+    def name(self) -> str:
+        return self.model.name
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestSubObject:
+    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntParent:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise ValueError(f"No EntTestSubObject found for ID {ent_id}")
+            raise ValueError(f"No EntParent found for ID {ent_id}")
         return ent
 
     @classmethod
-    async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID
-    ) -> EntTestSubObject | None:
+    async def gen(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntParent | None:
         session = get_session()
-        model = await session.get(EntTestSubObjectModel, ent_id)
+        model = await session.get(EntParentModel, ent_id)
         return await cls._gen_from_model(vc, model)
 
     @classmethod
     async def _gen_from_model(
-        cls, vc: ExampleViewerContext, model: EntTestSubObjectModel | None
-    ) -> EntTestSubObject | None:
+        cls, vc: ExampleViewerContext, model: EntParentModel | None
+    ) -> EntParent | None:
         if not model:
             return None
-        ent = EntTestSubObject(vc=vc, model=model)
+        ent = EntParent(vc=vc, model=model)
         # TODO check privacy here
         return ent
 
     @classmethod
     async def _genx_from_model(
-        cls, vc: ExampleViewerContext, model: EntTestSubObjectModel
-    ) -> EntTestSubObject:
-        ent = EntTestSubObject(vc=vc, model=model)
+        cls, vc: ExampleViewerContext, model: EntParentModel
+    ) -> EntParent:
+        ent = EntParent(vc=vc, model=model)
         # TODO check privacy here
         return ent
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestSubObjectQuery:
-        return EntTestSubObjectQuery(vc=vc)
+    def query(cls, vc: ExampleViewerContext) -> EntParentQuery:
+        return EntParentQuery(vc=vc)
 
 
-class EntTestSubObjectQuery:
+class EntParentQuery:
     vc: ExampleViewerContext
-    query: Select[tuple[EntTestSubObjectModel]]
+    query: Select[tuple[EntParentModel]]
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-        self.query = select(EntTestSubObjectModel)
+        self.query = select(EntParentModel)
 
     def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
         self.query = self.query.join(model_class, predicate)
@@ -108,98 +120,108 @@ class EntTestSubObjectQuery:
         self.query = self.query.limit(limit)
         return self
 
-    async def gen(self) -> list[EntTestSubObject]:
+    async def gen(self) -> list[EntParent]:
         session = get_session()
         result = await session.execute(self.query)
         models = result.scalars().all()
-        ents = [
-            await EntTestSubObject._gen_from_model(self.vc, model) for model in models
-        ]
+        ents = [await EntParent._gen_from_model(self.vc, model) for model in models]
         return list(filter(None, ents))
 
 
-class EntTestSubObjectMutator:
+class EntParentMutator:
     @classmethod
     def create(
         cls,
         vc: ExampleViewerContext,
-        email: str,
+        grand_parent_id: UUID,
+        name: str,
         id: UUID | None = None,
         created_at: datetime | None = None,
-    ) -> EntTestSubObjectMutatorCreationAction:
-        return EntTestSubObjectMutatorCreationAction(
-            vc=vc, id=id, created_at=created_at, email=email
+    ) -> EntParentMutatorCreationAction:
+        return EntParentMutatorCreationAction(
+            vc=vc,
+            id=id,
+            created_at=created_at,
+            grand_parent_id=grand_parent_id,
+            name=name,
         )
 
     @classmethod
     def update(
-        cls, vc: ExampleViewerContext, ent: EntTestSubObject
-    ) -> EntTestSubObjectMutatorUpdateAction:
-        return EntTestSubObjectMutatorUpdateAction(vc=vc, ent=ent)
+        cls, vc: ExampleViewerContext, ent: EntParent
+    ) -> EntParentMutatorUpdateAction:
+        return EntParentMutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
     def delete(
-        cls, vc: ExampleViewerContext, ent: EntTestSubObject
-    ) -> EntTestSubObjectMutatorDeletionAction:
-        return EntTestSubObjectMutatorDeletionAction(vc=vc, ent=ent)
+        cls, vc: ExampleViewerContext, ent: EntParent
+    ) -> EntParentMutatorDeletionAction:
+        return EntParentMutatorDeletionAction(vc=vc, ent=ent)
 
 
-class EntTestSubObjectMutatorCreationAction:
+class EntParentMutatorCreationAction:
     vc: ExampleViewerContext
     id: UUID
-    email: str
+    grand_parent_id: UUID
+    name: str
 
     def __init__(
         self,
         vc: ExampleViewerContext,
         id: UUID | None,
         created_at: datetime | None,
-        email: str,
+        grand_parent_id: UUID,
+        name: str,
     ) -> None:
         self.vc = vc
         self.id = id if id else uuid4()
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.email = email
+        self.grand_parent_id = grand_parent_id
+        self.name = name
 
-    async def gen_savex(self) -> EntTestSubObject:
+    async def gen_savex(self) -> EntParent:
         session = get_session()
-        model = EntTestSubObjectModel(
+        model = EntParentModel(
             id=self.id,
             created_at=self.created_at,
-            email=self.email,
+            grand_parent_id=self.grand_parent_id,
+            name=self.name,
         )
         session.add(model)
         await session.flush()
         # TODO privacy checks
-        return await EntTestSubObject._genx_from_model(self.vc, model)
+        return await EntParent._genx_from_model(self.vc, model)
 
 
-class EntTestSubObjectMutatorUpdateAction:
+class EntParentMutatorUpdateAction:
     vc: ExampleViewerContext
-    ent: EntTestSubObject
+    ent: EntParent
     id: UUID
-    email: str
+    grand_parent_id: UUID
+    name: str
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestSubObject) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntParent) -> None:
         self.vc = vc
         self.ent = ent
-        self.email = ent.email
+        self.grand_parent_id = ent.grand_parent_id
+        self.name = ent.name
 
-    async def gen_savex(self) -> EntTestSubObject:
+    async def gen_savex(self) -> EntParent:
         session = get_session()
         model = self.ent.model
-        model.email = self.email
+        model.grand_parent_id = self.grand_parent_id
+        model.name = self.name
         session.add(model)
         await session.flush()
         # TODO privacy checks
-        return await EntTestSubObject._genx_from_model(self.vc, model)
+        return await EntParent._genx_from_model(self.vc, model)
 
 
-class EntTestSubObjectMutatorDeletionAction:
+class EntParentMutatorDeletionAction:
     vc: ExampleViewerContext
-    ent: EntTestSubObject
+    ent: EntParent
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestSubObject) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntParent) -> None:
         self.vc = vc
         self.ent = ent
 
@@ -211,25 +233,29 @@ class EntTestSubObjectMutatorDeletionAction:
         await session.flush()
 
 
-class EntTestSubObjectExample:
+class EntParentExample:
     @classmethod
     async def gen_create(
         cls,
         vc: ExampleViewerContext,
         created_at: datetime | None = None,
-        email: str | Sentinel = NOTHING,
-    ) -> EntTestSubObject:
+        grand_parent_id: UUID | Sentinel = NOTHING,
+        name: str | Sentinel = NOTHING,
+    ) -> EntParent:
         # TODO make sure we only use this in test mode
 
-        email = "vdurmont@gmail.com" if isinstance(email, Sentinel) else email
+        if isinstance(grand_parent_id, Sentinel) or grand_parent_id is None:
+            grand_parent_id_ent = await EntGrandParentExample.gen_create(vc)
+            grand_parent_id = grand_parent_id_ent.id
+        name = "Vincent" if isinstance(name, Sentinel) else name
 
-        return await EntTestSubObjectMutator.create(
-            vc=vc, created_at=created_at, email=email
+        return await EntParentMutator.create(
+            vc=vc, created_at=created_at, grand_parent_id=grand_parent_id, name=name
         ).gen_savex()
 
     @classmethod
     def _get_field(cls, field_name: str) -> Field:
-        schema = EntTestSubObjectSchema()
+        schema = EntParentSchema()
         fields = schema.get_fields()
         field = list(
             filter(

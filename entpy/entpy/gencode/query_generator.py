@@ -20,6 +20,10 @@ class {base_name}Query:
         self.vc = vc
         self.query = select({base_name}Model)
 
+    def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
+        self.query = self.query.join(model_class, predicate)
+        return self
+
     def where(self, predicate: ColumnElement[bool]) -> Self:
         self.query = self.query.where(predicate)
         return self

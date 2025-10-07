@@ -53,8 +53,9 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
                     f"from .{edge_filename} import {edge_base_name}Example"
                 )
                 arguments_assignments += f"""
-        {field.name}_ent = await {edge_base_name}Example.gen_create(vc)
-        {field.name} = {field.name}_ent.id
+        if isinstance({field.name}, Sentinel) or {field.name} is None:
+            {field.name}_ent = await {edge_base_name}Example.gen_create(vc)
+            {field.name} = {field.name}_ent.id
 """
 
         # TODO check that mandatory fields have either an example or a dynamic example
