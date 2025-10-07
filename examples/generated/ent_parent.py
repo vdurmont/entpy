@@ -5,19 +5,19 @@ from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_model import EntModel
-from typing import Any
-from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from entpy import Field
+from .ent_model import EntModel
+from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
-from .ent_grand_parent import EntGrandParent
-from ent_parent_schema import EntParentSchema
 from sqlalchemy import select, Select
-from sqlalchemy import String
-from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy.sql.expression import ColumnElement
+from ent_parent_schema import EntParentSchema
 from .ent_grand_parent import EntGrandParentExample
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from typing import Any
+from .ent_grand_parent import EntGrandParent
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntParentModel(EntModel):
@@ -126,6 +126,12 @@ class EntParentQuery:
         models = result.scalars().all()
         ents = [await EntParent._gen_from_model(self.vc, model) for model in models]
         return list(filter(None, ents))
+
+    async def gen_first(self) -> EntParent | None:
+        session = get_session()
+        result = await session.execute(self.query.limit(1))
+        model = result.scalar_one_or_none()
+        return await EntParent._gen_from_model(self.vc, model)
 
 
 class EntParentMutator:

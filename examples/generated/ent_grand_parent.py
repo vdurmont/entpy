@@ -6,14 +6,14 @@ from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
-from typing import Any
-from sqlalchemy.sql.expression import ColumnElement
-from entpy import Field
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import select, Select
-from sqlalchemy import String
-from sentinels import NOTHING, Sentinel  # type: ignore
 from ent_grand_parent_schema import EntGrandParentSchema
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any
+from entpy import Field
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntGrandParentModel(EntModel):
@@ -114,6 +114,12 @@ class EntGrandParentQuery:
             await EntGrandParent._gen_from_model(self.vc, model) for model in models
         ]
         return list(filter(None, ents))
+
+    async def gen_first(self) -> EntGrandParent | None:
+        session = get_session()
+        result = await session.execute(self.query.limit(1))
+        model = result.scalar_one_or_none()
+        return await EntGrandParent._gen_from_model(self.vc, model)
 
 
 class EntGrandParentMutator:

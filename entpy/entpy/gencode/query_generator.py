@@ -42,5 +42,11 @@ class {base_name}Query:
         models = result.scalars().all()
         ents = [await {base_name}._gen_from_model(self.vc, model) for model in models]
         return list(filter(None, ents))
+
+    async def gen_first(self) -> {base_name} | None:
+        session = {session_getter_fn_name}()
+        result = await session.execute(self.query.limit(1))
+        model = result.scalar_one_or_none()
+        return await {base_name}._gen_from_model(self.vc, model)
 """,
     )

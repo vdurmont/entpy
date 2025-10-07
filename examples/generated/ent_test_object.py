@@ -5,24 +5,23 @@ from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_model import EntModel
-from typing import Any
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import Enum as DBEnum
 from entpy import Field, FieldWithDynamicExample
+from typing import Any
+from .ent_model import EntModel
+from sqlalchemy import String
 from sqlalchemy import ForeignKey
-from .ent_test_sub_object import EntTestSubObject
 from sqlalchemy.orm import Mapped, mapped_column
 from .ent_test_thing import IEntTestThing
-from sqlalchemy import Text
-from sqlalchemy import Enum as DBEnum
-from sqlalchemy import Select
-from sqlalchemy import String
 from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy import select, Select
 from .ent_test_sub_object import EntTestSubObjectExample
-from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import Text
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_test_sub_object import EntTestSubObject
 from ent_test_object_schema import Status
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestObjectModel(EntModel):
@@ -227,6 +226,12 @@ class EntTestObjectQuery:
         models = result.scalars().all()
         ents = [await EntTestObject._gen_from_model(self.vc, model) for model in models]
         return list(filter(None, ents))
+
+    async def gen_first(self) -> EntTestObject | None:
+        session = get_session()
+        result = await session.execute(self.query.limit(1))
+        model = result.scalar_one_or_none()
+        return await EntTestObject._gen_from_model(self.vc, model)
 
 
 class EntTestObjectMutator:
