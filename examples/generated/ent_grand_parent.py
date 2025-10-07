@@ -1,19 +1,19 @@
 from __future__ import annotations
-from entpy import Ent
-from uuid import UUID, uuid4
+from entpy import Ent, generate_uuid
+from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_model import EntModel
-from sqlalchemy import String
+from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_model import EntModel
 from sqlalchemy import select, Select
 from ent_grand_parent_schema import EntGrandParentSchema
-from sqlalchemy.sql.expression import ColumnElement
 from typing import Any
 from entpy import Field
-from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntGrandParentModel(EntModel):
@@ -161,8 +161,8 @@ class EntGrandParentMutatorCreationAction:
         name: str,
     ) -> None:
         self.vc = vc
-        self.id = id if id else uuid4()
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
+        self.id = id if id else generate_uuid(EntGrandParent, self.created_at)
         self.name = name
 
     async def gen_savex(self) -> EntGrandParent:

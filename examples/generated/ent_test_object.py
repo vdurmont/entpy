@@ -1,27 +1,27 @@
 from __future__ import annotations
-from entpy import Ent
-from uuid import UUID, uuid4
+from entpy import Ent, generate_uuid
+from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
+from sqlalchemy import ForeignKey
+from entpy import Field, FieldWithDynamicExample
+from sentinels import NOTHING, Sentinel  # type: ignore
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_model import EntModel
+from .ent_test_thing import IEntTestThing
+from sqlalchemy import select, Select
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import Text
+from ent_test_object_schema import Status
+from .ent_test_sub_object import EntTestSubObjectExample
+from typing import Any
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from sqlalchemy import Enum as DBEnum
-from entpy import Field, FieldWithDynamicExample
-from typing import Any
-from .ent_model import EntModel
-from sqlalchemy import String
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-from .ent_test_thing import IEntTestThing
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import select, Select
-from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import Text
-from sqlalchemy.sql.expression import ColumnElement
-from .ent_test_sub_object import EntTestSubObject
-from ent_test_object_schema import Status
-from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestObjectModel(EntModel):
@@ -316,8 +316,8 @@ class EntTestObjectMutatorCreationAction:
         status: Status | None,
     ) -> None:
         self.vc = vc
-        self.id = id if id else uuid4()
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
+        self.id = id if id else generate_uuid(EntTestObject, self.created_at)
         self.a_good_thing = a_good_thing
         self.firstname = firstname
         self.required_sub_object_id = required_sub_object_id

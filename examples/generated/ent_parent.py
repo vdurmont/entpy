@@ -1,23 +1,23 @@
 from __future__ import annotations
-from entpy import Ent
-from uuid import UUID, uuid4
+from entpy import Ent, generate_uuid
+from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from entpy import Field
-from .ent_model import EntModel
-from sqlalchemy import String
 from sqlalchemy import ForeignKey
+from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import select, Select
+from sqlalchemy import String
 from sqlalchemy.sql.expression import ColumnElement
-from ent_parent_schema import EntParentSchema
+from .ent_model import EntModel
+from sqlalchemy import select, Select
 from .ent_grand_parent import EntGrandParentExample
 from typing import Any
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from ent_parent_schema import EntParentSchema
 from .ent_grand_parent import EntGrandParent
-from sentinels import NOTHING, Sentinel  # type: ignore
+from entpy import Field
 
 
 class EntParentModel(EntModel):
@@ -180,8 +180,8 @@ class EntParentMutatorCreationAction:
         name: str,
     ) -> None:
         self.vc = vc
-        self.id = id if id else uuid4()
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
+        self.id = id if id else generate_uuid(EntParent, self.created_at)
         self.grand_parent_id = grand_parent_id
         self.name = name
 

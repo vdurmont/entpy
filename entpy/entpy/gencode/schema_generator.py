@@ -53,8 +53,8 @@ def generate(
 
     return f"""
 from __future__ import annotations
-from entpy import Ent
-from uuid import UUID, uuid4
+from entpy import Ent, generate_uuid
+from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 {vc_import}

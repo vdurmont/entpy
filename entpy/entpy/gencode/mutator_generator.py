@@ -114,8 +114,8 @@ class {base_name}MutatorCreationAction:
 
     def __init__(self, vc: {vc_name}, id: UUID | None, created_at: datetime | None{constructor_arguments}) -> None:
         self.vc = vc
-        self.id = id if id else uuid4()
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
+        self.id = id if id else generate_uuid({base_name}, self.created_at)
 {constructor_assignments}
 
     async def gen_savex(self) -> {base_name}:
