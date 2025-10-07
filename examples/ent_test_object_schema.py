@@ -5,6 +5,7 @@ from ent_test_thing_pattern import EntTestThingPattern
 from entpy import (
     EdgeField,
     Field,
+    IntField,
     Pattern,
     Schema,
     StringField,
@@ -46,4 +47,5 @@ class EntTestObjectSchema(Schema):
             DatetimeField("when_is_it_cool").dynamic_example(
                 lambda: datetime.now(tz=UTC)
             ),
+            IntField("status_code").example(404),
         ]

@@ -1,6 +1,14 @@
 import re
 
-from entpy import DatetimeField, EdgeField, EnumField, Schema, StringField, TextField
+from entpy import (
+    DatetimeField,
+    EdgeField,
+    EnumField,
+    IntField,
+    Schema,
+    StringField,
+    TextField,
+)
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import to_snake_case
 
@@ -33,6 +41,11 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(DBEnum({type_name}, native_enum=True)"
             fields_code += f"{common_column_attributes})\n"
+        elif isinstance(field, IntField):
+            types_imports.append("from sqlalchemy import Integer")
+            mapped_type = "int | None" if field.nullable else "int"
+            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
+            fields_code += f"mapped_column(Integer(){common_column_attributes})\n"
         elif isinstance(field, StringField):
             types_imports.append("from sqlalchemy import String")
             mapped_type = "str | None" if field.nullable else "str"
