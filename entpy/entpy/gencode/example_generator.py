@@ -45,11 +45,14 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
 
         if isinstance(field, EdgeField) and field.should_generate_example:
             edge_base_name = field.edge_class.__name__.replace("Schema", "")
-            edge_filename = to_snake_case(edge_base_name)
-            edges_imports.append(
-                f"from .{edge_filename} import {edge_base_name}Example"
-            )
-            arguments_assignments += f"""
+            # We skip examples for edges that point to the same schema to avoid
+            # recursive creations. The developpers can manually add those edges.
+            if edge_base_name != base_name:
+                edge_filename = to_snake_case(edge_base_name)
+                edges_imports.append(
+                    f"from .{edge_filename} import {edge_base_name}Example"
+                )
+                arguments_assignments += f"""
         {field.name}_ent = await {edge_base_name}Example.gen_create(vc)
         {field.name} = {field.name}_ent.id
 """

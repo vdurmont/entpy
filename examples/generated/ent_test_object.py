@@ -4,19 +4,19 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from evc import ExampleViewerContext
 from database import get_session
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import Text
-from ent_test_object_schema import EntTestObjectSchema
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_model import EntModel
 from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sentinels import NOTHING, Sentinel  # type: ignore
+from entpy import Field, FieldWithDynamicExample
+from ent_test_object_schema import EntTestObjectSchema
 from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import select
-from .ent_test_thing import IEntTestThing
 from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Text
+from sqlalchemy import select
+from sqlalchemy import ForeignKey
+from .ent_model import EntModel
+from .ent_test_thing import IEntTestThing
 
 
 class EntTestObjectModel(EntModel):
@@ -36,6 +36,9 @@ class EntTestObjectModel(EntModel):
     )
     optional_sub_object_no_ex_id: Mapped[UUID | None] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=True
+    )
+    self_id: Mapped[UUID | None] = mapped_column(
+        DBUUID(as_uuid=True), ForeignKey("test_object.id"), nullable=True
     )
 
 
@@ -116,6 +119,15 @@ class EntTestObject(Ent, IEntTestThing):
             )
         return None
 
+    @property
+    def self_id(self) -> UUID | None:
+        return self.model.self_id
+
+    async def gen_self(self) -> EntTestObject | None:
+        if self.model.self_id:
+            return await EntTestObject.gen(self.vc, self.model.self_id)
+        return None
+
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject:
         ent = await cls.gen(vc, ent_id)
@@ -182,6 +194,7 @@ class EntTestObjectMutator:
         lastname: str | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
+        self_id: UUID | None = None,
     ) -> EntTestObjectMutatorCreationAction:
         return EntTestObjectMutatorCreationAction(
             vc=vc,
@@ -194,6 +207,7 @@ class EntTestObjectMutator:
             lastname=lastname,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
+            self_id=self_id,
         )
 
     @classmethod
@@ -221,6 +235,7 @@ class EntTestObjectMutatorCreationAction:
     lastname: str | None = None
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
+    self_id: UUID | None = None
 
     def __init__(
         self,
@@ -234,6 +249,7 @@ class EntTestObjectMutatorCreationAction:
         lastname: str | None,
         optional_sub_object_id: UUID | None,
         optional_sub_object_no_ex_id: UUID | None,
+        self_id: UUID | None,
     ) -> None:
         self.vc = vc
         self.id = uuid4()
@@ -246,6 +262,7 @@ class EntTestObjectMutatorCreationAction:
         self.lastname = lastname
         self.optional_sub_object_id = optional_sub_object_id
         self.optional_sub_object_no_ex_id = optional_sub_object_no_ex_id
+        self.self_id = self_id
 
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
@@ -260,6 +277,7 @@ class EntTestObjectMutatorCreationAction:
             lastname=self.lastname,
             optional_sub_object_id=self.optional_sub_object_id,
             optional_sub_object_no_ex_id=self.optional_sub_object_no_ex_id,
+            self_id=self.self_id,
         )
         session.add(model)
         await session.flush()
@@ -280,6 +298,7 @@ class EntTestObjectMutatorUpdateAction:
     lastname: str | None = None
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
+    self_id: UUID | None = None
 
     def __init__(self, vc: ExampleViewerContext, ent: EntTestObject) -> None:
         self.vc = vc
@@ -293,6 +312,7 @@ class EntTestObjectMutatorUpdateAction:
         self.lastname = ent.lastname
         self.optional_sub_object_id = ent.optional_sub_object_id
         self.optional_sub_object_no_ex_id = ent.optional_sub_object_no_ex_id
+        self.self_id = ent.self_id
 
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
@@ -306,6 +326,7 @@ class EntTestObjectMutatorUpdateAction:
         model.lastname = self.lastname
         model.optional_sub_object_id = self.optional_sub_object_id
         model.optional_sub_object_no_ex_id = self.optional_sub_object_no_ex_id
+        model.self_id = self.self_id
         session.add(model)
         await session.flush()
         # TODO privacy checks
@@ -342,6 +363,7 @@ class EntTestObjectExample:
         lastname: str | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
+        self_id: UUID | None = None,
     ) -> EntTestObject:
         # TODO make sure we only use this in test mode
 
@@ -385,6 +407,7 @@ class EntTestObjectExample:
             lastname=lastname,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
+            self_id=self_id,
         ).gen_savex()
 
     @classmethod

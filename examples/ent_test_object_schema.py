@@ -21,6 +21,7 @@ class EntTestObjectSchema(Schema):
             StringField("firstname", 100).not_null().example("Vincent"),
             StringField("lastname", 100),
             StringField("city", 100).example("Los Angeles"),
+            EdgeField("self", EntTestObjectSchema),
             EdgeField("required_sub_object", EntTestSubObjectSchema).not_null(),
             EdgeField("optional_sub_object", EntTestSubObjectSchema),
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),

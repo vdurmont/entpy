@@ -33,7 +33,8 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
             types_imports.append("from sqlalchemy import ForeignKey")
             edge_base_name = field.edge_class.__name__.replace("Schema", "")
             edge_filename = to_snake_case(edge_base_name)
-            edges_imports.append(f"from .{edge_filename} import {edge_base_name}")
+            if edge_base_name != base_name:
+                edges_imports.append(f"from .{edge_filename} import {edge_base_name}")
 
             mapped_type = "UUID | None" if field.nullable else "UUID"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
