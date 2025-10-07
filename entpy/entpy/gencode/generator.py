@@ -37,11 +37,19 @@ def run(
     print(f"Found {len(configs)} schema(s) and pattern(s).")
 
     # Gencode all the things!
+    models_list = ""
     for config in configs:
         descriptor_class = config[0]
         descriptor_output_path = config[1]
         print(f"Processing: {descriptor_class.__name__}")
         if issubclass(descriptor_class, Schema):
+            models_list += (
+                "\nfrom ."
+                + descriptor_output_path.stem
+                + " import "
+                + descriptor_class.__name__.replace("Schema", "Model")
+                + "  # noqa: F401"
+            )
             code = generate_schema(
                 schema_class=descriptor_class,
                 ent_model_import="from .ent_model import EntModel",
@@ -62,6 +70,8 @@ def run(
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
         _write_file(descriptor_output_path, code)
+
+    _write_file(output_path / "all_models.py", models_list)
 
     # Format the code before returning
     # TODO make this a config, not everyone uses ruff

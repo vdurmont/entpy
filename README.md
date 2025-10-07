@@ -215,5 +215,4 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 - support gen(x)_from_XXXX for unique fields in patterns
 - check that the provided VC extends VC
 - check that when adding an edge, the base name is not XXX_id
-- generate a list of models to import
 - generate a list of UUID keys to load in patterns
