@@ -1,8 +1,17 @@
 import uuid
-
+from datetime import datetime, UTC
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from ent_test_thing_pattern import EntTestThingPattern
-from entpy import EdgeField, Field, Pattern, Schema, StringField, TextField, EnumField
+from entpy import (
+    EdgeField,
+    Field,
+    Pattern,
+    Schema,
+    StringField,
+    TextField,
+    EnumField,
+    DatetimeField,
+)
 from enum import Enum
 
 
@@ -34,4 +43,7 @@ class EntTestObjectSchema(Schema):
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),
             TextField("context").example("This is some good context."),
             EnumField("status", Status).example(Status.HAPPY),
+            DatetimeField("when_is_it_cool").dynamic_example(
+                lambda: datetime.now(tz=UTC)
+            ),
         ]

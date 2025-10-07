@@ -1,6 +1,6 @@
 import re
 
-from entpy import EdgeField, EnumField, Schema, StringField, TextField
+from entpy import DatetimeField, EdgeField, EnumField, Schema, StringField, TextField
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import to_snake_case
 
@@ -17,7 +17,14 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
         )
         common_column_attributes += ", unique=True" if field.is_unique else ""
 
-        if isinstance(field, EnumField):
+        if isinstance(field, DatetimeField):
+            types_imports.append("from sqlalchemy import DateTime")
+            mapped_type = "datetime | None" if field.nullable else "datetime"
+            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
+            fields_code += (
+                f"mapped_column(DateTime(timezone=True){common_column_attributes})\n"
+            )
+        elif isinstance(field, EnumField):
             module = field.enum_class.__module__
             type_name = field.enum_class.__name__
             types_imports.append("from sqlalchemy import Enum as DBEnum")

@@ -5,23 +5,24 @@ from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from entpy import Field, FieldWithDynamicExample
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import ForeignKey
-from sqlalchemy import String
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import select, Select
-from .ent_model import EntModel
-from sqlalchemy import Enum as DBEnum
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_test_thing import IEntTestThing
 from typing import Any
-from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Text
+from .ent_test_sub_object import EntTestSubObject
 from ent_test_object_schema import Status
 from .ent_test_sub_object import EntTestSubObjectExample
+from ent_test_object_schema import EntTestObjectSchema
+from .ent_test_thing import IEntTestThing
+from sqlalchemy import select, Select
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import DateTime
+from .ent_model import EntModel
+from sqlalchemy import ForeignKey
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Text
+from entpy import Field, FieldWithDynamicExample
 
 
 class EntTestObjectModel(EntModel):
@@ -47,6 +48,9 @@ class EntTestObjectModel(EntModel):
     )
     status: Mapped[Status | None] = mapped_column(
         DBEnum(Status, native_enum=True), nullable=True
+    )
+    when_is_it_cool: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
 
@@ -142,6 +146,10 @@ class EntTestObject(Ent, IEntTestThing):
     @property
     def status(self) -> Status | None:
         return self.model.status
+
+    @property
+    def when_is_it_cool(self) -> datetime | None:
+        return self.model.when_is_it_cool
 
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject:
@@ -253,6 +261,7 @@ class EntTestObjectMutator:
         optional_sub_object_no_ex_id: UUID | None = None,
         self_id: UUID | None = None,
         status: Status | None = None,
+        when_is_it_cool: datetime | None = None,
         id: UUID | None = None,
         created_at: datetime | None = None,
     ) -> EntTestObjectMutatorCreationAction:
@@ -271,6 +280,7 @@ class EntTestObjectMutator:
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
             self_id=self_id,
             status=status,
+            when_is_it_cool=when_is_it_cool,
         )
 
     @classmethod
@@ -300,6 +310,7 @@ class EntTestObjectMutatorCreationAction:
     optional_sub_object_no_ex_id: UUID | None = None
     self_id: UUID | None = None
     status: Status | None = None
+    when_is_it_cool: datetime | None = None
 
     def __init__(
         self,
@@ -317,6 +328,7 @@ class EntTestObjectMutatorCreationAction:
         optional_sub_object_no_ex_id: UUID | None,
         self_id: UUID | None,
         status: Status | None,
+        when_is_it_cool: datetime | None,
     ) -> None:
         self.vc = vc
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
@@ -332,6 +344,7 @@ class EntTestObjectMutatorCreationAction:
         self.optional_sub_object_no_ex_id = optional_sub_object_no_ex_id
         self.self_id = self_id
         self.status = status
+        self.when_is_it_cool = when_is_it_cool
 
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
@@ -349,6 +362,7 @@ class EntTestObjectMutatorCreationAction:
             optional_sub_object_no_ex_id=self.optional_sub_object_no_ex_id,
             self_id=self.self_id,
             status=self.status,
+            when_is_it_cool=self.when_is_it_cool,
         )
         session.add(model)
         await session.flush()
@@ -371,6 +385,7 @@ class EntTestObjectMutatorUpdateAction:
     optional_sub_object_no_ex_id: UUID | None = None
     self_id: UUID | None = None
     status: Status | None = None
+    when_is_it_cool: datetime | None = None
 
     def __init__(self, vc: ExampleViewerContext, ent: EntTestObject) -> None:
         self.vc = vc
@@ -386,6 +401,7 @@ class EntTestObjectMutatorUpdateAction:
         self.optional_sub_object_no_ex_id = ent.optional_sub_object_no_ex_id
         self.self_id = ent.self_id
         self.status = ent.status
+        self.when_is_it_cool = ent.when_is_it_cool
 
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
@@ -401,6 +417,7 @@ class EntTestObjectMutatorUpdateAction:
         model.optional_sub_object_no_ex_id = self.optional_sub_object_no_ex_id
         model.self_id = self.self_id
         model.status = self.status
+        model.when_is_it_cool = self.when_is_it_cool
         session.add(model)
         await session.flush()
         # TODO privacy checks
@@ -440,6 +457,7 @@ class EntTestObjectExample:
         optional_sub_object_no_ex_id: UUID | None = None,
         self_id: UUID | None = None,
         status: Status | None = None,
+        when_is_it_cool: datetime | None = None,
     ) -> EntTestObject:
         # TODO make sure we only use this in test mode
 
@@ -481,6 +499,17 @@ class EntTestObjectExample:
             optional_sub_object_id = optional_sub_object_id_ent.id
         status = Status.HAPPY if isinstance(status, Sentinel) else status
 
+        if isinstance(when_is_it_cool, Sentinel):
+            field = cls._get_field("when_is_it_cool")
+            if not isinstance(field, FieldWithDynamicExample):
+                raise TypeError(
+                    "Internal ent error: "
+                    + f"field {field.name} must support dynamic examples."
+                )
+            generator = field.get_example_generator()
+            if generator:
+                when_is_it_cool = generator()
+
         return await EntTestObjectMutator.create(
             vc=vc,
             created_at=created_at,
@@ -495,6 +524,7 @@ class EntTestObjectExample:
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
             self_id=self_id,
             status=status,
+            when_is_it_cool=when_is_it_cool,
         ).gen_savex()
 
     @classmethod

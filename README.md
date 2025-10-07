@@ -217,3 +217,5 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 - check that when adding an edge, the base name is not XXX_id
 - generate a list of UUID keys to load in patterns
 - limit the limit in queries
+- make sure field names are unique (also check edge fields vs XXX_id fields)
+- delete cascade?
