@@ -3,13 +3,13 @@ from entpy import ViewerContext, Ent
 from uuid import UUID, uuid4
 from datetime import datetime
 
-from examples.database import get_session
-from sentinels import NOTHING, Sentinel  # type: ignore
+from database import get_session
+from ent_test_sub_object_schema import EntTestSubObjectSchema
 from sqlalchemy import String
-from .ent_model import EntModel
-from examples.ent_test_sub_object_schema import EntTestSubObjectSchema
 from entpy import Field
+from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.orm import Mapped, mapped_column
+from .ent_model import EntModel
 
 
 class EntTestSubObjectModel(EntModel):

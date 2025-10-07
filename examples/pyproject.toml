@@ -12,7 +12,13 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-asyncio",
+    "ruff",
+    "mypy",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+pythonpath = ["."]
+
+[tool.uv.sources]
+entpy = { path = "../entpy", editable = true }

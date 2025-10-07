@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from examples.database import get_session, init_db
+from database import get_session, init_db
 from entpy import ViewerContext
 
 

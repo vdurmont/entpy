@@ -3,18 +3,18 @@ from entpy import ViewerContext, Ent
 from uuid import UUID, uuid4
 from datetime import datetime
 
-from examples.database import get_session
-from sentinels import NOTHING, Sentinel  # type: ignore
+from database import get_session
 from sqlalchemy import ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_model import EntModel
-from sqlalchemy import select
-from .ent_test_sub_object import EntTestSubObject
-from .ent_test_sub_object import EntTestSubObjectExample
-from entpy import Field, FieldWithDynamicExample
-from examples.ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.orm import Mapped, mapped_column
 from .ent_test_thing import IEntTestThing
+from sqlalchemy import select
+from ent_test_object_schema import EntTestObjectSchema
+from entpy import Field, FieldWithDynamicExample
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy.orm import Mapped, mapped_column
+from .ent_test_sub_object import EntTestSubObjectExample
+from .ent_test_sub_object import EntTestSubObject
+from .ent_model import EntModel
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 
 class EntTestObjectModel(EntModel):

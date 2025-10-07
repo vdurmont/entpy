@@ -1,11 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from examples.generated.ent_test_object import (
+from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
 )
-from examples.generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
-from examples.generated.ent_test_thing import IEntTestThing
+from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
+from generated.ent_test_thing import IEntTestThing
 from entpy import ViewerContext
 
 

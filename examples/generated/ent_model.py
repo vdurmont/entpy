@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
-from examples.database import Base
+from database import Base
 
 
 class EntModel(Base):
