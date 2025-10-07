@@ -4,21 +4,21 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import Enum as DBEnum
-from sqlalchemy.orm import Mapped, mapped_column
-from ent_test_object_schema import Status
-from .ent_test_thing import IEntTestThing
-from .ent_test_sub_object import EntTestSubObjectExample
-from .ent_model import EntModel
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import String
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import select
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import Text
 from sqlalchemy import ForeignKey
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import select
+from sqlalchemy import String
+from sqlalchemy import Text
+from .ent_test_sub_object import EntTestSubObjectExample
+from sqlalchemy import Enum as DBEnum
+from ent_test_object_schema import Status
+from entpy import Field, FieldWithDynamicExample
+from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_test_sub_object import EntTestSubObject
+from ent_test_object_schema import EntTestObjectSchema
+from .ent_test_thing import IEntTestThing
+from sqlalchemy.orm import Mapped, mapped_column
+from .ent_model import EntModel
 
 
 class EntTestObjectModel(EntModel):
@@ -205,9 +205,11 @@ class EntTestObjectMutator:
         optional_sub_object_no_ex_id: UUID | None = None,
         self_id: UUID | None = None,
         status: Status | None = None,
+        id: UUID | None = None,
     ) -> EntTestObjectMutatorCreationAction:
         return EntTestObjectMutatorCreationAction(
             vc=vc,
+            id=id,
             a_good_thing=a_good_thing,
             firstname=firstname,
             required_sub_object_id=required_sub_object_id,
@@ -252,6 +254,7 @@ class EntTestObjectMutatorCreationAction:
     def __init__(
         self,
         vc: ExampleViewerContext,
+        id: UUID | None,
         a_good_thing: str,
         firstname: str,
         required_sub_object_id: UUID,
@@ -265,7 +268,7 @@ class EntTestObjectMutatorCreationAction:
         status: Status | None,
     ) -> None:
         self.vc = vc
-        self.id = uuid4()
+        self.id = id if id else uuid4()
         self.a_good_thing = a_good_thing
         self.firstname = firstname
         self.required_sub_object_id = required_sub_object_id

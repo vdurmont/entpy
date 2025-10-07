@@ -4,12 +4,12 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from evc import ExampleViewerContext
 from database import get_session
+from sqlalchemy import String
+from ent_test_sub_object_schema import EntTestSubObjectSchema
+from sentinels import NOTHING, Sentinel  # type: ignore
+from entpy import Field
 from sqlalchemy.orm import Mapped, mapped_column
 from .ent_model import EntModel
-from entpy import Field
-from sqlalchemy import String
-from sentinels import NOTHING, Sentinel  # type: ignore
-from ent_test_sub_object_schema import EntTestSubObjectSchema
 
 
 class EntTestSubObjectModel(EntModel):
@@ -79,9 +79,9 @@ class EntTestSubObject(Ent):
 class EntTestSubObjectMutator:
     @classmethod
     def create(
-        cls, vc: ExampleViewerContext, email: str
+        cls, vc: ExampleViewerContext, email: str, id: UUID | None = None
     ) -> EntTestSubObjectMutatorCreationAction:
-        return EntTestSubObjectMutatorCreationAction(vc=vc, email=email)
+        return EntTestSubObjectMutatorCreationAction(vc=vc, id=id, email=email)
 
     @classmethod
     def update(
@@ -101,9 +101,9 @@ class EntTestSubObjectMutatorCreationAction:
     id: UUID
     email: str
 
-    def __init__(self, vc: ExampleViewerContext, email: str) -> None:
+    def __init__(self, vc: ExampleViewerContext, id: UUID | None, email: str) -> None:
         self.vc = vc
-        self.id = uuid4()
+        self.id = id if id else uuid4()
         self.email = email
 
     async def gen_savex(self) -> EntTestSubObject:

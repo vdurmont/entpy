@@ -51,3 +51,19 @@ async def test_deletion(db_session: AsyncSession, vc: ExampleViewerContext) -> N
     reloaded_ent = await EntTestObject.gen(vc, ent.id)
 
     assert reloaded_ent is None, "Ent should have been deleted"
+
+
+async def test_creation_with_assigned_id(
+    db_session: AsyncSession, vc: ExampleViewerContext
+) -> None:
+    custom_uuid = uuid.uuid4()
+    ent = await EntTestObjectMutator.create(
+        vc=vc,
+        id=custom_uuid,
+        a_good_thing="Eating cheese",
+        username="vdurmont2",
+        firstname="Vincent",
+        required_sub_object_id=uuid.uuid4(),
+    ).gen_savex()
+
+    assert ent.id == custom_uuid, "Mutator.create should honor custom uuids"

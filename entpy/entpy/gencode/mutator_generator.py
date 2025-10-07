@@ -53,9 +53,9 @@ def _generate_base(schema: Schema, base_name: str, vc_name: str) -> GeneratedCon
 class {base_name}Mutator:
     @classmethod
     def create(
-        cls, vc: {vc_name}{arguments_definition}
+        cls, vc: {vc_name}{arguments_definition}, id: UUID | None = None
     ) -> {base_name}MutatorCreationAction:
-        return {base_name}MutatorCreationAction(vc=vc{arguments_usage})
+        return {base_name}MutatorCreationAction(vc=vc, id=id{arguments_usage})
 
     @classmethod
     def update(
@@ -112,9 +112,9 @@ class {base_name}MutatorCreationAction:
     id: UUID
 {local_variables}
 
-    def __init__(self, vc: {vc_name}{constructor_arguments}) -> None:
+    def __init__(self, vc: {vc_name}, id: UUID | None{constructor_arguments}) -> None:
         self.vc = vc
-        self.id = uuid4()
+        self.id = id if id else uuid4()
 {constructor_assignments}
 
     async def gen_savex(self) -> {base_name}:
