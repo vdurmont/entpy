@@ -1,6 +1,6 @@
 import re
 
-from entpy import EdgeField, Schema, StringField, TextField
+from entpy import EdgeField, EnumField, Schema, StringField, TextField
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import to_snake_case
 
@@ -17,7 +17,16 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
         )
         common_column_attributes += ", unique=True" if field.is_unique else ""
 
-        if isinstance(field, StringField):
+        if isinstance(field, EnumField):
+            module = field.enum_class.__module__
+            type_name = field.enum_class.__name__
+            types_imports.append("from sqlalchemy import Enum as DBEnum")
+            types_imports.append(f"from {module} import {type_name}")
+            mapped_type = type_name + " | None" if field.nullable else type_name
+            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
+            fields_code += f"mapped_column(DBEnum({type_name}, native_enum=True)"
+            fields_code += f"{common_column_attributes})\n"
+        elif isinstance(field, StringField):
             types_imports.append("from sqlalchemy import String")
             mapped_type = "str | None" if field.nullable else "str"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "

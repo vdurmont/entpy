@@ -1,6 +1,7 @@
 from .framework.ent import Ent  # noqa: F401
 from .framework.fields.core import Field, FieldWithDynamicExample  # noqa: F401
 from .framework.fields.edge_field import EdgeField  # noqa: F401
+from .framework.fields.enum_field import EnumField  # noqa: F401
 from .framework.fields.string_field import StringField  # noqa: F401
 from .framework.fields.text_field import TextField  # noqa: F401
 from .framework.pattern import Pattern  # noqa: F401

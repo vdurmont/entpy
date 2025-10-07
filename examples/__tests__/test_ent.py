@@ -3,6 +3,7 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ent_test_object_schema import Status
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
@@ -56,9 +57,9 @@ async def test_edges_work_well(
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
     # Check required
-    assert (
-        ent.required_sub_object_id is not None
-    ), "We should be able to access the required edge's ID"
+    assert ent.required_sub_object_id is not None, (
+        "We should be able to access the required edge's ID"
+    )
     req_edge = await ent.gen_required_sub_object()
     assert req_edge is not None, "We should be able to load the required edge"
 
@@ -68,13 +69,13 @@ async def test_edges_work_well(
     assert opt_edge is not None, "We should be able to load the optional edge"
 
     # Check optional, but example cancelled
-    assert (
-        ent.optional_sub_object_no_ex_id is None
-    ), "Example does not generate a sub object"
+    assert ent.optional_sub_object_no_ex_id is None, (
+        "Example does not generate a sub object"
+    )
     opt_edge_2 = await ent.gen_optional_sub_object_no_ex()
-    assert (
-        opt_edge_2 is None
-    ), "We should not be able to load the optional edge with no example"
+    assert opt_edge_2 is None, (
+        "We should not be able to load the optional edge with no example"
+    )
 
 
 async def test_pattern_fields_are_written_properly(
@@ -109,3 +110,9 @@ async def test_gen_and_genx_from_unique_field(
 
     with pytest.raises(ValueError):
         await EntTestObject.genx_from_username(vc, other_username)
+
+
+async def test_enum_field(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
+    status = Status.SAD
+    ent = await EntTestObjectExample.gen_create(vc, status=status)
+    assert ent.status == status

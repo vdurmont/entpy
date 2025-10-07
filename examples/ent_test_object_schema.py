@@ -2,7 +2,13 @@ import uuid
 
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from ent_test_thing_pattern import EntTestThingPattern
-from entpy import EdgeField, Field, Pattern, Schema, StringField, TextField
+from entpy import EdgeField, Field, Pattern, Schema, StringField, TextField, EnumField
+from enum import Enum
+
+
+class Status(Enum):
+    HAPPY = "HAPPY"
+    SAD = "SAD"
 
 
 class EntTestObjectSchema(Schema):
@@ -26,4 +32,5 @@ class EntTestObjectSchema(Schema):
             EdgeField("optional_sub_object", EntTestSubObjectSchema),
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),
             TextField("context").example("This is some good context."),
+            EnumField("status", Status).example(Status.HAPPY),
         ]
