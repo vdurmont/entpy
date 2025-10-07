@@ -5,6 +5,7 @@ from entpy import (
     EdgeField,
     EnumField,
     IntField,
+    JsonField,
     Schema,
     StringField,
     TextField,
@@ -46,6 +47,15 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
             mapped_type = "int | None" if field.nullable else "int"
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(Integer(){common_column_attributes})\n"
+        elif isinstance(field, JsonField):
+            types_imports.append("from sqlalchemy import JSON")
+            mapped_type = (
+                field.get_python_type() + " | None"
+                if field.nullable
+                else field.get_python_type()
+            )
+            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
+            fields_code += f"mapped_column(JSON(){common_column_attributes})\n"
         elif isinstance(field, StringField):
             types_imports.append("from sqlalchemy import String")
             mapped_type = "str | None" if field.nullable else "str"

@@ -4,6 +4,7 @@ from ent_test_sub_object_schema import EntTestSubObjectSchema
 from ent_test_thing_pattern import EntTestThingPattern
 from entpy import (
     EdgeField,
+    JsonField,
     Field,
     IntField,
     Pattern,
@@ -48,4 +49,5 @@ class EntTestObjectSchema(Schema):
                 lambda: datetime.now(tz=UTC)
             ),
             IntField("status_code").example(404),
+            JsonField("some_json", "list[str]").example(["hello", "world"]),
         ]

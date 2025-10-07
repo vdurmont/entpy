@@ -5,25 +5,26 @@ from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import ForeignKey
-from sqlalchemy import DateTime
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import Text
-from .ent_model import EntModel
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from typing import Any
+from .ent_model import EntModel
+from sqlalchemy import DateTime
 from .ent_test_sub_object import EntTestSubObjectExample
-from ent_test_object_schema import Status
-from sqlalchemy import Enum as DBEnum
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import select, Select
 from sentinels import NOTHING, Sentinel  # type: ignore
 from .ent_test_thing import IEntTestThing
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy import Text
+from sqlalchemy import Integer
 from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import String
+from sqlalchemy import ForeignKey
+from sqlalchemy import JSON
+from sqlalchemy import Enum as DBEnum
 from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import select, Select
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from ent_test_object_schema import Status
 
 
 class EntTestObjectModel(EntModel):
@@ -47,6 +48,7 @@ class EntTestObjectModel(EntModel):
     self_id: Mapped[UUID | None] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_object.id"), nullable=True
     )
+    some_json: Mapped[list[str] | None] = mapped_column(JSON(), nullable=True)
     status: Mapped[Status | None] = mapped_column(
         DBEnum(Status, native_enum=True), nullable=True
     )
@@ -144,6 +146,10 @@ class EntTestObject(Ent, IEntTestThing):
         if self.model.self_id:
             return await EntTestObject.gen(self.vc, self.model.self_id)
         return None
+
+    @property
+    def some_json(self) -> list[str] | None:
+        return self.model.some_json
 
     @property
     def status(self) -> Status | None:
@@ -266,6 +272,7 @@ class EntTestObjectMutator:
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
         self_id: UUID | None = None,
+        some_json: list[str] | None = None,
         status: Status | None = None,
         status_code: int | None = None,
         when_is_it_cool: datetime | None = None,
@@ -286,6 +293,7 @@ class EntTestObjectMutator:
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
             self_id=self_id,
+            some_json=some_json,
             status=status,
             status_code=status_code,
             when_is_it_cool=when_is_it_cool,
@@ -317,6 +325,7 @@ class EntTestObjectMutatorCreationAction:
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
     self_id: UUID | None = None
+    some_json: list[str] | None = None
     status: Status | None = None
     status_code: int | None = None
     when_is_it_cool: datetime | None = None
@@ -336,6 +345,7 @@ class EntTestObjectMutatorCreationAction:
         optional_sub_object_id: UUID | None,
         optional_sub_object_no_ex_id: UUID | None,
         self_id: UUID | None,
+        some_json: list[str] | None,
         status: Status | None,
         status_code: int | None,
         when_is_it_cool: datetime | None,
@@ -353,6 +363,7 @@ class EntTestObjectMutatorCreationAction:
         self.optional_sub_object_id = optional_sub_object_id
         self.optional_sub_object_no_ex_id = optional_sub_object_no_ex_id
         self.self_id = self_id
+        self.some_json = some_json
         self.status = status
         self.status_code = status_code
         self.when_is_it_cool = when_is_it_cool
@@ -372,6 +383,7 @@ class EntTestObjectMutatorCreationAction:
             optional_sub_object_id=self.optional_sub_object_id,
             optional_sub_object_no_ex_id=self.optional_sub_object_no_ex_id,
             self_id=self.self_id,
+            some_json=self.some_json,
             status=self.status,
             status_code=self.status_code,
             when_is_it_cool=self.when_is_it_cool,
@@ -396,6 +408,7 @@ class EntTestObjectMutatorUpdateAction:
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
     self_id: UUID | None = None
+    some_json: list[str] | None = None
     status: Status | None = None
     status_code: int | None = None
     when_is_it_cool: datetime | None = None
@@ -413,6 +426,7 @@ class EntTestObjectMutatorUpdateAction:
         self.optional_sub_object_id = ent.optional_sub_object_id
         self.optional_sub_object_no_ex_id = ent.optional_sub_object_no_ex_id
         self.self_id = ent.self_id
+        self.some_json = ent.some_json
         self.status = ent.status
         self.status_code = ent.status_code
         self.when_is_it_cool = ent.when_is_it_cool
@@ -430,6 +444,7 @@ class EntTestObjectMutatorUpdateAction:
         model.optional_sub_object_id = self.optional_sub_object_id
         model.optional_sub_object_no_ex_id = self.optional_sub_object_no_ex_id
         model.self_id = self.self_id
+        model.some_json = self.some_json
         model.status = self.status
         model.status_code = self.status_code
         model.when_is_it_cool = self.when_is_it_cool
@@ -471,6 +486,7 @@ class EntTestObjectExample:
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
         self_id: UUID | None = None,
+        some_json: list[str] | None = None,
         status: Status | None = None,
         status_code: int | None = None,
         when_is_it_cool: datetime | None = None,
@@ -513,6 +529,8 @@ class EntTestObjectExample:
         ):
             optional_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
             optional_sub_object_id = optional_sub_object_id_ent.id
+        some_json = ["hello", "world"] if isinstance(some_json, Sentinel) else some_json
+
         status = Status.HAPPY if isinstance(status, Sentinel) else status
 
         status_code = 404 if isinstance(status_code, Sentinel) else status_code
@@ -541,6 +559,7 @@ class EntTestObjectExample:
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
             self_id=self_id,
+            some_json=some_json,
             status=status,
             status_code=status_code,
             when_is_it_cool=when_is_it_cool,
