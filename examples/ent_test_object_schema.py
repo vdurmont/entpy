@@ -6,6 +6,9 @@ from entpy import EdgeField, Field, Pattern, Schema, StringField, TextField
 
 
 class EntTestObjectSchema(Schema):
+    def get_description(self):
+        return "This is an object we use to test all the ent framework features!"
+
     def get_patterns(self) -> list[Pattern]:
         return [EntTestThingPattern()]
 

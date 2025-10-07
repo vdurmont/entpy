@@ -30,6 +30,9 @@ class Descriptor(ABC):
             fields += pattern.get_all_fields()
         return _sort_fields(fields)
 
+    def get_description(self) -> str:
+        return ""
+
 
 def _sort_fields(fields: list[Field]) -> list[Field]:
     # Separate nullable and non-nullable fields

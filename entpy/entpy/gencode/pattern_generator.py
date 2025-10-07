@@ -1,5 +1,5 @@
 from entpy import Pattern, Schema
-from entpy.gencode.utils import to_snake_case
+from entpy.gencode.utils import get_description, to_snake_case
 
 
 def generate(
@@ -35,7 +35,7 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 {vc_import}
 
-class I{base_name}(ABC):
+class I{base_name}(ABC):{get_description(pattern)}
     {properties}
 
     @classmethod

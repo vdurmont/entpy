@@ -5,18 +5,18 @@ from datetime import datetime
 from evc import ExampleViewerContext
 from database import get_session
 from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import String
-from .ent_model import EntModel
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_test_sub_object import EntTestSubObject
 from sqlalchemy import Text
 from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import select
 from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_model import EntModel
+from sqlalchemy import String
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import select
 from .ent_test_thing import IEntTestThing
 from .ent_test_sub_object import EntTestSubObjectExample
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class EntTestObjectModel(EntModel):
@@ -40,6 +40,10 @@ class EntTestObjectModel(EntModel):
 
 
 class EntTestObject(Ent, IEntTestThing):
+    """
+    This is an object we use to test all the ent framework features!
+    """
+
     vc: ExampleViewerContext
     model: EntTestObjectModel
 

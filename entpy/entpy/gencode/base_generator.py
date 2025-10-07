@@ -1,6 +1,6 @@
 from entpy import EdgeField, Schema
 from entpy.gencode.generated_content import GeneratedContent
-from entpy.gencode.utils import to_snake_case
+from entpy.gencode.utils import get_description, to_snake_case
 
 
 def generate(
@@ -35,7 +35,7 @@ def generate(
     return GeneratedContent(
         imports=imports,
         code=f"""
-class {base_name}({extends}):
+class {base_name}({extends}):{get_description(schema)}
     vc: {vc_name}
     model: {base_name}Model
 
