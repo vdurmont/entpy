@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
-from framework.fields.core import Field
+from entpy.framework.fields.core import Field
 
 if TYPE_CHECKING:
-    from framework.schema import Schema
+    from entpy.framework.schema import Schema
 
 
 class EdgeField(Field):

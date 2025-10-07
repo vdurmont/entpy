@@ -1,0 +1,18 @@
+[project]
+name = "entpy-examples"
+requires-python = ">=3.12"
+version = "0.0.1"
+description = "Examples for the EntPy framework"
+authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
+dependencies = [
+    "entpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

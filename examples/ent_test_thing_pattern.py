@@ -1,4 +1,4 @@
-from framework import Field, Pattern, StringField
+from entpy import Field, Pattern, StringField
 
 
 class EntTestThingPattern(Pattern):

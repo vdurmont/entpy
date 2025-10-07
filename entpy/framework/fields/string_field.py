@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from framework.fields.core import (
+from entpy.framework.fields.core import (
     Field,
     FieldWithDynamicExample,
     FieldWithExample,

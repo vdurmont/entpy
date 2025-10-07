@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from gencode.generator import run
+from entpy.gencode.generator import run
 
 if __name__ == "__main__":
     run(

@@ -1,4 +1,4 @@
-from framework import Field, Schema, StringField
+from entpy import Field, Schema, StringField
 
 
 class EntTestSubObjectSchema(Schema):

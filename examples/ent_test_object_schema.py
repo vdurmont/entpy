@@ -2,7 +2,7 @@ import uuid
 
 from examples.ent_test_sub_object_schema import EntTestSubObjectSchema
 from examples.ent_test_thing_pattern import EntTestThingPattern
-from framework import EdgeField, Field, Pattern, Schema, StringField
+from entpy import EdgeField, Field, Pattern, Schema, StringField
 
 
 class EntTestObjectSchema(Schema):

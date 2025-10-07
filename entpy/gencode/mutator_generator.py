@@ -1,5 +1,5 @@
-from framework.schema import Schema
-from gencode.generated_content import GeneratedContent
+from entpy import Schema
+from entpy.gencode.generated_content import GeneratedContent
 
 
 def generate(

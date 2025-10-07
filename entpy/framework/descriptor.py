@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from framework.fields.core import Field
+from entpy.framework.fields.core import Field
 
 if TYPE_CHECKING:
-    from framework.pattern import Pattern
+    from entpy.framework.pattern import Pattern
 
 
 class Descriptor(ABC):

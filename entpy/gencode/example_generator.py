@@ -1,11 +1,10 @@
-from framework.fields.core import (
+from entpy import EdgeField, Schema
+from entpy.framework.fields.core import (
     FieldWithDynamicExample,
     FieldWithExample,
 )
-from framework.fields.edge_field import EdgeField
-from framework.schema import Schema
-from gencode.generated_content import GeneratedContent
-from gencode.utils import to_snake_case
+from entpy.gencode.generated_content import GeneratedContent
+from entpy.gencode.utils import to_snake_case
 
 
 def generate(
@@ -67,7 +66,7 @@ def generate(
 
     return GeneratedContent(
         imports=[
-            "from framework import Field, FieldWithDynamicExample",
+            "from entpy import Field, FieldWithDynamicExample",
             "from sentinels import NOTHING, Sentinel  # type: ignore",
             f"from {schema.__class__.__module__} import {schema.__class__.__name__}",
         ]

@@ -1,6 +1,5 @@
-from framework.pattern import Pattern
-from framework.schema import Schema
-from gencode.utils import to_snake_case
+from entpy import Pattern, Schema
+from entpy.gencode.utils import to_snake_case
 
 
 def generate(
@@ -28,10 +27,10 @@ def generate(
     )
 
     return f"""
-from abc import ABC, abstractmethod
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from uuid import UUID
-from framework import ViewerContext
+from entpy import ViewerContext
 
 class I{base_name}(ABC):
     {properties}

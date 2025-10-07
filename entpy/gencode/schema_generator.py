@@ -1,8 +1,8 @@
-from framework.schema import Schema
-from gencode.base_generator import generate as generate_base
-from gencode.example_generator import generate as generate_example
-from gencode.model_generator import generate as generate_model
-from gencode.mutator_generator import generate as generate_mutator
+from entpy import Schema
+from entpy.gencode.base_generator import generate as generate_base
+from entpy.gencode.example_generator import generate as generate_example
+from entpy.gencode.model_generator import generate as generate_model
+from entpy.gencode.mutator_generator import generate as generate_mutator
 
 
 def generate(
@@ -39,7 +39,7 @@ def generate(
 
     return f"""
 from __future__ import annotations
-from framework import ViewerContext, Ent
+from entpy import ViewerContext, Ent
 from uuid import UUID, uuid4
 from datetime import datetime
 

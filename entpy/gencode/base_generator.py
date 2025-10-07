@@ -1,7 +1,6 @@
-from framework.fields.edge_field import EdgeField
-from framework.schema import Schema
-from gencode.generated_content import GeneratedContent
-from gencode.utils import to_snake_case
+from entpy import EdgeField, Schema
+from entpy.gencode.generated_content import GeneratedContent
+from entpy.gencode.utils import to_snake_case
 
 
 def generate(

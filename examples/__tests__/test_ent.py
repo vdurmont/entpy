@@ -8,7 +8,7 @@ from examples.generated.ent_test_object import (
     EntTestObjectExample,
 )
 from examples.generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
-from framework import ViewerContext
+from entpy import ViewerContext
 
 
 async def test_ent_test_object_gen_with_existing_model(

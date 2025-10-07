@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from examples.database import get_session, init_db
-from framework import ViewerContext
+from entpy import ViewerContext
 
 
 @pytest.fixture

@@ -1,5 +1,0 @@
-from framework.descriptor import Descriptor
-
-
-class Schema(Descriptor):
-    pass

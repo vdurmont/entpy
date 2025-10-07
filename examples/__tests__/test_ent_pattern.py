@@ -6,7 +6,7 @@ from examples.generated.ent_test_object import (
 )
 from examples.generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
 from examples.generated.ent_test_thing import IEntTestThing
-from framework import ViewerContext
+from entpy import ViewerContext
 
 
 async def test_gen_from_pattern(db_session: AsyncSession, vc: ViewerContext) -> None:
