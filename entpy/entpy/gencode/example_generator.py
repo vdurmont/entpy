@@ -75,13 +75,13 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
 class {base_name}Example:
     @classmethod
     async def gen_create(
-        cls, vc: {vc_name}{arguments_definition}
+        cls, vc: {vc_name}, created_at: datetime | None = None{arguments_definition}
     ) -> {base_name}:
         # TODO make sure we only use this in test mode
 
 {arguments_assignments}
 
-        return await {base_name}Mutator.create(vc=vc{mutator_arguments}).gen_savex()
+        return await {base_name}Mutator.create(vc=vc, created_at=created_at{mutator_arguments}).gen_savex()
 
     @classmethod
     def _get_field(cls, field_name: str) -> Field:
@@ -96,5 +96,5 @@ class {base_name}Example:
         if not field:
             raise ValueError(f"Unknown field: {{field_name}}")
         return field
-""",
+""",  # noqa: E501
     )

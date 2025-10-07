@@ -1,24 +1,28 @@
 from __future__ import annotations
 from entpy import Ent
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, UTC
+from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import select
-from sqlalchemy import String
-from sqlalchemy import Text
-from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import Enum as DBEnum
-from ent_test_object_schema import Status
-from entpy import Field, FieldWithDynamicExample
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_test_sub_object import EntTestSubObject
-from ent_test_object_schema import EntTestObjectSchema
-from .ent_test_thing import IEntTestThing
-from sqlalchemy.orm import Mapped, mapped_column
 from .ent_model import EntModel
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from typing import Any
+from .ent_test_sub_object import EntTestSubObjectExample
+from .ent_test_thing import IEntTestThing
+from ent_test_object_schema import Status
+from sqlalchemy import select
+from sqlalchemy import Select
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy import Text
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy.orm import Mapped, mapped_column
+from sentinels import NOTHING, Sentinel  # type: ignore
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy.sql.expression import ColumnElement
 
 
 class EntTestObjectModel(EntModel):
@@ -188,6 +192,38 @@ class EntTestObject(Ent, IEntTestThing):
         # TODO check privacy here
         return ent
 
+    @classmethod
+    def query(cls, vc: ExampleViewerContext) -> EntTestObjectQuery:
+        return EntTestObjectQuery(vc=vc)
+
+
+class EntTestObjectQuery:
+    vc: ExampleViewerContext
+    query: Select[tuple[EntTestObjectModel]]
+
+    def __init__(self, vc: ExampleViewerContext) -> None:
+        self.vc = vc
+        self.query = select(EntTestObjectModel)
+
+    def where(self, predicate: ColumnElement[bool]) -> Self:
+        self.query = self.query.where(predicate)
+        return self
+
+    def order_by(self, predicate: ColumnElement[Any]) -> Self:
+        self.query = self.query.order_by(predicate)
+        return self
+
+    def limit(self, limit: int) -> Self:
+        self.query = self.query.limit(limit)
+        return self
+
+    async def gen(self) -> list[EntTestObject]:
+        session = get_session()
+        result = await session.execute(self.query)
+        models = result.scalars().all()
+        ents = [await EntTestObject._gen_from_model(self.vc, model) for model in models]
+        return list(filter(None, ents))
+
 
 class EntTestObjectMutator:
     @classmethod
@@ -206,10 +242,12 @@ class EntTestObjectMutator:
         self_id: UUID | None = None,
         status: Status | None = None,
         id: UUID | None = None,
+        created_at: datetime | None = None,
     ) -> EntTestObjectMutatorCreationAction:
         return EntTestObjectMutatorCreationAction(
             vc=vc,
             id=id,
+            created_at=created_at,
             a_good_thing=a_good_thing,
             firstname=firstname,
             required_sub_object_id=required_sub_object_id,
@@ -255,6 +293,7 @@ class EntTestObjectMutatorCreationAction:
         self,
         vc: ExampleViewerContext,
         id: UUID | None,
+        created_at: datetime | None,
         a_good_thing: str,
         firstname: str,
         required_sub_object_id: UUID,
@@ -269,6 +308,7 @@ class EntTestObjectMutatorCreationAction:
     ) -> None:
         self.vc = vc
         self.id = id if id else uuid4()
+        self.created_at = created_at if created_at else datetime.now(tz=UTC)
         self.a_good_thing = a_good_thing
         self.firstname = firstname
         self.required_sub_object_id = required_sub_object_id
@@ -285,6 +325,7 @@ class EntTestObjectMutatorCreationAction:
         session = get_session()
         model = EntTestObjectModel(
             id=self.id,
+            created_at=self.created_at,
             a_good_thing=self.a_good_thing,
             firstname=self.firstname,
             required_sub_object_id=self.required_sub_object_id,
@@ -375,6 +416,7 @@ class EntTestObjectExample:
     async def gen_create(
         cls,
         vc: ExampleViewerContext,
+        created_at: datetime | None = None,
         a_good_thing: str | Sentinel = NOTHING,
         firstname: str | Sentinel = NOTHING,
         required_sub_object_id: UUID | Sentinel = NOTHING,
@@ -421,6 +463,7 @@ class EntTestObjectExample:
 
         return await EntTestObjectMutator.create(
             vc=vc,
+            created_at=created_at,
             a_good_thing=a_good_thing,
             firstname=firstname,
             required_sub_object_id=required_sub_object_id,

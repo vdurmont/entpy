@@ -1,15 +1,19 @@
 from __future__ import annotations
 from entpy import Ent
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, UTC
+from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import String
-from ent_test_sub_object_schema import EntTestSubObjectSchema
-from sentinels import NOTHING, Sentinel  # type: ignore
-from entpy import Field
-from sqlalchemy.orm import Mapped, mapped_column
 from .ent_model import EntModel
+from sqlalchemy import String
+from typing import Any
+from ent_test_sub_object_schema import EntTestSubObjectSchema
+from sqlalchemy import select, Select
+from entpy import Field
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import ColumnElement
 
 
 class EntTestSubObjectModel(EntModel):
@@ -75,13 +79,53 @@ class EntTestSubObject(Ent):
         # TODO check privacy here
         return ent
 
+    @classmethod
+    def query(cls, vc: ExampleViewerContext) -> EntTestSubObjectQuery:
+        return EntTestSubObjectQuery(vc=vc)
+
+
+class EntTestSubObjectQuery:
+    vc: ExampleViewerContext
+    query: Select[tuple[EntTestSubObjectModel]]
+
+    def __init__(self, vc: ExampleViewerContext) -> None:
+        self.vc = vc
+        self.query = select(EntTestSubObjectModel)
+
+    def where(self, predicate: ColumnElement[bool]) -> Self:
+        self.query = self.query.where(predicate)
+        return self
+
+    def order_by(self, predicate: ColumnElement[Any]) -> Self:
+        self.query = self.query.order_by(predicate)
+        return self
+
+    def limit(self, limit: int) -> Self:
+        self.query = self.query.limit(limit)
+        return self
+
+    async def gen(self) -> list[EntTestSubObject]:
+        session = get_session()
+        result = await session.execute(self.query)
+        models = result.scalars().all()
+        ents = [
+            await EntTestSubObject._gen_from_model(self.vc, model) for model in models
+        ]
+        return list(filter(None, ents))
+
 
 class EntTestSubObjectMutator:
     @classmethod
     def create(
-        cls, vc: ExampleViewerContext, email: str, id: UUID | None = None
+        cls,
+        vc: ExampleViewerContext,
+        email: str,
+        id: UUID | None = None,
+        created_at: datetime | None = None,
     ) -> EntTestSubObjectMutatorCreationAction:
-        return EntTestSubObjectMutatorCreationAction(vc=vc, id=id, email=email)
+        return EntTestSubObjectMutatorCreationAction(
+            vc=vc, id=id, created_at=created_at, email=email
+        )
 
     @classmethod
     def update(
@@ -101,15 +145,23 @@ class EntTestSubObjectMutatorCreationAction:
     id: UUID
     email: str
 
-    def __init__(self, vc: ExampleViewerContext, id: UUID | None, email: str) -> None:
+    def __init__(
+        self,
+        vc: ExampleViewerContext,
+        id: UUID | None,
+        created_at: datetime | None,
+        email: str,
+    ) -> None:
         self.vc = vc
         self.id = id if id else uuid4()
+        self.created_at = created_at if created_at else datetime.now(tz=UTC)
         self.email = email
 
     async def gen_savex(self) -> EntTestSubObject:
         session = get_session()
         model = EntTestSubObjectModel(
             id=self.id,
+            created_at=self.created_at,
             email=self.email,
         )
         session.add(model)
@@ -158,13 +210,18 @@ class EntTestSubObjectMutatorDeletionAction:
 class EntTestSubObjectExample:
     @classmethod
     async def gen_create(
-        cls, vc: ExampleViewerContext, email: str | Sentinel = NOTHING
+        cls,
+        vc: ExampleViewerContext,
+        created_at: datetime | None = None,
+        email: str | Sentinel = NOTHING,
     ) -> EntTestSubObject:
         # TODO make sure we only use this in test mode
 
         email = "vdurmont@gmail.com" if isinstance(email, Sentinel) else email
 
-        return await EntTestSubObjectMutator.create(vc=vc, email=email).gen_savex()
+        return await EntTestSubObjectMutator.create(
+            vc=vc, created_at=created_at, email=email
+        ).gen_savex()
 
     @classmethod
     def _get_field(cls, field_name: str) -> Field:

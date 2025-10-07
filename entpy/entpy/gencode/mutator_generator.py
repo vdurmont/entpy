@@ -53,9 +53,9 @@ def _generate_base(schema: Schema, base_name: str, vc_name: str) -> GeneratedCon
 class {base_name}Mutator:
     @classmethod
     def create(
-        cls, vc: {vc_name}{arguments_definition}, id: UUID | None = None
+        cls, vc: {vc_name}{arguments_definition}, id: UUID | None = None, created_at: datetime | None = None
     ) -> {base_name}MutatorCreationAction:
-        return {base_name}MutatorCreationAction(vc=vc, id=id{arguments_usage})
+        return {base_name}MutatorCreationAction(vc=vc, id=id, created_at=created_at{arguments_usage})
 
     @classmethod
     def update(
@@ -68,7 +68,7 @@ class {base_name}Mutator:
         cls, vc: {vc_name}, ent: {base_name}
     ) -> {base_name}MutatorDeletionAction:
         return {base_name}MutatorDeletionAction(vc=vc, ent=ent)
-""",
+""",  # noqa: E501
     )
 
 
@@ -112,22 +112,24 @@ class {base_name}MutatorCreationAction:
     id: UUID
 {local_variables}
 
-    def __init__(self, vc: {vc_name}, id: UUID | None{constructor_arguments}) -> None:
+    def __init__(self, vc: {vc_name}, id: UUID | None, created_at: datetime | None{constructor_arguments}) -> None:
         self.vc = vc
         self.id = id if id else uuid4()
+        self.created_at = created_at if created_at else datetime.now(tz=UTC)
 {constructor_assignments}
 
     async def gen_savex(self) -> {base_name}:
         session = {session_getter_fn_name}()
         model = {base_name}Model(
             id=self.id,
+            created_at=self.created_at,
 {model_assignments}
         )
         session.add(model)
         await session.flush()
         # TODO privacy checks
         return await {base_name}._genx_from_model(self.vc, model)
-""",
+""",  # noqa: E501
     )
 
 

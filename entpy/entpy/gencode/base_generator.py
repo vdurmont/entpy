@@ -93,6 +93,10 @@ class {base_name}({extends}):{get_description(schema)}
         ent = {base_name}(vc=vc, model=model)
         # TODO check privacy here
         return ent
+
+    @classmethod
+    def query(cls, vc: {vc_name}) -> {base_name}Query:
+        return {base_name}Query(vc=vc)
 """,
     )
 

@@ -3,6 +3,7 @@ from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.mutator_generator import generate as generate_mutator
+from entpy.gencode.query_generator import generate as generate_query
 
 
 def generate(
@@ -23,6 +24,12 @@ def generate(
         session_getter_fn_name=session_getter_fn_name,
         vc_name=vc_name,
     )
+    query_content = generate_query(
+        schema=schema,
+        base_name=base_name,
+        session_getter_fn_name=session_getter_fn_name,
+        vc_name=vc_name,
+    )
     mutator_content = generate_mutator(
         schema=schema,
         base_name=base_name,
@@ -37,6 +44,7 @@ def generate(
         [ent_model_import]
         + model_content.imports
         + base_content.imports
+        + query_content.imports
         + mutator_content.imports
         + example_content.imports
     )
@@ -47,7 +55,8 @@ def generate(
 from __future__ import annotations
 from entpy import Ent
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, UTC
+from typing import Self
 {vc_import}
 {session_getter_import}
 {imports_code}
@@ -55,6 +64,8 @@ from datetime import datetime
 {model_content.code}
 
 {base_content.code}
+
+{query_content.code}
 
 {mutator_content.code}
 

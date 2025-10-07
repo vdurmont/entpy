@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Generic, Self, TypeVar
-
-if TYPE_CHECKING:
-    pass
+from typing import Generic, Self, TypeVar
 
 
 class Field(ABC):
