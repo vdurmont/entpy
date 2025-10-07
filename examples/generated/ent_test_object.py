@@ -5,23 +5,23 @@ from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import ForeignKey
 from entpy import Field, FieldWithDynamicExample
-from sentinels import NOTHING, Sentinel  # type: ignore
 from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import ForeignKey
 from sqlalchemy import String
-from sqlalchemy.sql.expression import ColumnElement
-from .ent_model import EntModel
-from .ent_test_thing import IEntTestThing
-from sqlalchemy import select, Select
 from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import select, Select
+from .ent_model import EntModel
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from .ent_test_thing import IEntTestThing
+from typing import Any
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Text
 from ent_test_object_schema import Status
 from .ent_test_sub_object import EntTestSubObjectExample
-from typing import Any
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import Enum as DBEnum
 
 
 class EntTestObjectModel(EntModel):
@@ -91,6 +91,9 @@ class EntTestObject(Ent, IEntTestThing):
 
     @property
     def username(self) -> str:
+        """
+        This is the username that you will use on the platform.
+        """
         return self.model.username
 
     @property

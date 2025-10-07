@@ -106,9 +106,15 @@ def _generate_accessors(schema: Schema) -> str:
     accessors_code = ""
     for field in fields:
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
+        description = field.description
+        if description:
+            description = f"""\"\"\"
+        {description}
+        \"\"\"
+        """
         accessors_code += f"""    @property
     def {field.name}(self) -> {accessor_type}:
-        return self.model.{field.name}
+        {description if description else ""}return self.model.{field.name}
 
 """
 

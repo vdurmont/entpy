@@ -10,6 +10,7 @@ class Field(ABC):
     original_name: str
     nullable: bool = True
     is_unique: bool = False
+    description: str | None = None
 
     def __init__(self, name: str, actual_name: str | None = None):
         self.original_name = name
@@ -25,6 +26,10 @@ class Field(ABC):
 
     def unique(self) -> Self:
         self.is_unique = True
+        return self
+
+    def documentation(self, doc: str) -> Self:
+        self.description = doc
         return self
 
 

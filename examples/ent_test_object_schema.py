@@ -23,6 +23,7 @@ class EntTestObjectSchema(Schema):
             StringField("username", 100)
             .not_null()
             .unique()
+            .documentation("This is the username that you will use on the platform.")
             .dynamic_example(lambda: str(uuid.uuid4())),
             StringField("firstname", 100).not_null().example("Vincent"),
             StringField("lastname", 100),
