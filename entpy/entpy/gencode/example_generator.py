@@ -7,10 +7,7 @@ from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import to_snake_case
 
 
-def generate(
-    schema: Schema,
-    base_name: str,
-) -> GeneratedContent:
+def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
     # Build up the list of arguments the gen_create function takes
     arguments_definition = ""
     for field in schema.get_all_fields():
@@ -75,7 +72,7 @@ def generate(
 class {base_name}Example:
     @classmethod
     async def gen_create(
-        cls, vc: ViewerContext{arguments_definition}
+        cls, vc: {vc_name}{arguments_definition}
     ) -> {base_name}:
         # TODO make sure we only use this in test mode
 

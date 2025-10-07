@@ -4,9 +4,7 @@ from entpy.gencode.utils import to_snake_case
 
 
 def generate(
-    schema: Schema,
-    base_name: str,
-    session_getter_fn_name: str,
+    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
 ) -> GeneratedContent:
     extends = ",".join(
         ["Ent"]
@@ -18,7 +16,9 @@ def generate(
 
     accessors = _generate_accessors(schema)
 
-    unique_gens = _generate_unique_gens(schema=schema, base_name=base_name)
+    unique_gens = _generate_unique_gens(
+        schema=schema, base_name=base_name, vc_name=vc_name
+    )
 
     imports = []
 
@@ -36,10 +36,10 @@ def generate(
         imports=imports,
         code=f"""
 class {base_name}({extends}):
-    vc: ViewerContext
+    vc: {vc_name}
     model: {base_name}Model
 
-    def __init__(self, vc: ViewerContext, model: {base_name}Model) -> None:
+    def __init__(self, vc: {vc_name}, model: {base_name}Model) -> None:
         self.vc = vc
         self.model = model
 
@@ -59,7 +59,7 @@ class {base_name}({extends}):
 
     @classmethod
     async def genx(
-        cls, vc: ViewerContext, ent_id: UUID
+        cls, vc: {vc_name}, ent_id: UUID
     ) -> {base_name}:
         ent = await cls.gen(vc, ent_id)
         if not ent:
@@ -68,7 +68,7 @@ class {base_name}({extends}):
 
     @classmethod
     async def gen(
-        cls, vc: ViewerContext, ent_id: UUID
+        cls, vc: {vc_name}, ent_id: UUID
     ) -> {base_name} | None:
         session = {session_getter_fn_name}()
         model = await session.get({base_name}Model, ent_id)
@@ -78,7 +78,7 @@ class {base_name}({extends}):
 
     @classmethod
     async def _gen_from_model(
-        cls, vc: ViewerContext, model: {base_name}Model | None
+        cls, vc: {vc_name}, model: {base_name}Model | None
     ) -> {base_name} | None:
         if not model:
             return None
@@ -88,7 +88,7 @@ class {base_name}({extends}):
 
     @classmethod
     async def _genx_from_model(
-        cls, vc: ViewerContext, model: {base_name}Model
+        cls, vc: {vc_name}, model: {base_name}Model
     ) -> {base_name}:
         ent = {base_name}(vc=vc, model=model)
         # TODO check privacy here
@@ -128,13 +128,13 @@ def _generate_accessors(schema: Schema) -> str:
     return accessors_code
 
 
-def _generate_unique_gens(schema: Schema, base_name: str) -> str:
+def _generate_unique_gens(schema: Schema, base_name: str, vc_name: str) -> str:
     unique_gens = ""
     for field in schema.get_all_fields():
         if field.is_unique:
             unique_gens += f"""
     @classmethod
-    async def gen_from_{field.name}(cls, vc: ViewerContext, {field.name}: {field.get_python_type()}) -> {base_name} | None:
+    async def gen_from_{field.name}(cls, vc: {vc_name}, {field.name}: {field.get_python_type()}) -> {base_name} | None:
         session = get_session()
         result = await session.execute(
             select({base_name}Model)
@@ -144,7 +144,7 @@ def _generate_unique_gens(schema: Schema, base_name: str) -> str:
         return await cls._gen_from_model(vc, model)
 
     @classmethod
-    async def genx_from_{field.name}(cls, vc: ViewerContext, {field.name}: {field.get_python_type()}) -> {base_name}:
+    async def genx_from_{field.name}(cls, vc: {vc_name}, {field.name}: {field.get_python_type()}) -> {base_name}:
         result = await cls.gen_from_{field.name}(vc, {field.name})
         if not result:
             raise ValueError(f"No EntTestObject found for {field.name} {{{field.name}}}")

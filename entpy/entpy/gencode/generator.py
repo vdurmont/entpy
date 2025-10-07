@@ -14,6 +14,8 @@ def run(
     base_import: str,
     session_getter_import: str,
     session_getter_fn_name: str,
+    vc_import: str,
+    vc_name: str,
 ) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()
@@ -45,6 +47,8 @@ def run(
                 ent_model_import="from .ent_model import EntModel",
                 session_getter_import=session_getter_import,
                 session_getter_fn_name=session_getter_fn_name,
+                vc_import=vc_import,
+                vc_name=vc_name,
             )
         elif issubclass(descriptor_class, Pattern):
             code = generate_pattern(
@@ -52,6 +56,8 @@ def run(
                 children_schema_classes=get_children_schema_classes(
                     pattern_class=descriptor_class,
                 ),
+                vc_import=vc_import,
+                vc_name=vc_name,
             )
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")

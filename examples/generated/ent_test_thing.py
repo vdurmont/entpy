@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from uuid import UUID
-from entpy import ViewerContext
+from evc import ExampleViewerContext
 
 
 class IEntTestThing(ABC):
@@ -11,7 +11,7 @@ class IEntTestThing(ABC):
         pass
 
     @classmethod
-    async def gen(cls, vc: ViewerContext, ent_id: UUID) -> IEntTestThing | None:
+    async def gen(cls, vc: ExampleViewerContext, ent_id: UUID) -> IEntTestThing | None:
         # TODO refactor this to read the bytes from the UUID
 
         from .ent_test_object import EntTestObject
@@ -23,7 +23,7 @@ class IEntTestThing(ABC):
         return None
 
     @classmethod
-    async def genx(cls, vc: ViewerContext, ent_id: UUID) -> IEntTestThing:
+    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> IEntTestThing:
         # TODO refactor this to read the bytes from the UUID
 
         from .ent_test_object import EntTestObject

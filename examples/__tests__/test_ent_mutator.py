@@ -8,10 +8,10 @@ from generated.ent_test_object import (
     EntTestObjectMutator,
 )
 from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
-from entpy import ViewerContext
+from evc import ExampleViewerContext
 
 
-async def test_creation(db_session: AsyncSession, vc: ViewerContext) -> None:
+async def test_creation(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
     ent = await EntTestObjectMutator.create(
         vc=vc,
         a_good_thing="Eating cheese",
@@ -29,7 +29,7 @@ async def test_creation(db_session: AsyncSession, vc: ViewerContext) -> None:
     assert ent.firstname == "Vincent"
 
 
-async def test_update(db_session: AsyncSession, vc: ViewerContext) -> None:
+async def test_update(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
     name = "Chris"
 
     ent = await EntTestObjectExample.gen_create(vc=vc)
@@ -43,7 +43,7 @@ async def test_update(db_session: AsyncSession, vc: ViewerContext) -> None:
     assert ent.firstname == name, "Name should have been updated"
 
 
-async def test_deletion(db_session: AsyncSession, vc: ViewerContext) -> None:
+async def test_deletion(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
     ent = await EntTestObjectExample.gen_create(vc=vc)
 
     await EntTestObjectMutator.delete(vc, ent).gen_save()

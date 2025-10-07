@@ -3,7 +3,10 @@ from entpy.gencode.utils import to_snake_case
 
 
 def generate(
-    pattern_class: type[Pattern], children_schema_classes: list[type[Schema]]
+    pattern_class: type[Pattern],
+    children_schema_classes: list[type[Schema]],
+    vc_import: str,
+    vc_name: str,
 ) -> str:
     pattern = pattern_class()
     base_name = pattern_class.__name__.replace("Pattern", "")
@@ -30,19 +33,19 @@ def generate(
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from uuid import UUID
-from entpy import ViewerContext
+{vc_import}
 
 class I{base_name}(ABC):
     {properties}
 
     @classmethod
-    async def gen(cls, vc: ViewerContext, ent_id: UUID) -> I{base_name} | None:
+    async def gen(cls, vc: {vc_name}, ent_id: UUID) -> I{base_name} | None:
         # TODO refactor this to read the bytes from the UUID
         {loaders_gen}
         return None
 
     @classmethod
-    async def genx(cls, vc: ViewerContext, ent_id: UUID) -> I{base_name}:
+    async def genx(cls, vc: {vc_name}, ent_id: UUID) -> I{base_name}:
         # TODO refactor this to read the bytes from the UUID
         {loaders_genx}
         raise ValueError(f"No {base_name} found for ID {{ent_id}}")

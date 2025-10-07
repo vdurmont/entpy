@@ -3,25 +3,26 @@ from entpy.gencode.generated_content import GeneratedContent
 
 
 def generate(
-    schema: Schema,
-    base_name: str,
-    session_getter_fn_name: str,
+    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
 ) -> GeneratedContent:
-    base = _generate_base(schema=schema, base_name=base_name)
+    base = _generate_base(schema=schema, base_name=base_name, vc_name=vc_name)
     creation = _generate_creation(
         schema=schema,
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
+        vc_name=vc_name,
     )
     update = _generate_update(
         schema=schema,
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
+        vc_name=vc_name,
     )
     deletion = _generate_deletion(
         schema=schema,
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
+        vc_name=vc_name,
     )
     return GeneratedContent(
         imports=base.imports + creation.imports + deletion.imports,
@@ -35,7 +36,7 @@ def generate(
     )
 
 
-def _generate_base(schema: Schema, base_name: str) -> GeneratedContent:
+def _generate_base(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
     # Build up the list of arguments the create function takes
     arguments_definition = ""
     for field in schema.get_all_fields():
@@ -52,19 +53,19 @@ def _generate_base(schema: Schema, base_name: str) -> GeneratedContent:
 class {base_name}Mutator:
     @classmethod
     def create(
-        cls, vc: ViewerContext{arguments_definition}
+        cls, vc: {vc_name}{arguments_definition}
     ) -> {base_name}MutatorCreationAction:
         return {base_name}MutatorCreationAction(vc=vc{arguments_usage})
 
     @classmethod
     def update(
-        cls, vc: ViewerContext, ent: {base_name}
+        cls, vc: {vc_name}, ent: {base_name}
     ) -> {base_name}MutatorUpdateAction:
         return {base_name}MutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
     def delete(
-        cls, vc: ViewerContext, ent: {base_name}
+        cls, vc: {vc_name}, ent: {base_name}
     ) -> {base_name}MutatorDeletionAction:
         return {base_name}MutatorDeletionAction(vc=vc, ent=ent)
 """,
@@ -72,9 +73,7 @@ class {base_name}Mutator:
 
 
 def _generate_creation(
-    schema: Schema,
-    base_name: str,
-    session_getter_fn_name: str,
+    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
 ) -> GeneratedContent:
     # Build up the list of local variables we will store in the class
     local_variables = ""
@@ -109,11 +108,11 @@ def _generate_creation(
     return GeneratedContent(
         code=f"""
 class {base_name}MutatorCreationAction:
-    vc: ViewerContext
+    vc: {vc_name}
     id: UUID
 {local_variables}
 
-    def __init__(self, vc: ViewerContext{constructor_arguments}) -> None:
+    def __init__(self, vc: {vc_name}{constructor_arguments}) -> None:
         self.vc = vc
         self.id = uuid4()
 {constructor_assignments}
@@ -133,7 +132,7 @@ class {base_name}MutatorCreationAction:
 
 
 def _generate_update(
-    schema: Schema, base_name: str, session_getter_fn_name: str
+    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
 ) -> GeneratedContent:
     fields = schema.get_all_fields()
 
@@ -159,12 +158,12 @@ def _generate_update(
     return GeneratedContent(
         code=f"""
 class {base_name}MutatorUpdateAction:
-    vc: ViewerContext
+    vc: {vc_name}
     ent: {base_name}
     id: UUID
 {local_variables}
 
-    def __init__(self, vc: ViewerContext, ent: {base_name}) -> None:
+    def __init__(self, vc: {vc_name}, ent: {base_name}) -> None:
         self.vc = vc
         self.ent = ent
 {local_variables_assignments}
@@ -182,15 +181,15 @@ class {base_name}MutatorUpdateAction:
 
 
 def _generate_deletion(
-    schema: Schema, base_name: str, session_getter_fn_name: str
+    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
 ) -> GeneratedContent:
     return GeneratedContent(
         code=f"""
 class {base_name}MutatorDeletionAction:
-    vc: ViewerContext
+    vc: {vc_name}
     ent: {base_name}
 
-    def __init__(self, vc: ViewerContext, ent: {base_name}) -> None:
+    def __init__(self, vc: {vc_name}, ent: {base_name}) -> None:
         self.vc = vc
         self.ent = ent
 

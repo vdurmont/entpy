@@ -10,6 +10,8 @@ def generate(
     ent_model_import: str,
     session_getter_import: str,
     session_getter_fn_name: str,
+    vc_import: str,
+    vc_name: str,
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.replace("Schema", "")
@@ -19,13 +21,17 @@ def generate(
         schema=schema,
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
+        vc_name=vc_name,
     )
     mutator_content = generate_mutator(
         schema=schema,
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
+        vc_name=vc_name,
     )
-    example_content = generate_example(schema=schema, base_name=base_name)
+    example_content = generate_example(
+        schema=schema, base_name=base_name, vc_name=vc_name
+    )
 
     imports = (
         [ent_model_import]
@@ -42,7 +48,7 @@ from __future__ import annotations
 from entpy import ViewerContext, Ent
 from uuid import UUID, uuid4
 from datetime import datetime
-
+{vc_import}
 {session_getter_import}
 {imports_code}
 

@@ -8,11 +8,11 @@ from generated.ent_test_object import (
     EntTestObjectExample,
 )
 from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
-from entpy import ViewerContext
+from evc import ExampleViewerContext
 
 
 async def test_ent_test_object_gen_with_existing_model(
-    db_session: AsyncSession, vc: ViewerContext
+    db_session: AsyncSession, vc: ExampleViewerContext
 ) -> None:
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
@@ -23,7 +23,7 @@ async def test_ent_test_object_gen_with_existing_model(
 
 
 async def test_ent_test_object_gen_with_unknown_model(
-    db_session: AsyncSession, vc: ViewerContext
+    db_session: AsyncSession, vc: ExampleViewerContext
 ) -> None:
     ent_id = uuid.uuid4()
     result = await EntTestObject.gen(vc, ent_id)
@@ -32,7 +32,7 @@ async def test_ent_test_object_gen_with_unknown_model(
 
 
 async def test_ent_test_object_genx_with_existing_model(
-    db_session: AsyncSession, vc: ViewerContext
+    db_session: AsyncSession, vc: ExampleViewerContext
 ) -> None:
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
@@ -43,14 +43,16 @@ async def test_ent_test_object_genx_with_existing_model(
 
 
 async def test_ent_test_object_genx_with_unknown_model(
-    db_session: AsyncSession, vc: ViewerContext
+    db_session: AsyncSession, vc: ExampleViewerContext
 ) -> None:
     ent_id = uuid.uuid4()
     with pytest.raises(ValueError):
         await EntTestObject.genx(vc, ent_id)
 
 
-async def test_edges_work_well(db_session: AsyncSession, vc: ViewerContext) -> None:
+async def test_edges_work_well(
+    db_session: AsyncSession, vc: ExampleViewerContext
+) -> None:
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
     # Check required
@@ -76,7 +78,7 @@ async def test_edges_work_well(db_session: AsyncSession, vc: ViewerContext) -> N
 
 
 async def test_pattern_fields_are_written_properly(
-    db_session: AsyncSession, vc: ViewerContext
+    db_session: AsyncSession, vc: ExampleViewerContext
 ) -> None:
     good = "Taking a nap"
     ent = await EntTestObjectExample.gen_create(vc, a_good_thing=good)
@@ -87,7 +89,7 @@ async def test_pattern_fields_are_written_properly(
 
 
 async def test_gen_and_genx_from_unique_field(
-    db_session: AsyncSession, vc: ViewerContext
+    db_session: AsyncSession, vc: ExampleViewerContext
 ) -> None:
     username = "vdurmont_" + str(uuid.uuid4())
     other_username = "vdurmont_" + str(uuid.uuid4())

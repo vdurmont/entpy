@@ -1,15 +1,15 @@
 from __future__ import annotations
-from entpy import ViewerContext, Ent
+from entpy import Ent
 from uuid import UUID, uuid4
 from datetime import datetime
-
+from evc import ExampleViewerContext
 from database import get_session
 from sqlalchemy.orm import Mapped, mapped_column
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_model import EntModel
-from entpy import Field
-from sqlalchemy import String
 from ent_test_sub_object_schema import EntTestSubObjectSchema
+from entpy import Field
+from .ent_model import EntModel
+from sqlalchemy import String
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestSubObjectModel(EntModel):
@@ -19,10 +19,10 @@ class EntTestSubObjectModel(EntModel):
 
 
 class EntTestSubObject(Ent):
-    vc: ViewerContext
+    vc: ExampleViewerContext
     model: EntTestSubObjectModel
 
-    def __init__(self, vc: ViewerContext, model: EntTestSubObjectModel) -> None:
+    def __init__(self, vc: ExampleViewerContext, model: EntTestSubObjectModel) -> None:
         self.vc = vc
         self.model = model
 
@@ -43,21 +43,23 @@ class EntTestSubObject(Ent):
         return self.model.email
 
     @classmethod
-    async def genx(cls, vc: ViewerContext, ent_id: UUID) -> EntTestSubObject:
+    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestSubObject:
         ent = await cls.gen(vc, ent_id)
         if not ent:
             raise ValueError(f"No EntTestSubObject found for ID {ent_id}")
         return ent
 
     @classmethod
-    async def gen(cls, vc: ViewerContext, ent_id: UUID) -> EntTestSubObject | None:
+    async def gen(
+        cls, vc: ExampleViewerContext, ent_id: UUID
+    ) -> EntTestSubObject | None:
         session = get_session()
         model = await session.get(EntTestSubObjectModel, ent_id)
         return await cls._gen_from_model(vc, model)
 
     @classmethod
     async def _gen_from_model(
-        cls, vc: ViewerContext, model: EntTestSubObjectModel | None
+        cls, vc: ExampleViewerContext, model: EntTestSubObjectModel | None
     ) -> EntTestSubObject | None:
         if not model:
             return None
@@ -67,7 +69,7 @@ class EntTestSubObject(Ent):
 
     @classmethod
     async def _genx_from_model(
-        cls, vc: ViewerContext, model: EntTestSubObjectModel
+        cls, vc: ExampleViewerContext, model: EntTestSubObjectModel
     ) -> EntTestSubObject:
         ent = EntTestSubObject(vc=vc, model=model)
         # TODO check privacy here
@@ -77,29 +79,29 @@ class EntTestSubObject(Ent):
 class EntTestSubObjectMutator:
     @classmethod
     def create(
-        cls, vc: ViewerContext, email: str
+        cls, vc: ExampleViewerContext, email: str
     ) -> EntTestSubObjectMutatorCreationAction:
         return EntTestSubObjectMutatorCreationAction(vc=vc, email=email)
 
     @classmethod
     def update(
-        cls, vc: ViewerContext, ent: EntTestSubObject
+        cls, vc: ExampleViewerContext, ent: EntTestSubObject
     ) -> EntTestSubObjectMutatorUpdateAction:
         return EntTestSubObjectMutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
     def delete(
-        cls, vc: ViewerContext, ent: EntTestSubObject
+        cls, vc: ExampleViewerContext, ent: EntTestSubObject
     ) -> EntTestSubObjectMutatorDeletionAction:
         return EntTestSubObjectMutatorDeletionAction(vc=vc, ent=ent)
 
 
 class EntTestSubObjectMutatorCreationAction:
-    vc: ViewerContext
+    vc: ExampleViewerContext
     id: UUID
     email: str
 
-    def __init__(self, vc: ViewerContext, email: str) -> None:
+    def __init__(self, vc: ExampleViewerContext, email: str) -> None:
         self.vc = vc
         self.id = uuid4()
         self.email = email
@@ -117,12 +119,12 @@ class EntTestSubObjectMutatorCreationAction:
 
 
 class EntTestSubObjectMutatorUpdateAction:
-    vc: ViewerContext
+    vc: ExampleViewerContext
     ent: EntTestSubObject
     id: UUID
     email: str
 
-    def __init__(self, vc: ViewerContext, ent: EntTestSubObject) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntTestSubObject) -> None:
         self.vc = vc
         self.ent = ent
         self.email = ent.email
@@ -138,10 +140,10 @@ class EntTestSubObjectMutatorUpdateAction:
 
 
 class EntTestSubObjectMutatorDeletionAction:
-    vc: ViewerContext
+    vc: ExampleViewerContext
     ent: EntTestSubObject
 
-    def __init__(self, vc: ViewerContext, ent: EntTestSubObject) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntTestSubObject) -> None:
         self.vc = vc
         self.ent = ent
 
@@ -156,7 +158,7 @@ class EntTestSubObjectMutatorDeletionAction:
 class EntTestSubObjectExample:
     @classmethod
     async def gen_create(
-        cls, vc: ViewerContext, email: str | Sentinel = NOTHING
+        cls, vc: ExampleViewerContext, email: str | Sentinel = NOTHING
     ) -> EntTestSubObject:
         # TODO make sure we only use this in test mode
 

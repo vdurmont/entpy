@@ -6,10 +6,12 @@ from generated.ent_test_object import (
 )
 from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
 from generated.ent_test_thing import IEntTestThing
-from entpy import ViewerContext
+from evc import ExampleViewerContext
 
 
-async def test_gen_from_pattern(db_session: AsyncSession, vc: ViewerContext) -> None:
+async def test_gen_from_pattern(
+    db_session: AsyncSession, vc: ExampleViewerContext
+) -> None:
     ent = await EntTestObjectExample.gen_create(vc)
 
     result = await IEntTestThing.gen(vc, ent.id)
@@ -18,7 +20,9 @@ async def test_gen_from_pattern(db_session: AsyncSession, vc: ViewerContext) -> 
     assert isinstance(result, EntTestObject), "we should get the right type"
 
 
-async def test_genx_from_pattern(db_session: AsyncSession, vc: ViewerContext) -> None:
+async def test_genx_from_pattern(
+    db_session: AsyncSession, vc: ExampleViewerContext
+) -> None:
     ent = await EntTestObjectExample.gen_create(vc)
 
     result = await IEntTestThing.genx(vc, ent.id)

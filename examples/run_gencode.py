@@ -9,4 +9,6 @@ if __name__ == "__main__":
         base_import="from database import Base",
         session_getter_import="from database import get_session",
         session_getter_fn_name="get_session",
+        vc_import="from evc import ExampleViewerContext",
+        vc_name="ExampleViewerContext",
     )

@@ -1,20 +1,20 @@
 from __future__ import annotations
-from entpy import ViewerContext, Ent
+from entpy import Ent
 from uuid import UUID, uuid4
 from datetime import datetime
-
+from evc import ExampleViewerContext
 from database import get_session
-from .ent_test_thing import IEntTestThing
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.orm import Mapped, mapped_column
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_model import EntModel
-from entpy import Field, FieldWithDynamicExample
-from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import select
-from sqlalchemy import ForeignKey, String
 from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy.orm import Mapped, mapped_column
+from .ent_test_sub_object import EntTestSubObjectExample
+from .ent_test_thing import IEntTestThing
+from entpy import Field, FieldWithDynamicExample
+from .ent_model import EntModel
+from sqlalchemy import ForeignKey, String
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 
 class EntTestObjectModel(EntModel):
@@ -37,10 +37,10 @@ class EntTestObjectModel(EntModel):
 
 
 class EntTestObject(Ent, IEntTestThing):
-    vc: ViewerContext
+    vc: ExampleViewerContext
     model: EntTestObjectModel
 
-    def __init__(self, vc: ViewerContext, model: EntTestObjectModel) -> None:
+    def __init__(self, vc: ExampleViewerContext, model: EntTestObjectModel) -> None:
         self.vc = vc
         self.model = model
 
@@ -106,21 +106,21 @@ class EntTestObject(Ent, IEntTestThing):
         return None
 
     @classmethod
-    async def genx(cls, vc: ViewerContext, ent_id: UUID) -> EntTestObject:
+    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject:
         ent = await cls.gen(vc, ent_id)
         if not ent:
             raise ValueError(f"No EntTestObject found for ID {ent_id}")
         return ent
 
     @classmethod
-    async def gen(cls, vc: ViewerContext, ent_id: UUID) -> EntTestObject | None:
+    async def gen(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject | None:
         session = get_session()
         model = await session.get(EntTestObjectModel, ent_id)
         return await cls._gen_from_model(vc, model)
 
     @classmethod
     async def gen_from_username(
-        cls, vc: ViewerContext, username: str
+        cls, vc: ExampleViewerContext, username: str
     ) -> EntTestObject | None:
         session = get_session()
         result = await session.execute(
@@ -131,7 +131,7 @@ class EntTestObject(Ent, IEntTestThing):
 
     @classmethod
     async def genx_from_username(
-        cls, vc: ViewerContext, username: str
+        cls, vc: ExampleViewerContext, username: str
     ) -> EntTestObject:
         result = await cls.gen_from_username(vc, username)
         if not result:
@@ -140,7 +140,7 @@ class EntTestObject(Ent, IEntTestThing):
 
     @classmethod
     async def _gen_from_model(
-        cls, vc: ViewerContext, model: EntTestObjectModel | None
+        cls, vc: ExampleViewerContext, model: EntTestObjectModel | None
     ) -> EntTestObject | None:
         if not model:
             return None
@@ -150,7 +150,7 @@ class EntTestObject(Ent, IEntTestThing):
 
     @classmethod
     async def _genx_from_model(
-        cls, vc: ViewerContext, model: EntTestObjectModel
+        cls, vc: ExampleViewerContext, model: EntTestObjectModel
     ) -> EntTestObject:
         ent = EntTestObject(vc=vc, model=model)
         # TODO check privacy here
@@ -161,7 +161,7 @@ class EntTestObjectMutator:
     @classmethod
     def create(
         cls,
-        vc: ViewerContext,
+        vc: ExampleViewerContext,
         a_good_thing: str,
         firstname: str,
         required_sub_object_id: UUID,
@@ -185,19 +185,19 @@ class EntTestObjectMutator:
 
     @classmethod
     def update(
-        cls, vc: ViewerContext, ent: EntTestObject
+        cls, vc: ExampleViewerContext, ent: EntTestObject
     ) -> EntTestObjectMutatorUpdateAction:
         return EntTestObjectMutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
     def delete(
-        cls, vc: ViewerContext, ent: EntTestObject
+        cls, vc: ExampleViewerContext, ent: EntTestObject
     ) -> EntTestObjectMutatorDeletionAction:
         return EntTestObjectMutatorDeletionAction(vc=vc, ent=ent)
 
 
 class EntTestObjectMutatorCreationAction:
-    vc: ViewerContext
+    vc: ExampleViewerContext
     id: UUID
     a_good_thing: str
     firstname: str
@@ -210,7 +210,7 @@ class EntTestObjectMutatorCreationAction:
 
     def __init__(
         self,
-        vc: ViewerContext,
+        vc: ExampleViewerContext,
         a_good_thing: str,
         firstname: str,
         required_sub_object_id: UUID,
@@ -251,7 +251,7 @@ class EntTestObjectMutatorCreationAction:
 
 
 class EntTestObjectMutatorUpdateAction:
-    vc: ViewerContext
+    vc: ExampleViewerContext
     ent: EntTestObject
     id: UUID
     a_good_thing: str
@@ -263,7 +263,7 @@ class EntTestObjectMutatorUpdateAction:
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
 
-    def __init__(self, vc: ViewerContext, ent: EntTestObject) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject) -> None:
         self.vc = vc
         self.ent = ent
         self.a_good_thing = ent.a_good_thing
@@ -293,10 +293,10 @@ class EntTestObjectMutatorUpdateAction:
 
 
 class EntTestObjectMutatorDeletionAction:
-    vc: ViewerContext
+    vc: ExampleViewerContext
     ent: EntTestObject
 
-    def __init__(self, vc: ViewerContext, ent: EntTestObject) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject) -> None:
         self.vc = vc
         self.ent = ent
 
@@ -312,7 +312,7 @@ class EntTestObjectExample:
     @classmethod
     async def gen_create(
         cls,
-        vc: ViewerContext,
+        vc: ExampleViewerContext,
         a_good_thing: str | Sentinel = NOTHING,
         firstname: str | Sentinel = NOTHING,
         required_sub_object_id: UUID | Sentinel = NOTHING,
