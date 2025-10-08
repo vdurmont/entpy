@@ -289,6 +289,5 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 - limit the limit in queries
 - make sure field names are unique (also check edge fields vs XXX_id fields)
 - delete cascade?
-- add generated code header
 - entquery in patterns
 - doc for entquery
