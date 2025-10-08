@@ -45,6 +45,7 @@ uv run python ent_gencode.py
 
 The framework will generate a file in `./entities/ent_my_object.py` that contains:
 - `EntMyObject`, the main class you will use to access the data
+- `EntMyObjectQuery`, a utility class that wraps the SQL Alchemy query API and enables you to query ents
 - `EntMyObjectMutator`, a utility class to handle mutations (creation, update, deletion) for your ent in a safe way
 - `EntMyObjectExample`, a utility class for your tests to generate ents pre-popualted with test/example data
 
@@ -52,7 +53,13 @@ The framework will generate a file in `./entities/ent_my_object.py` that contain
 
 ## ViewerContext
 
-// TODO write me
+A `ViewerContext` (or VC) is a class that holds information about the identity of the person/service that is currently executing the code. It is used heavily in EntPrivacy to determine if the current viewer can access/modify the data.
+
+There are 2 special ViewerContexts:
+- `omniscient`, which means you can see everything
+- `all_powerful`, which means you can see and do everything
+
+Those VCs should be used as little as possible and only in situations where it is absolutely impossible to have the real identity of the viewer.
 
 ## Reading an Ent
 
@@ -130,6 +137,11 @@ Fields have a set of common attributes, such as:
 - `unique()`, which sets a unique index on that field and generates additional functions to get an Ent from that field: `gen_from_xxxx` and `genx_from_xxxx`.
 
 Then, we have a list of field types that are provided by the framework:
+- `IntField` that stores an integer.
+
+```python
+IntField("my_int")
+```
 - `StringField` that stores a string. You need to pass the length of the string.
 
 ```python
@@ -219,3 +231,6 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 - limit the limit in queries
 - make sure field names are unique (also check edge fields vs XXX_id fields)
 - delete cascade?
+- add generated code header
+- entquery in patterns
+- doc for entquery
