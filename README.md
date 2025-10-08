@@ -74,6 +74,27 @@ optional_ent = await EntMyObject.gen(vc, ent_id)
 ent = await EntMyObject.genx(vc, ent_id)
 ```
 
+## Querying Ents
+
+If you want to perform a more complex query to find one or more Ents, you can use the query API:
+```python
+from ent_my_object import EntMyObject, EntMyObjectModel
+from ent_my_other_object import EntMyOtherObjectModel
+
+ents = (
+    await EntMyObject.query(vc)
+    .where(EntMyObjectModel.happiness_level == 3)
+    .where(EntMyObjectModel.sadness_level < 5)
+    .join(EntMyOtherObjectModel, EntMyOtherObjectModel.id == EntMyObjectModel.other_id)
+    .where(EntMyOtherObjectModel.some_other_field == "yolo")
+    .order_by(EntMyObjectModel.id.desc())
+    .limit(10)
+    .gen()
+)
+```
+
+The EntQuery wraps the SQL Alchemy query API so you can use the models to query everything!
+
 ## Creating an Ent
 
 ```python
@@ -134,18 +155,55 @@ Fields have a set of common attributes, such as:
 - `not_null()`, which indicates that the field is not optional
 - `example(...)`, which enables the developer to provide an example for what the data for this field will look like. It is used in the `EntExample` when generating data for the tests and is mandatory for required fields (that have been marked `not_null`).
 - `dynamic_example(lambda: ...)`, which is a more advanced version of `example()` that enables the developer to provide a dyanamically set example. It is useful for mandatory fields that have to be unique to make sure that each example has a different value.
+- `default`, which is something that some fields support and allows you to define a default value for the field in case none is provided.
 - `unique()`, which sets a unique index on that field and generates additional functions to get an Ent from that field: `gen_from_xxxx` and `genx_from_xxxx`.
 
 Then, we have a list of field types that are provided by the framework:
+- `DatetimeField` that stores a datetime object. Note that we store all datetime with tz=UTC.
+
+```python
+DatetimeField("my_date")
+```
+- `EdgeField` stores a reference to another Ent.
+
+```python
+EdgeField("my_object", EntMyOtherObjectSchema)
+```
+This field will be stored in the database as `my_object_id: UUID` and we will also generate a utility function `async def gen_my_object(self) -> EntMyOtherObject` to easily load the edge.
+
+Note that you should not use a field name that ends with `_id`, this will be added for you automatically.
+- `EnumField` that stores a python enum.
+
+```python
+from enum import Enum
+
+class EnumClass(Enum):
+    VAL1 = "VAL1"
+    VAL2 = "VAL2"
+
+EnumField("my_enum", EnumClass)
+```
 - `IntField` that stores an integer.
 
 ```python
 IntField("my_int")
 ```
+- `JsonField` that stores a JSON object. The second argument after the field name is the python type to which the content of the JsonField will be casted.
+
+```python
+JsonField("my_json", "list[str]")
+JsonField("my_json_2", "dict[str, str]")
+JsonField("my_json_3", "dict[str, Any]")
+```
 - `StringField` that stores a string. You need to pass the length of the string.
 
 ```python
 StringField("my_string", 100).example("Hello!")
+```
+- `TextField` that stores a large string.
+
+```python
+TextField("my_large_text")
 ```
 
 # Gencode
