@@ -10,26 +10,26 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
+from sqlalchemy import Text
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import select, Select, func
 from sqlalchemy import Enum as DBEnum
-from entpy import Field, FieldWithDynamicExample
-from sentinels import NOTHING, Sentinel  # type: ignore
 from .ent_model import EntModel
 from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
 from .ent_test_sub_object import EntTestSubObjectExample
 from ent_test_object_schema import Status
-from sqlalchemy import String
-from sqlalchemy import DateTime
-from .ent_test_thing import IEntTestThing
-from sqlalchemy.orm import Mapped, mapped_column
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import select, Select, func
-from sqlalchemy.sql.expression import ColumnElement
-from typing import Any, TypeVar, Generic
 from sqlalchemy import JSON
-from sqlalchemy import Text
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_test_thing import IEntTestThing
+from sqlalchemy import DateTime
 from ent_test_object_schema import EntTestObjectSchema
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from .ent_test_sub_object import EntTestSubObject
+from typing import Any, TypeVar, Generic
+from sqlalchemy.orm import Mapped, mapped_column
+from entpy import Field, FieldWithDynamicExample
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestObjectModel(EntModel):

@@ -19,6 +19,8 @@ def generate(
     schema = schema_class()
     base_name = schema_class.__name__.replace("Schema", "")
 
+    # Validate that the schema has at least one field
+    _validate_has_fields(schema)
     # Validate that all field names are unique
     _validate_unique_field_names(schema)
     # Validate that EdgeFields don't end with _id
@@ -84,6 +86,16 @@ from abc import ABC
 
 {example_content.code}
 """
+
+
+def _validate_has_fields(schema: Schema) -> None:
+    """Validate that the schema has at least one field (from schema or patterns)."""
+    all_fields = schema.get_all_fields()
+    if not all_fields:
+        raise ValueError(
+            f"{schema.__class__.__name__} must have at least one field. "
+            f"Define fields in the schema itself or include patterns that provide fields."
+        )
 
 
 def _validate_unique_field_names(schema: Schema) -> None:
