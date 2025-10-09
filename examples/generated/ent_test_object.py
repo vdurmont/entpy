@@ -3,33 +3,32 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid
+from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import select
-from .ent_test_thing import IEntTestThing
-from entpy import Field, FieldWithDynamicExample
-from typing import Any
-from sqlalchemy import DateTime
-from sqlalchemy import Enum as DBEnum
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import JSON
-from sqlalchemy import Select
-from sqlalchemy import Integer
-from sqlalchemy.sql.expression import ColumnElement
+from ent_test_object_schema import EntTestObjectSchema
+from .ent_test_thing import IEntTestThing
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
-from sqlalchemy import Text
-from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy import DateTime
+from sqlalchemy import Enum as DBEnum
+from typing import Any
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from ent_test_object_schema import Status
-from .ent_model import EntModel
+from entpy import Field, FieldWithDynamicExample
 from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import Integer
+from ent_test_object_schema import Status
+from sqlalchemy import select, Select
 from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import Text
+from sqlalchemy import JSON
+from .ent_model import EntModel
+from sqlalchemy.sql.expression import ColumnElement
 
 
 class EntTestObjectModel(EntModel):
@@ -177,6 +176,18 @@ class EntTestObject(Ent, IEntTestThing):
     def when_is_it_cool(self) -> datetime | None:
         return self.model.when_is_it_cool
 
+    async def _gen_evaluate_privacy(
+        self, vc: ExampleViewerContext, action: Action
+    ) -> Decision:
+        rules = EntTestObjectSchema().get_privacy_rules(action)
+        for rule in rules:
+            decision = await rule.gen_evaluate(vc, self)
+            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+            if decision != Decision.PASS:
+                return decision
+        # We default to denying
+        return Decision.DENY
+
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject:
         ent = await cls.gen(vc, ent_id)
@@ -217,15 +228,17 @@ class EntTestObject(Ent, IEntTestThing):
         if not model:
             return None
         ent = EntTestObject(vc=vc, model=model)
-        # TODO check privacy here
-        return ent
+        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
+        return ent if decision == Decision.ALLOW else None
 
     @classmethod
     async def _genx_from_model(
         cls, vc: ExampleViewerContext, model: EntTestObjectModel
     ) -> EntTestObject:
         ent = EntTestObject(vc=vc, model=model)
-        # TODO check privacy here
+        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
+        if decision != Decision.ALLOW:
+            raise PrivacyError("Cannot load EntTestObject with id {ent.id}")
         return ent
 
     @classmethod

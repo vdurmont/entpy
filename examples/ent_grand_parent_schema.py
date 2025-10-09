@@ -1,4 +1,4 @@
-from entpy import Field, Schema, StringField
+from entpy import Field, Schema, StringField, Action, AllowAll, PrivacyRule
 
 
 class EntGrandParentSchema(Schema):
@@ -6,3 +6,6 @@ class EntGrandParentSchema(Schema):
         return [
             StringField("name", 100).not_null().example("Anne"),
         ]
+
+    def get_privacy_rules(self, action: Action) -> list[PrivacyRule]:
+        return [AllowAll()]

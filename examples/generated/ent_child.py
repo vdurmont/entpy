@@ -3,25 +3,25 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid
+from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
-from ent_child_schema import EntChildSchema
-from sqlalchemy.sql.expression import ColumnElement
-from entpy import Field
-from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_model import EntModel
 from .ent_parent import EntParent
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import select, Select
+from sqlalchemy import ForeignKey
+from entpy import Field
 from sqlalchemy import String
+from ent_child_schema import EntChildSchema
+from .ent_model import EntModel
+from sentinels import NOTHING, Sentinel  # type: ignore
 from .ent_parent import EntParentExample
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any
 
 
 class EntChildModel(EntModel):
@@ -64,6 +64,18 @@ class EntChild(Ent):
     async def gen_parent(self) -> EntParent:
         return await EntParent.genx(self.vc, self.model.parent_id)
 
+    async def _gen_evaluate_privacy(
+        self, vc: ExampleViewerContext, action: Action
+    ) -> Decision:
+        rules = EntChildSchema().get_privacy_rules(action)
+        for rule in rules:
+            decision = await rule.gen_evaluate(vc, self)
+            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+            if decision != Decision.PASS:
+                return decision
+        # We default to denying
+        return Decision.DENY
+
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntChild:
         ent = await cls.gen(vc, ent_id)
@@ -84,15 +96,17 @@ class EntChild(Ent):
         if not model:
             return None
         ent = EntChild(vc=vc, model=model)
-        # TODO check privacy here
-        return ent
+        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
+        return ent if decision == Decision.ALLOW else None
 
     @classmethod
     async def _genx_from_model(
         cls, vc: ExampleViewerContext, model: EntChildModel
     ) -> EntChild:
         ent = EntChild(vc=vc, model=model)
-        # TODO check privacy here
+        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
+        if decision != Decision.ALLOW:
+            raise PrivacyError("Cannot load EntChild with id {ent.id}")
         return ent
 
     @classmethod

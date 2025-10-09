@@ -3,6 +3,9 @@ from datetime import datetime, UTC
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from ent_test_thing_pattern import EntTestThingPattern
 from entpy import (
+    Action,
+    AllowAll,
+    PrivacyRule,
     EdgeField,
     JsonField,
     Field,
@@ -52,3 +55,6 @@ class EntTestObjectSchema(Schema):
             IntField("status_code").example(404),
             JsonField("some_json", "list[str]").example(["hello", "world"]),
         ]
+
+    def get_privacy_rules(self, action: Action) -> list[PrivacyRule]:
+        return [AllowAll()]

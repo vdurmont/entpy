@@ -3,21 +3,21 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid
+from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from evc import ExampleViewerContext
 from database import get_session
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import select, Select
+from entpy import Field
+from sqlalchemy import String
+from .ent_model import EntModel
+from sentinels import NOTHING, Sentinel  # type: ignore
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from sqlalchemy.sql.expression import ColumnElement
-from entpy import Field
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_model import EntModel
-from sqlalchemy import select, Select
-from sqlalchemy import String
 
 
 class EntTestSubObjectModel(EntModel):
@@ -50,6 +50,18 @@ class EntTestSubObject(Ent):
     def email(self) -> str:
         return self.model.email
 
+    async def _gen_evaluate_privacy(
+        self, vc: ExampleViewerContext, action: Action
+    ) -> Decision:
+        rules = EntTestSubObjectSchema().get_privacy_rules(action)
+        for rule in rules:
+            decision = await rule.gen_evaluate(vc, self)
+            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+            if decision != Decision.PASS:
+                return decision
+        # We default to denying
+        return Decision.DENY
+
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestSubObject:
         ent = await cls.gen(vc, ent_id)
@@ -72,15 +84,17 @@ class EntTestSubObject(Ent):
         if not model:
             return None
         ent = EntTestSubObject(vc=vc, model=model)
-        # TODO check privacy here
-        return ent
+        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
+        return ent if decision == Decision.ALLOW else None
 
     @classmethod
     async def _genx_from_model(
         cls, vc: ExampleViewerContext, model: EntTestSubObjectModel
     ) -> EntTestSubObject:
         ent = EntTestSubObject(vc=vc, model=model)
-        # TODO check privacy here
+        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
+        if decision != Decision.ALLOW:
+            raise PrivacyError("Cannot load EntTestSubObject with id {ent.id}")
         return ent
 
     @classmethod

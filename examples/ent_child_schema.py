@@ -1,4 +1,4 @@
-from entpy import Field, Schema, StringField, EdgeField
+from entpy import Field, Schema, StringField, EdgeField, Action, AllowAll, PrivacyRule
 from ent_parent_schema import EntParentSchema
 
 
@@ -8,3 +8,6 @@ class EntChildSchema(Schema):
             EdgeField("parent", EntParentSchema).not_null(),
             StringField("name", 100).not_null().example("Benjamin"),
         ]
+
+    def get_privacy_rules(self, action: Action) -> list[PrivacyRule]:
+        return [AllowAll()]

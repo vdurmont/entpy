@@ -56,7 +56,7 @@ def generate(
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid
+from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self

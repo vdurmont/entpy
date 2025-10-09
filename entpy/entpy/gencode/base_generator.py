@@ -57,6 +57,16 @@ class {base_name}({extends}):{get_description(schema)}
 
 {accessors}
 
+    async def _gen_evaluate_privacy(self, vc: {vc_name}, action: Action) -> Decision:
+        rules = {base_name}Schema().get_privacy_rules(action)
+        for rule in rules:
+            decision = await rule.gen_evaluate(vc, self)
+            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+            if decision != Decision.PASS:
+                return decision
+        # We default to denying
+        return Decision.DENY
+
     @classmethod
     async def genx(
         cls, vc: {vc_name}, ent_id: UUID
@@ -83,15 +93,17 @@ class {base_name}({extends}):{get_description(schema)}
         if not model:
             return None
         ent = {base_name}(vc=vc, model=model)
-        # TODO check privacy here
-        return ent
+        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
+        return ent if decision == Decision.ALLOW else None
 
     @classmethod
     async def _genx_from_model(
         cls, vc: {vc_name}, model: {base_name}Model
     ) -> {base_name}:
         ent = {base_name}(vc=vc, model=model)
-        # TODO check privacy here
+        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
+        if decision != Decision.ALLOW:
+            raise PrivacyError("Cannot load {base_name} with id {{ent.id}}")
         return ent
 
     @classmethod
