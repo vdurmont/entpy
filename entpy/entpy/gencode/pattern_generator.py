@@ -30,9 +30,9 @@ def generate(
     )
 
     # Get the first implementation we can find to use for the example
-    schema_class = children_schema_classes[0]
-    if not schema_class:
+    if not children_schema_classes:
         raise ValueError(f"No concrete implementation found for {base_name}")
+    schema_class = children_schema_classes[0]
     example_base_name = schema_class.__name__.replace("Schema", "")
 
     # Generate the arguments for the gen_create function of the example
