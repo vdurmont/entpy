@@ -44,17 +44,23 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
 """  # noqa: E501
 
         if isinstance(field, EdgeField) and field.should_generate_example:
-            edge_base_name = field.edge_class.__name__.replace("Schema", "")
-            # We skip examples for edges that point to the same schema to avoid
-            # recursive creations. The developpers can manually add those edges.
-            if edge_base_name != base_name:
+            edge_base_name = field.edge_class.__name__.replace("Schema", "").replace(
+                "Pattern", ""
+            )
+            i = "I" if field.edge_class.__name__.endswith("Pattern") else ""
+            # We skip examples for edges that point to the same schema or a pattern
+            # implemented by the current Ent to avoid recursive creations. The
+            # developpers can manually add those edges if they want.
+            if edge_base_name != base_name and field.edge_class.__name__ not in [
+                p.__class__.__name__ for p in schema.get_patterns()
+            ]:
                 edge_filename = to_snake_case(edge_base_name)
                 edges_imports.append(
-                    f"from .{edge_filename} import {edge_base_name}Example"
+                    f"from .{edge_filename} import {i}{edge_base_name}Example"
                 )
                 arguments_assignments += f"""
         if isinstance({field.name}, Sentinel) or {field.name} is None:
-            {field.name}_ent = await {edge_base_name}Example.gen_create(vc)
+            {field.name}_ent = await {i}{edge_base_name}Example.gen_create(vc)
             {field.name} = {field.name}_ent.id
 """
 

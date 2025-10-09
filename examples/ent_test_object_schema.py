@@ -43,6 +43,7 @@ class EntTestObjectSchema(Schema):
             StringField("lastname", 100).default("Doe"),
             StringField("city", 100).example("Los Angeles"),
             EdgeField("self", EntTestObjectSchema),
+            EdgeField("some_pattern", EntTestThingPattern),
             EdgeField("required_sub_object", EntTestSubObjectSchema).not_null(),
             EdgeField("optional_sub_object", EntTestSubObjectSchema),
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),

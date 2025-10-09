@@ -7,11 +7,11 @@ def generate(
     schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
 ) -> GeneratedContent:
     extends = ",".join(
-        ["Ent"]
-        + [
+        [
             f"I{pattern.__class__.__name__.replace("Pattern", "")}"
             for pattern in schema.get_patterns()
         ]
+        + ["Ent"]
     )
 
     accessors = _generate_accessors(schema)

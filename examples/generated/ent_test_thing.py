@@ -3,12 +3,15 @@
 ####################
 
 from __future__ import annotations
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from uuid import UUID
+from entpy import Ent
+from datetime import datetime
+from sentinels import Sentinel, NOTHING  # type: ignore
 from evc import ExampleViewerContext
 
 
-class IEntTestThing(ABC):
+class IEntTestThing(Ent):
     @property
     @abstractmethod
     def a_good_thing(self) -> str:
@@ -37,3 +40,19 @@ class IEntTestThing(ABC):
             return ent_test_object
 
         raise ValueError(f"No EntTestThing found for ID {ent_id}")
+
+
+class IEntTestThingExample:
+    @classmethod
+    async def gen_create(
+        cls,
+        vc: ExampleViewerContext,
+        created_at: datetime | None = None,
+        a_good_thing: str | Sentinel = NOTHING,
+    ) -> IEntTestThing:
+        # TODO make sure we only use this in test mode
+
+        # EntPy selected a random implementation of the pattern to use for examples
+        from .ent_test_object import EntTestObjectExample
+
+        return await EntTestObjectExample.gen_create(vc=vc, created_at=created_at)

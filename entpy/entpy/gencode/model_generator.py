@@ -72,13 +72,17 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
             fields_code += f"mapped_column(Text(){common_column_attributes})\n"
         elif isinstance(field, EdgeField):
             types_imports.append("from sqlalchemy import ForeignKey")
-            edge_base_name = field.edge_class.__name__.replace("Schema", "")
+            edge_base_name = field.edge_class.__name__.replace("Schema", "").replace(
+                "Pattern", ""
+            )
             edge_filename = to_snake_case(edge_base_name)
             if edge_base_name != base_name:
                 edges_imports.append(f"from .{edge_filename} import {edge_base_name}")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += "mapped_column(DBUUID(as_uuid=True), "
-            fields_code += f'ForeignKey("{_get_table_name(edge_base_name)}.id")'
+            fields_code += "mapped_column(DBUUID(as_uuid=True)"
+            if not field.edge_class.__name__.endswith("Pattern"):
+                # Cannot do FKs for Patterns
+                fields_code += f', ForeignKey("{_get_table_name(edge_base_name)}.id")'
             fields_code += f"{common_column_attributes})\n"
         else:
             raise Exception(f"Unsupported field type: {type(field)}")

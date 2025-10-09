@@ -10,27 +10,26 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from ent_test_object_schema import Status
-from typing import Any, TypeVar, Generic
-from sqlalchemy import ForeignKey
-from entpy import Field, FieldWithDynamicExample
-from ent_test_object_schema import EntTestObjectSchema
 from sqlalchemy import Enum as DBEnum
-from sqlalchemy import select
-from sqlalchemy.sql.expression import ColumnElement
-from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import JSON
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import DateTime
-from sqlalchemy import Select, func
-from .ent_test_sub_object import EntTestSubObject
-from .ent_test_thing import IEntTestThing
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import Text
+from entpy import Field, FieldWithDynamicExample
 from sentinels import NOTHING, Sentinel  # type: ignore
 from .ent_model import EntModel
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from .ent_test_sub_object import EntTestSubObjectExample
+from ent_test_object_schema import Status
+from sqlalchemy import String
+from sqlalchemy import DateTime
+from .ent_test_thing import IEntTestThing
+from sqlalchemy.orm import Mapped, mapped_column
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import select, Select, func
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any, TypeVar, Generic
+from sqlalchemy import JSON
+from sqlalchemy import Text
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 
 class EntTestObjectModel(EntModel):
@@ -60,6 +59,9 @@ class EntTestObjectModel(EntModel):
         DBUUID(as_uuid=True), ForeignKey("test_object.id"), nullable=True
     )
     some_json: Mapped[list[str] | None] = mapped_column(JSON(), nullable=True)
+    some_pattern_id: Mapped[UUID | None] = mapped_column(
+        DBUUID(as_uuid=True), nullable=True
+    )
     status: Mapped[Status | None] = mapped_column(
         DBEnum(Status, native_enum=True), nullable=True
     )
@@ -69,7 +71,7 @@ class EntTestObjectModel(EntModel):
     )
 
 
-class EntTestObject(Ent, IEntTestThing):
+class EntTestObject(IEntTestThing, Ent):
     """
     This is an object we use to test all the ent framework features!
     """
@@ -165,6 +167,15 @@ class EntTestObject(Ent, IEntTestThing):
     @property
     def some_json(self) -> list[str] | None:
         return self.model.some_json
+
+    @property
+    def some_pattern_id(self) -> UUID | None:
+        return self.model.some_pattern_id
+
+    async def gen_some_pattern(self) -> IEntTestThing | None:
+        if self.model.some_pattern_id:
+            return await IEntTestThing.gen(self.vc, self.model.some_pattern_id)
+        return None
 
     @property
     def status(self) -> Status | None:
@@ -326,6 +337,7 @@ class EntTestObjectMutator:
         sadness: Status | None = None,
         self_id: UUID | None = None,
         some_json: list[str] | None = None,
+        some_pattern_id: UUID | None = None,
         status: Status | None = None,
         status_code: int | None = None,
         when_is_it_cool: datetime | None = None,
@@ -348,6 +360,7 @@ class EntTestObjectMutator:
             sadness=sadness,
             self_id=self_id,
             some_json=some_json,
+            some_pattern_id=some_pattern_id,
             status=status,
             status_code=status_code,
             when_is_it_cool=when_is_it_cool,
@@ -381,6 +394,7 @@ class EntTestObjectMutatorCreationAction:
     sadness: Status | None = None
     self_id: UUID | None = None
     some_json: list[str] | None = None
+    some_pattern_id: UUID | None = None
     status: Status | None = None
     status_code: int | None = None
     when_is_it_cool: datetime | None = None
@@ -402,6 +416,7 @@ class EntTestObjectMutatorCreationAction:
         sadness: Status | None,
         self_id: UUID | None,
         some_json: list[str] | None,
+        some_pattern_id: UUID | None,
         status: Status | None,
         status_code: int | None,
         when_is_it_cool: datetime | None,
@@ -421,6 +436,7 @@ class EntTestObjectMutatorCreationAction:
         self.sadness = sadness
         self.self_id = self_id
         self.some_json = some_json
+        self.some_pattern_id = some_pattern_id
         self.status = status
         self.status_code = status_code
         self.when_is_it_cool = when_is_it_cool
@@ -442,6 +458,7 @@ class EntTestObjectMutatorCreationAction:
             sadness=self.sadness,
             self_id=self.self_id,
             some_json=self.some_json,
+            some_pattern_id=self.some_pattern_id,
             status=self.status,
             status_code=self.status_code,
             when_is_it_cool=self.when_is_it_cool,
@@ -468,6 +485,7 @@ class EntTestObjectMutatorUpdateAction:
     sadness: Status | None = None
     self_id: UUID | None = None
     some_json: list[str] | None = None
+    some_pattern_id: UUID | None = None
     status: Status | None = None
     status_code: int | None = None
     when_is_it_cool: datetime | None = None
@@ -487,6 +505,7 @@ class EntTestObjectMutatorUpdateAction:
         self.sadness = ent.sadness
         self.self_id = ent.self_id
         self.some_json = ent.some_json
+        self.some_pattern_id = ent.some_pattern_id
         self.status = ent.status
         self.status_code = ent.status_code
         self.when_is_it_cool = ent.when_is_it_cool
@@ -506,6 +525,7 @@ class EntTestObjectMutatorUpdateAction:
         model.sadness = self.sadness
         model.self_id = self.self_id
         model.some_json = self.some_json
+        model.some_pattern_id = self.some_pattern_id
         model.status = self.status
         model.status_code = self.status_code
         model.when_is_it_cool = self.when_is_it_cool
@@ -549,6 +569,7 @@ class EntTestObjectExample:
         sadness: Status | None = None,
         self_id: UUID | None = None,
         some_json: list[str] | None = None,
+        some_pattern_id: UUID | None = None,
         status: Status | None = None,
         status_code: int | None = None,
         when_is_it_cool: datetime | None = None,
@@ -623,6 +644,7 @@ class EntTestObjectExample:
             sadness=sadness,
             self_id=self_id,
             some_json=some_json,
+            some_pattern_id=some_pattern_id,
             status=status,
             status_code=status_code,
             when_is_it_cool=when_is_it_cool,
