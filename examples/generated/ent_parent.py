@@ -11,18 +11,18 @@ from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
 from typing import Any, TypeVar, Generic
-from entpy import Field
+from ent_parent_schema import EntParentSchema
 from sqlalchemy import select, Select, func
+from .ent_grand_parent import EntGrandParent
+from entpy import Field
+from .ent_model import EntModel
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import ForeignKey
+from .ent_grand_parent import EntGrandParentExample
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_grand_parent import EntGrandParentExample
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import ForeignKey
-from ent_parent_schema import EntParentSchema
-from .ent_grand_parent import EntGrandParent
 from sqlalchemy.sql.expression import ColumnElement
-from .ent_model import EntModel
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntParentModel(EntModel):

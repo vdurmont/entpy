@@ -11,14 +11,14 @@ from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
 from typing import Any, TypeVar, Generic
-from entpy import Field
-from sqlalchemy import select, Select, func
 from ent_test_sub_object_schema import EntTestSubObjectSchema
+from sqlalchemy import select, Select, func
+from entpy import Field
+from .ent_model import EntModel
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
-from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.sql.expression import ColumnElement
-from .ent_model import EntModel
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestSubObjectModel(EntModel):

@@ -12,17 +12,17 @@ from evc import ExampleViewerContext
 from database import get_session
 from typing import Any, TypeVar, Generic
 from ent_child_schema import EntChildSchema
-from entpy import Field
 from sqlalchemy import select, Select, func
+from entpy import Field
+from .ent_model import EntModel
+from .ent_parent import EntParent
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from .ent_parent import EntParentExample
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import ForeignKey
-from .ent_parent import EntParent
 from sqlalchemy.sql.expression import ColumnElement
-from .ent_model import EntModel
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntChildModel(EntModel):

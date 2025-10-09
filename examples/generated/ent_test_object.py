@@ -10,27 +10,26 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import String
-from sqlalchemy import DateTime
-from .ent_test_thing import IEntTestThing
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import ForeignKey
-from sqlalchemy import JSON
-from .ent_model import EntModel
+from sqlalchemy import select, Select, func
 from sqlalchemy import Integer
-from sqlalchemy.orm import Mapped, mapped_column
-from ent_test_object_schema import Status
-from sqlalchemy import select
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import Text
-from typing import Any, TypeVar, Generic
-from entpy import Field, FieldWithDynamicExample
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import Select, func
-from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from .ent_model import EntModel
+from sqlalchemy import ForeignKey
 from sqlalchemy import Enum as DBEnum
+from ent_test_object_schema import EntTestObjectSchema
+from sentinels import NOTHING, Sentinel  # type: ignore
+from typing import Any, TypeVar, Generic
+from .ent_test_thing import IEntTestThing
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy import Text
+from ent_test_object_schema import Status
+from sqlalchemy import String
 from sqlalchemy.sql.expression import ColumnElement
+from .ent_test_sub_object import EntTestSubObject
+from .ent_test_sub_object import EntTestSubObjectExample
+from sqlalchemy import JSON
+from sqlalchemy import DateTime
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class EntTestObjectModel(EntModel):

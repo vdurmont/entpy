@@ -11,14 +11,14 @@ from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
 from typing import Any, TypeVar, Generic
-from entpy import Field
 from sqlalchemy import select, Select, func
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy.sql.expression import ColumnElement
+from entpy import Field
 from .ent_model import EntModel
 from ent_grand_parent_schema import EntGrandParentSchema
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+from sqlalchemy.sql.expression import ColumnElement
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntGrandParentModel(EntModel):

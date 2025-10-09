@@ -33,7 +33,7 @@ def generate(
         imports.append(f"from {module_name} import {class_name}")
 
     return GeneratedContent(
-        imports=imports,
+        imports=imports + accessors.imports,
         code=f"""
 class {base_name}({extends}):{get_description(schema)}
     vc: {vc_name}
@@ -55,7 +55,7 @@ class {base_name}({extends}):{get_description(schema)}
     def updated_at(self) -> datetime:
         return self.model.updated_at
 
-{accessors}
+{accessors.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc_name}, action: Action) -> Decision:
         rules = {base_name}Schema().get_privacy_rules(action)
@@ -117,9 +117,10 @@ class {base_name}({extends}):{get_description(schema)}
     )
 
 
-def _generate_accessors(schema: Schema) -> str:
+def _generate_accessors(schema: Schema) -> GeneratedContent:
     fields = schema.get_all_fields()
     accessors_code = ""
+    imports = []
     for field in fields:
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
         description = field.description
@@ -137,6 +138,13 @@ def _generate_accessors(schema: Schema) -> str:
         # If the field is an edge, we want to generate a utility function to
         # load the edge directly
         if isinstance(field, EdgeField):
+            if field.edge_class != schema.__class__:
+                module = "." + to_snake_case(
+                    field.edge_class.__name__.replace("Schema", "").replace(
+                        "Pattern", ""
+                    )
+                )
+                imports.append(f"from {module} import {field.get_edge_type()}")
             if field.nullable:
                 accessors_code += f"""
     async def gen_{field.original_name}(self) -> {field.get_edge_type()} | None:
@@ -151,7 +159,7 @@ def _generate_accessors(schema: Schema) -> str:
         return await {field.get_edge_type()}.genx(self.vc, self.model.{field.name})
 
 """  # noqa: E501
-    return accessors_code
+    return GeneratedContent(imports=imports, code=accessors_code)
 
 
 def _generate_unique_gens(schema: Schema, base_name: str, vc_name: str) -> str:
@@ -175,5 +183,5 @@ def _generate_unique_gens(schema: Schema, base_name: str, vc_name: str) -> str:
         if not result:
             raise ValueError(f"No EntTestObject found for {field.name} {{{field.name}}}")
         return result
-"""
+"""  # noqa: E501
     return unique_gens
