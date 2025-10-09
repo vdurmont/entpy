@@ -10,27 +10,27 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_model import EntModel
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import Integer
-from sqlalchemy import Text
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_test_sub_object import EntTestSubObjectExample
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import Enum as DBEnum
-from sqlalchemy import select
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import String
-from sqlalchemy import DateTime
-from sqlalchemy import Select, func
-from sqlalchemy import ForeignKey
 from sqlalchemy.sql.expression import ColumnElement
-from ent_test_object_schema import Status
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy import Text
+from .ent_model import EntModel
 from .ent_test_thing import IEntTestThing
+from sqlalchemy import String
+from sqlalchemy import Integer
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from sqlalchemy import JSON
 from typing import Any, TypeVar, Generic
+from sqlalchemy import DateTime
 from sentinels import NOTHING, Sentinel  # type: ignore
+from ent_test_object_schema import Status
+from .ent_test_sub_object import EntTestSubObjectExample
+from entpy import Field, FieldWithDynamicExample
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import Select, func
+from sqlalchemy import ForeignKey
 
 
 class EntTestObjectModel(EntModel):
@@ -300,7 +300,7 @@ class EntTestObjectCountQuery(EntTestObjectQuery[int]):
     def __init__(self) -> None:
         self.query = select(func.count()).select_from(EntTestObjectModel)
 
-    async def gen(self) -> int:
+    async def gen_NO_PRIVACY(self) -> int:
         session = get_session()
         result = await session.execute(self.query)
         count = result.scalar()

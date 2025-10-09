@@ -10,19 +10,19 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.sql.expression import ColumnElement
-from .ent_model import EntModel
 from entpy import Field
-from sqlalchemy import String
+from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import select, Select, func
-from typing import Any, TypeVar, Generic
-from sqlalchemy import ForeignKey
-from ent_parent_schema import EntParentSchema
-from .ent_grand_parent import EntGrandParentExample
-from .ent_grand_parent import EntGrandParent
-from sqlalchemy.orm import Mapped, mapped_column
 from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy.orm import Mapped, mapped_column
+from ent_parent_schema import EntParentSchema
+from .ent_grand_parent import EntGrandParent
+from .ent_model import EntModel
+from typing import Any, TypeVar, Generic
+from .ent_grand_parent import EntGrandParentExample
+from sqlalchemy import String
+from sqlalchemy import ForeignKey
 
 
 class EntParentModel(EntModel):
@@ -167,7 +167,7 @@ class EntParentCountQuery(EntParentQuery[int]):
     def __init__(self) -> None:
         self.query = select(func.count()).select_from(EntParentModel)
 
-    async def gen(self) -> int:
+    async def gen_NO_PRIVACY(self) -> int:
         session = get_session()
         result = await session.execute(self.query)
         count = result.scalar()

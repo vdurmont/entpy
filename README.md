@@ -291,4 +291,3 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 - delete cascade?
 - entquery in patterns
 - doc for entquery
-- add `gen_count_NO_PRIVACY`

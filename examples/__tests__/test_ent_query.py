@@ -104,7 +104,7 @@ async def test_ent_query_count(
     results = (
         await EntTestObject.query_count(vc)
         .where(EntTestObjectModel.firstname == firstname)
-        .gen()
+        .gen_NO_PRIVACY()
     )
 
     assert results == 3

@@ -58,7 +58,7 @@ class {base_name}CountQuery({base_name}Query[int]):
     def __init__(self) -> None:
         self.query = select(func.count()).select_from({base_name}Model)
 
-    async def gen(self) -> int:
+    async def gen_NO_PRIVACY(self) -> int:
         session = {session_getter_fn_name}()
         result = await session.execute(self.query)
         count = result.scalar()

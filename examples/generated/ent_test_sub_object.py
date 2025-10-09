@@ -10,15 +10,15 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.sql.expression import ColumnElement
-from .ent_model import EntModel
 from entpy import Field
-from sqlalchemy import String
+from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import select, Select, func
-from ent_test_sub_object_schema import EntTestSubObjectSchema
-from typing import Any, TypeVar, Generic
-from sqlalchemy.orm import Mapped, mapped_column
 from sentinels import NOTHING, Sentinel  # type: ignore
+from ent_test_sub_object_schema import EntTestSubObjectSchema
+from sqlalchemy.orm import Mapped, mapped_column
+from .ent_model import EntModel
+from typing import Any, TypeVar, Generic
+from sqlalchemy import String
 
 
 class EntTestSubObjectModel(EntModel):
@@ -157,7 +157,7 @@ class EntTestSubObjectCountQuery(EntTestSubObjectQuery[int]):
     def __init__(self) -> None:
         self.query = select(func.count()).select_from(EntTestSubObjectModel)
 
-    async def gen(self) -> int:
+    async def gen_NO_PRIVACY(self) -> int:
         session = get_session()
         result = await session.execute(self.query)
         count = result.scalar()
