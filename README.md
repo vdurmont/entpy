@@ -95,6 +95,15 @@ ents = (
 
 The EntQuery wraps the SQL Alchemy query API so you can use the models to query everything!
 
+You can also query for counts. Watch out! We do not run privacy rules when counting...
+```python
+number = (
+    await EntMyObject.query_count(vc)
+    .where(EntMyObjectModel.happiness_level == 3)
+    .gen()
+)
+```
+
 ## Creating an Ent
 
 ```python
@@ -290,4 +299,9 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 - make sure field names are unique (also check edge fields vs XXX_id fields)
 - delete cascade?
 - entquery in patterns
-- doc for entquery
+
+# Future improvements
+
+Those are things we may tackle later... maybe! Let us know if you're interested!
+
+- Adding a function to `EntXXXCountQuery` to compute the count in a privacy-aware way.
