@@ -107,8 +107,12 @@ class {base_name}({extends}):{get_description(schema)}
         return ent
 
     @classmethod
-    def query(cls, vc: {vc_name}) -> {base_name}Query:
-        return {base_name}Query(vc=vc)
+    def query(cls, vc: {vc_name}) -> {base_name}ListQuery:
+        return {base_name}ListQuery(vc=vc)
+
+    @classmethod
+    def query_count(cls, vc: {vc_name}) -> {base_name}CountQuery:
+        return {base_name}CountQuery()
 """,
     )
 

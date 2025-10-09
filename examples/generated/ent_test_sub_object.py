@@ -7,17 +7,18 @@ from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
+from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import select, Select
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_model import EntModel
 from entpy import Field
 from sqlalchemy import String
-from .ent_model import EntModel
-from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import select, Select, func
 from ent_test_sub_object_schema import EntTestSubObjectSchema
-from sqlalchemy.sql.expression import ColumnElement
-from typing import Any
+from typing import Any, TypeVar, Generic
+from sqlalchemy.orm import Mapped, mapped_column
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestSubObjectModel(EntModel):
@@ -98,17 +99,19 @@ class EntTestSubObject(Ent):
         return ent
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestSubObjectQuery:
-        return EntTestSubObjectQuery(vc=vc)
+    def query(cls, vc: ExampleViewerContext) -> EntTestSubObjectListQuery:
+        return EntTestSubObjectListQuery(vc=vc)
+
+    @classmethod
+    def query_count(cls, vc: ExampleViewerContext) -> EntTestSubObjectCountQuery:
+        return EntTestSubObjectCountQuery()
 
 
-class EntTestSubObjectQuery:
-    vc: ExampleViewerContext
-    query: Select[tuple[EntTestSubObjectModel]]
+T = TypeVar("T")
 
-    def __init__(self, vc: ExampleViewerContext) -> None:
-        self.vc = vc
-        self.query = select(EntTestSubObjectModel)
+
+class EntTestSubObjectQuery(ABC, Generic[T]):
+    query: Select[tuple[T]]
 
     def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
         self.query = self.query.join(model_class, predicate)
@@ -126,6 +129,14 @@ class EntTestSubObjectQuery:
         self.query = self.query.limit(limit)
         return self
 
+
+class EntTestSubObjectListQuery(EntTestSubObjectQuery[EntTestSubObjectModel]):
+    vc: ExampleViewerContext
+
+    def __init__(self, vc: ExampleViewerContext) -> None:
+        self.vc = vc
+        self.query = select(EntTestSubObjectModel)
+
     async def gen(self) -> list[EntTestSubObject]:
         session = get_session()
         result = await session.execute(self.query)
@@ -140,6 +151,19 @@ class EntTestSubObjectQuery:
         result = await session.execute(self.query.limit(1))
         model = result.scalar_one_or_none()
         return await EntTestSubObject._gen_from_model(self.vc, model)
+
+
+class EntTestSubObjectCountQuery(EntTestSubObjectQuery[int]):
+    def __init__(self) -> None:
+        self.query = select(func.count()).select_from(EntTestSubObjectModel)
+
+    async def gen(self) -> int:
+        session = get_session()
+        result = await session.execute(self.query)
+        count = result.scalar()
+        if count is None:
+            raise RuntimeError("Unable to get the count")
+        return count
 
 
 class EntTestSubObjectMutator:

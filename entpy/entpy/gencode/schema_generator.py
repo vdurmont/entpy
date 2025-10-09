@@ -60,6 +60,7 @@ from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
+from abc import ABC
 {vc_import}
 {session_getter_import}
 {imports_code}

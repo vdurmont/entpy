@@ -8,17 +8,14 @@ def generate(
     return GeneratedContent(
         imports=[
             "from sqlalchemy.sql.expression import ColumnElement",
-            "from typing import Any",
-            "from sqlalchemy import select, Select",
+            "from typing import Any, TypeVar, Generic",
+            "from sqlalchemy import select, Select, func",
         ],
         code=f"""
-class {base_name}Query:
-    vc: {vc_name}
-    query: Select[tuple[{base_name}Model]]
+T = TypeVar("T")
 
-    def __init__(self, vc: {vc_name}) -> None:
-        self.vc = vc
-        self.query = select({base_name}Model)
+class {base_name}Query(ABC, Generic[T]):
+    query: Select[tuple[T]]
 
     def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
         self.query = self.query.join(model_class, predicate)
@@ -36,6 +33,14 @@ class {base_name}Query:
         self.query = self.query.limit(limit)
         return self
 
+
+class {base_name}ListQuery({base_name}Query[{base_name}Model]):
+    vc: {vc_name}
+
+    def __init__(self, vc: {vc_name}) -> None:
+        self.vc = vc
+        self.query = select({base_name}Model)
+
     async def gen(self) -> list[{base_name}]:
         session = {session_getter_fn_name}()
         result = await session.execute(self.query)
@@ -48,5 +53,17 @@ class {base_name}Query:
         result = await session.execute(self.query.limit(1))
         model = result.scalar_one_or_none()
         return await {base_name}._gen_from_model(self.vc, model)
+
+class {base_name}CountQuery({base_name}Query[int]):
+    def __init__(self) -> None:
+        self.query = select(func.count()).select_from({base_name}Model)
+
+    async def gen(self) -> int:
+        session = {session_getter_fn_name}()
+        result = await session.execute(self.query)
+        count = result.scalar()
+        if count is None:
+            raise RuntimeError("Unable to get the count")
+        return count
 """,
     )

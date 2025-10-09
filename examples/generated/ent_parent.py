@@ -7,21 +7,22 @@ from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
+from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_grand_parent import EntGrandParentExample
-from ent_parent_schema import EntParentSchema
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import select, Select
-from sqlalchemy import ForeignKey
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_model import EntModel
 from entpy import Field
 from sqlalchemy import String
-from .ent_model import EntModel
+from sqlalchemy import select, Select, func
+from typing import Any, TypeVar, Generic
+from sqlalchemy import ForeignKey
+from ent_parent_schema import EntParentSchema
+from .ent_grand_parent import EntGrandParentExample
 from .ent_grand_parent import EntGrandParent
+from sqlalchemy.orm import Mapped, mapped_column
 from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy.sql.expression import ColumnElement
-from typing import Any
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 
 class EntParentModel(EntModel):
@@ -110,17 +111,19 @@ class EntParent(Ent):
         return ent
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntParentQuery:
-        return EntParentQuery(vc=vc)
+    def query(cls, vc: ExampleViewerContext) -> EntParentListQuery:
+        return EntParentListQuery(vc=vc)
+
+    @classmethod
+    def query_count(cls, vc: ExampleViewerContext) -> EntParentCountQuery:
+        return EntParentCountQuery()
 
 
-class EntParentQuery:
-    vc: ExampleViewerContext
-    query: Select[tuple[EntParentModel]]
+T = TypeVar("T")
 
-    def __init__(self, vc: ExampleViewerContext) -> None:
-        self.vc = vc
-        self.query = select(EntParentModel)
+
+class EntParentQuery(ABC, Generic[T]):
+    query: Select[tuple[T]]
 
     def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
         self.query = self.query.join(model_class, predicate)
@@ -138,6 +141,14 @@ class EntParentQuery:
         self.query = self.query.limit(limit)
         return self
 
+
+class EntParentListQuery(EntParentQuery[EntParentModel]):
+    vc: ExampleViewerContext
+
+    def __init__(self, vc: ExampleViewerContext) -> None:
+        self.vc = vc
+        self.query = select(EntParentModel)
+
     async def gen(self) -> list[EntParent]:
         session = get_session()
         result = await session.execute(self.query)
@@ -150,6 +161,19 @@ class EntParentQuery:
         result = await session.execute(self.query.limit(1))
         model = result.scalar_one_or_none()
         return await EntParent._gen_from_model(self.vc, model)
+
+
+class EntParentCountQuery(EntParentQuery[int]):
+    def __init__(self) -> None:
+        self.query = select(func.count()).select_from(EntParentModel)
+
+    async def gen(self) -> int:
+        session = get_session()
+        result = await session.execute(self.query)
+        count = result.scalar()
+        if count is None:
+            raise RuntimeError("Unable to get the count")
+        return count
 
 
 class EntParentMutator:

@@ -88,3 +88,23 @@ async def test_ent_query_join(
     assert len(results) == 2
     assert results[0].id == child2.id
     assert results[1].id == child1.id
+
+
+async def test_ent_query_count(
+    db_session: AsyncSession, vc: ExampleViewerContext
+) -> None:
+    firstname = "john"
+    await EntTestObjectExample.gen_create(vc, firstname=firstname)
+    await EntTestObjectExample.gen_create(vc, firstname=firstname)
+    await EntTestObjectExample.gen_create(vc, firstname=firstname)
+    await EntTestObjectExample.gen_create(vc)
+    await EntTestObjectExample.gen_create(vc)
+    await EntTestObjectExample.gen_create(vc)
+
+    results = (
+        await EntTestObject.query_count(vc)
+        .where(EntTestObjectModel.firstname == firstname)
+        .gen()
+    )
+
+    assert results == 3

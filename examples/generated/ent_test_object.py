@@ -7,28 +7,30 @@ from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
+from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
+from .ent_model import EntModel
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import Integer
+from sqlalchemy import Text
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from .ent_test_sub_object import EntTestSubObjectExample
 from ent_test_object_schema import EntTestObjectSchema
-from .ent_test_thing import IEntTestThing
-from sqlalchemy import ForeignKey
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy import select
+from entpy import Field, FieldWithDynamicExample
 from sqlalchemy import String
 from sqlalchemy import DateTime
-from sqlalchemy import Enum as DBEnum
-from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column
-from entpy import Field, FieldWithDynamicExample
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import Integer
-from ent_test_object_schema import Status
-from sqlalchemy import select, Select
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import Text
-from sqlalchemy import JSON
-from .ent_model import EntModel
+from sqlalchemy import Select, func
+from sqlalchemy import ForeignKey
 from sqlalchemy.sql.expression import ColumnElement
+from ent_test_object_schema import Status
+from .ent_test_thing import IEntTestThing
+from sqlalchemy import JSON
+from typing import Any, TypeVar, Generic
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestObjectModel(EntModel):
@@ -242,17 +244,19 @@ class EntTestObject(Ent, IEntTestThing):
         return ent
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestObjectQuery:
-        return EntTestObjectQuery(vc=vc)
+    def query(cls, vc: ExampleViewerContext) -> EntTestObjectListQuery:
+        return EntTestObjectListQuery(vc=vc)
+
+    @classmethod
+    def query_count(cls, vc: ExampleViewerContext) -> EntTestObjectCountQuery:
+        return EntTestObjectCountQuery()
 
 
-class EntTestObjectQuery:
-    vc: ExampleViewerContext
-    query: Select[tuple[EntTestObjectModel]]
+T = TypeVar("T")
 
-    def __init__(self, vc: ExampleViewerContext) -> None:
-        self.vc = vc
-        self.query = select(EntTestObjectModel)
+
+class EntTestObjectQuery(ABC, Generic[T]):
+    query: Select[tuple[T]]
 
     def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
         self.query = self.query.join(model_class, predicate)
@@ -270,6 +274,14 @@ class EntTestObjectQuery:
         self.query = self.query.limit(limit)
         return self
 
+
+class EntTestObjectListQuery(EntTestObjectQuery[EntTestObjectModel]):
+    vc: ExampleViewerContext
+
+    def __init__(self, vc: ExampleViewerContext) -> None:
+        self.vc = vc
+        self.query = select(EntTestObjectModel)
+
     async def gen(self) -> list[EntTestObject]:
         session = get_session()
         result = await session.execute(self.query)
@@ -282,6 +294,19 @@ class EntTestObjectQuery:
         result = await session.execute(self.query.limit(1))
         model = result.scalar_one_or_none()
         return await EntTestObject._gen_from_model(self.vc, model)
+
+
+class EntTestObjectCountQuery(EntTestObjectQuery[int]):
+    def __init__(self) -> None:
+        self.query = select(func.count()).select_from(EntTestObjectModel)
+
+    async def gen(self) -> int:
+        session = get_session()
+        result = await session.execute(self.query)
+        count = result.scalar()
+        if count is None:
+            raise RuntimeError("Unable to get the count")
+        return count
 
 
 class EntTestObjectMutator:
