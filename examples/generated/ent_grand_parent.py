@@ -10,15 +10,15 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from entpy import Field
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import select, Select, func
-from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any, TypeVar, Generic
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import select, Select, func
 from ent_grand_parent_schema import EntGrandParentSchema
 from .ent_model import EntModel
-from typing import Any, TypeVar, Generic
-from sqlalchemy import String
+from entpy import Field
 
 
 class EntGrandParentModel(EntModel):

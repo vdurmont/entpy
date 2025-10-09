@@ -1,4 +1,6 @@
-from entpy import Schema
+import re
+
+from entpy import EdgeField, Schema
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
 from entpy.gencode.model_generator import generate as generate_model
@@ -16,6 +18,13 @@ def generate(
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.replace("Schema", "")
+
+    # Validate that all field names are unique
+    _validate_unique_field_names(schema)
+    # Validate that EdgeFields don't end with _id
+    _validate_edge_field_names(schema)
+    # Validate that field names only contain lowercase letters, numbers, and underscores
+    _validate_field_name_format(schema)
 
     model_content = generate_model(schema=schema, base_name=base_name)
     base_content = generate_base(
@@ -75,3 +84,49 @@ from abc import ABC
 
 {example_content.code}
 """
+
+
+def _validate_unique_field_names(schema: Schema) -> None:
+    """Validate that all field names (from schema and patterns) are unique."""
+    all_fields = schema.get_all_fields()
+    field_names = [field.name for field in all_fields]
+    duplicates = [name for name in field_names if field_names.count(name) > 1]
+
+    if duplicates:
+        unique_duplicates = list(set(duplicates))
+        raise ValueError(
+            f"Duplicate field names found in {schema.__class__.__name__}: {', '.join(unique_duplicates)}"
+        )
+
+
+def _validate_edge_field_names(schema: Schema) -> None:
+    """Validate that EdgeField names don't end with _id."""
+    all_fields = schema.get_all_fields()
+    invalid_edge_fields = [
+        field.original_name
+        for field in all_fields
+        if isinstance(field, EdgeField) and field.original_name.endswith("_id")
+    ]
+
+    if invalid_edge_fields:
+        raise ValueError(
+            f"EdgeField names in {schema.__class__.__name__} should not end with '_id' "
+            f"(this suffix is added automatically by EntPy): {', '.join(invalid_edge_fields)}"
+        )
+
+
+def _validate_field_name_format(schema: Schema) -> None:
+    """Validate that field names only contain lowercase letters, numbers, and underscores."""
+    all_fields = schema.get_all_fields()
+    pattern = re.compile(r"^[a-z0-9_]+$")
+    invalid_fields = [
+        field.original_name
+        for field in all_fields
+        if not pattern.match(field.original_name)
+    ]
+
+    if invalid_fields:
+        raise ValueError(
+            f"Field names in {schema.__class__.__name__} must only contain lowercase letters, "
+            f"numbers, and underscores: {', '.join(invalid_fields)}"
+        )
