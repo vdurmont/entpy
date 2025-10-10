@@ -1,4 +1,5 @@
 from .framework.action import Action  # noqa: F401
+from .framework.composite_index import CompositeIndex  # noqa: F401
 from .framework.decision import Decision  # noqa: F401
 from .framework.ent import Ent  # noqa: F401
 from .framework.errors import PrivacyError  # noqa: F401

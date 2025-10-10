@@ -1,6 +1,7 @@
 import re
 
 from entpy import (
+    CompositeIndex,
     DatetimeField,
     EdgeField,
     EnumField,
@@ -87,20 +88,43 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
 
+    indexes = _generate_indexes(schema=schema, base_name=base_name)
+
     return GeneratedContent(
         imports=[
             "from sqlalchemy.orm import Mapped, mapped_column",
             "from sqlalchemy.dialects.postgresql import UUID as DBUUID",
         ]
         + types_imports
-        + edges_imports,
+        + edges_imports
+        + indexes.imports,
         code=f"""
 class {base_name}Model(EntModel):
     __tablename__ = "{_get_table_name(base_name)}"
 
 {fields_code}
+
+{indexes.code}
 """,
     )
+
+
+def _generate_indexes(schema: Schema, base_name: str) -> GeneratedContent:
+    indexes = schema.get_composite_indexes()
+    return GeneratedContent(
+        imports=["from sqlalchemy import Index"] if indexes else [],
+        code="\n".join(
+            [_generate_index(index=index, base_name=base_name) for index in indexes]
+        ),
+    )
+
+
+def _generate_index(index: CompositeIndex, base_name: str) -> str:
+    return f"""Index(
+    "{index.name}",
+{"\n".join([f"    {base_name}Model.{field_name}," for field_name in index.field_names])}
+{"    unique = True" if index.unique else ""}
+)"""
 
 
 def _get_table_name(base_name: str) -> str:
