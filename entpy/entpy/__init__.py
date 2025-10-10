@@ -2,7 +2,11 @@ from .framework.action import Action  # noqa: F401
 from .framework.composite_index import CompositeIndex  # noqa: F401
 from .framework.decision import Decision  # noqa: F401
 from .framework.ent import Ent  # noqa: F401
-from .framework.errors import PrivacyError  # noqa: F401
+from .framework.errors import (  # noqa: F401
+    EntNotFoundError,
+    ExecutionError,
+    PrivacyError,
+)
 from .framework.fields.core import Field, FieldWithDynamicExample  # noqa: F401
 from .framework.fields.datetime_field import DatetimeField  # noqa: F401
 from .framework.fields.edge_field import EdgeField  # noqa: F401

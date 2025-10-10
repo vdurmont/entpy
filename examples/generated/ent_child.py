@@ -3,26 +3,26 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
+from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
+from sqlalchemy.orm import Mapped, mapped_column
 from ent_child_schema import EntChildSchema
+from entpy import Field
+from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_parent import EntParentExample
 from sqlalchemy import ForeignKey
-from .ent_parent import EntParent
+from sqlalchemy import String
+from .ent_model import EntModel
 from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import select, Select, func
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sentinels import NOTHING, Sentinel  # type: ignore
-from entpy import Field
-from .ent_parent import EntParentExample
+from .ent_parent import EntParent
 from typing import Any, TypeVar, Generic
-from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 
 class EntChildModel(EntModel):
@@ -81,7 +81,7 @@ class EntChild(Ent):
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntChild:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise ValueError(f"No EntChild found for ID {ent_id}")
+            raise EntNotFoundError(f"No EntChild found for ID {ent_id}")
         return ent
 
     @classmethod
@@ -104,10 +104,9 @@ class EntChild(Ent):
     async def _genx_from_model(
         cls, vc: ExampleViewerContext, model: EntChildModel
     ) -> EntChild:
-        ent = EntChild(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        if decision != Decision.ALLOW:
-            raise PrivacyError("Cannot load EntChild with id {ent.id}")
+        ent = await EntChild._gen_from_model(vc=vc, model=model)
+        if not ent:
+            raise EntNotFoundError(f"No EntChild found for ID {model.id}")
         return ent
 
     @classmethod
@@ -172,7 +171,7 @@ class EntChildCountQuery(EntChildQuery[int]):
         result = await session.execute(self.query)
         count = result.scalar()
         if count is None:
-            raise RuntimeError("Unable to get the count")
+            raise ExecutionError("Unable to get the count")
         return count
 
 

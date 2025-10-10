@@ -63,7 +63,7 @@ class {base_name}CountQuery({base_name}Query[int]):
         result = await session.execute(self.query)
         count = result.scalar()
         if count is None:
-            raise RuntimeError("Unable to get the count")
+            raise ExecutionError("Unable to get the count")
         return count
 """,
     )

@@ -73,7 +73,7 @@ class {base_name}({extends}):{get_description(schema)}
     ) -> {base_name}:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise ValueError(f"No {base_name} found for ID {{ent_id}}")
+            raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
         return ent
 
     @classmethod
@@ -100,10 +100,9 @@ class {base_name}({extends}):{get_description(schema)}
     async def _genx_from_model(
         cls, vc: {vc_name}, model: {base_name}Model
     ) -> {base_name}:
-        ent = {base_name}(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        if decision != Decision.ALLOW:
-            raise PrivacyError("Cannot load {base_name} with id {{ent.id}}")
+        ent = await {base_name}._gen_from_model(vc=vc, model=model)
+        if not ent:
+            raise EntNotFoundError(f"No {base_name} found for ID {{model.id}}")
         return ent
 
     @classmethod
@@ -181,7 +180,7 @@ def _generate_unique_gens(schema: Schema, base_name: str, vc_name: str) -> str:
     async def genx_from_{field.name}(cls, vc: {vc_name}, {field.name}: {field.get_python_type()}) -> {base_name}:
         result = await cls.gen_from_{field.name}(vc, {field.name})
         if not result:
-            raise ValueError(f"No EntTestObject found for {field.name} {{{field.name}}}")
+            raise EntNotFoundError(f"No EntTestObject found for {field.name} {{{field.name}}}")
         return result
 """  # noqa: E501
     return unique_gens

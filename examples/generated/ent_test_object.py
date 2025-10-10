@@ -3,33 +3,34 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
+from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
+from ent_test_object_schema import Status
+from .ent_model import EntModel
 from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import select, Select, func
-from sqlalchemy import JSON
-from .ent_test_sub_object import EntTestSubObject
-from .ent_test_sub_object import EntTestSubObjectExample
-from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import DateTime
-from typing import Any, TypeVar, Generic
-from .ent_test_thing import IEntTestThing
+from sqlalchemy import select
+from sqlalchemy import ForeignKey
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import Select, func
+from sqlalchemy import Integer
 from sqlalchemy import Text
 from sqlalchemy import Enum as DBEnum
-from ent_test_object_schema import Status
 from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import Integer
-from .ent_model import EntModel
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import DateTime
+from typing import Any, TypeVar, Generic
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey
+from .ent_test_sub_object import EntTestSubObjectExample
+from .ent_test_thing import IEntTestThing
 from sqlalchemy import String
+from sqlalchemy import JSON
 
 
 class EntTestObjectModel(EntModel):
@@ -205,7 +206,7 @@ class EntTestObject(IEntTestThing, Ent):
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise ValueError(f"No EntTestObject found for ID {ent_id}")
+            raise EntNotFoundError(f"No EntTestObject found for ID {ent_id}")
         return ent
 
     @classmethod
@@ -231,7 +232,7 @@ class EntTestObject(IEntTestThing, Ent):
     ) -> EntTestObject:
         result = await cls.gen_from_username(vc, username)
         if not result:
-            raise ValueError(f"No EntTestObject found for username {username}")
+            raise EntNotFoundError(f"No EntTestObject found for username {username}")
         return result
 
     @classmethod
@@ -248,10 +249,9 @@ class EntTestObject(IEntTestThing, Ent):
     async def _genx_from_model(
         cls, vc: ExampleViewerContext, model: EntTestObjectModel
     ) -> EntTestObject:
-        ent = EntTestObject(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        if decision != Decision.ALLOW:
-            raise PrivacyError("Cannot load EntTestObject with id {ent.id}")
+        ent = await EntTestObject._gen_from_model(vc=vc, model=model)
+        if not ent:
+            raise EntNotFoundError(f"No EntTestObject found for ID {model.id}")
         return ent
 
     @classmethod
@@ -316,7 +316,7 @@ class EntTestObjectCountQuery(EntTestObjectQuery[int]):
         result = await session.execute(self.query)
         count = result.scalar()
         if count is None:
-            raise RuntimeError("Unable to get the count")
+            raise ExecutionError("Unable to get the count")
         return count
 
 

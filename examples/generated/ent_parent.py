@@ -3,26 +3,26 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
+from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
+from entpy import Field
+from .ent_grand_parent import EntGrandParent
 from .ent_grand_parent import EntGrandParentExample
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from .ent_model import EntModel
 from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import select, Select, func
+from typing import Any, TypeVar, Generic
 from ent_parent_schema import EntParentSchema
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sentinels import NOTHING, Sentinel  # type: ignore
-from entpy import Field
-from typing import Any, TypeVar, Generic
-from .ent_grand_parent import EntGrandParent
-from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String
 
 
 class EntParentModel(EntModel):
@@ -81,7 +81,7 @@ class EntParent(Ent):
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntParent:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise ValueError(f"No EntParent found for ID {ent_id}")
+            raise EntNotFoundError(f"No EntParent found for ID {ent_id}")
         return ent
 
     @classmethod
@@ -104,10 +104,9 @@ class EntParent(Ent):
     async def _genx_from_model(
         cls, vc: ExampleViewerContext, model: EntParentModel
     ) -> EntParent:
-        ent = EntParent(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        if decision != Decision.ALLOW:
-            raise PrivacyError("Cannot load EntParent with id {ent.id}")
+        ent = await EntParent._gen_from_model(vc=vc, model=model)
+        if not ent:
+            raise EntNotFoundError(f"No EntParent found for ID {model.id}")
         return ent
 
     @classmethod
@@ -172,7 +171,7 @@ class EntParentCountQuery(EntParentQuery[int]):
         result = await session.execute(self.query)
         count = result.scalar()
         if count is None:
-            raise RuntimeError("Unable to get the count")
+            raise ExecutionError("Unable to get the count")
         return count
 
 

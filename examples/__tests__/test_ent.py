@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from entpy import EntNotFoundError
 from ent_test_object_schema import Status
 from generated.ent_test_object import (
     EntTestObject,
@@ -47,7 +47,7 @@ async def test_ent_test_object_genx_with_unknown_model(
     db_session: AsyncSession, vc: ExampleViewerContext
 ) -> None:
     ent_id = uuid.uuid4()
-    with pytest.raises(ValueError):
+    with pytest.raises(EntNotFoundError):
         await EntTestObject.genx(vc, ent_id)
 
 
@@ -108,7 +108,7 @@ async def test_gen_and_genx_from_unique_field(
     resultx = await EntTestObject.genx_from_username(vc, username)
     assert resultx.username == username
 
-    with pytest.raises(ValueError):
+    with pytest.raises(EntNotFoundError):
         await EntTestObject.genx_from_username(vc, other_username)
 
 

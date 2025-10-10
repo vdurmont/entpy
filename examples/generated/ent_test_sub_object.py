@@ -3,22 +3,22 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid, PrivacyError, Action, Decision
+from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from ent_test_sub_object_schema import EntTestSubObjectSchema
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import select, Select, func
-from sentinels import NOTHING, Sentinel  # type: ignore
-from entpy import Field
-from typing import Any, TypeVar, Generic
-from .ent_model import EntModel
 from sqlalchemy.orm import Mapped, mapped_column
+from entpy import Field
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import String
+from .ent_model import EntModel
+from typing import Any, TypeVar, Generic
+from sqlalchemy import select, Select, func
+from ent_test_sub_object_schema import EntTestSubObjectSchema
 
 
 class EntTestSubObjectModel(EntModel):
@@ -67,7 +67,7 @@ class EntTestSubObject(Ent):
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestSubObject:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise ValueError(f"No EntTestSubObject found for ID {ent_id}")
+            raise EntNotFoundError(f"No EntTestSubObject found for ID {ent_id}")
         return ent
 
     @classmethod
@@ -92,10 +92,9 @@ class EntTestSubObject(Ent):
     async def _genx_from_model(
         cls, vc: ExampleViewerContext, model: EntTestSubObjectModel
     ) -> EntTestSubObject:
-        ent = EntTestSubObject(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        if decision != Decision.ALLOW:
-            raise PrivacyError("Cannot load EntTestSubObject with id {ent.id}")
+        ent = await EntTestSubObject._gen_from_model(vc=vc, model=model)
+        if not ent:
+            raise EntNotFoundError(f"No EntTestSubObject found for ID {model.id}")
         return ent
 
     @classmethod
@@ -162,7 +161,7 @@ class EntTestSubObjectCountQuery(EntTestSubObjectQuery[int]):
         result = await session.execute(self.query)
         count = result.scalar()
         if count is None:
-            raise RuntimeError("Unable to get the count")
+            raise ExecutionError("Unable to get the count")
         return count
 
 
