@@ -12,17 +12,17 @@ from evc import ExampleViewerContext
 from database import get_session
 from sqlalchemy.orm import Mapped, mapped_column
 from entpy import Field
-from .ent_grand_parent import EntGrandParent
-from .ent_grand_parent import EntGrandParentExample
 from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import ForeignKey
 from sqlalchemy import String
-from .ent_model import EntModel
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import select, Select, func
-from typing import Any, TypeVar, Generic
+from .ent_grand_parent import EntGrandParent
 from ent_parent_schema import EntParentSchema
+from sqlalchemy import ForeignKey
+from sqlalchemy import select, Select, func
+from .ent_grand_parent import EntGrandParentExample
+from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from typing import Any, TypeVar, Generic
+from .ent_model import EntModel
 
 
 class EntParentModel(EntModel):
@@ -160,6 +160,12 @@ class EntParentListQuery(EntParentQuery[EntParentModel]):
         result = await session.execute(self.query.limit(1))
         model = result.scalar_one_or_none()
         return await EntParent._gen_from_model(self.vc, model)
+
+    async def genx_first(self) -> EntParent:
+        ent = await self.gen_first()
+        if not ent:
+            raise EntNotFoundError("Expected query to return an ent, got None.")
+        return ent
 
 
 class EntParentCountQuery(EntParentQuery[int]):

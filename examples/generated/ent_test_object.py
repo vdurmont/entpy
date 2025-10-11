@@ -10,27 +10,27 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from ent_test_object_schema import Status
-from .ent_model import EntModel
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import select
-from sqlalchemy import ForeignKey
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import Select, func
-from sqlalchemy import Integer
-from sqlalchemy import Text
-from sqlalchemy import Enum as DBEnum
-from entpy import Field, FieldWithDynamicExample
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import DateTime
-from typing import Any, TypeVar, Generic
-from sqlalchemy.orm import Mapped, mapped_column
-from .ent_test_sub_object import EntTestSubObjectExample
-from .ent_test_thing import IEntTestThing
 from sqlalchemy import String
 from sqlalchemy import JSON
+from .ent_model import EntModel
+from ent_test_object_schema import Status
+from sqlalchemy import DateTime
+from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy.orm import Mapped, mapped_column
+from .ent_test_sub_object import EntTestSubObjectExample
+from sqlalchemy import Text
+from entpy import Field, FieldWithDynamicExample
+from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_test_thing import IEntTestThing
+from typing import Any, TypeVar, Generic
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy import Integer
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import ForeignKey
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import Select, func
 
 
 class EntTestObjectModel(EntModel):
@@ -305,6 +305,12 @@ class EntTestObjectListQuery(EntTestObjectQuery[EntTestObjectModel]):
         result = await session.execute(self.query.limit(1))
         model = result.scalar_one_or_none()
         return await EntTestObject._gen_from_model(self.vc, model)
+
+    async def genx_first(self) -> EntTestObject:
+        ent = await self.gen_first()
+        if not ent:
+            raise EntNotFoundError("Expected query to return an ent, got None.")
+        return ent
 
 
 class EntTestObjectCountQuery(EntTestObjectQuery[int]):

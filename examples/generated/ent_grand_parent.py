@@ -13,12 +13,12 @@ from database import get_session
 from sqlalchemy.orm import Mapped, mapped_column
 from entpy import Field
 from sentinels import NOTHING, Sentinel  # type: ignore
-from ent_grand_parent_schema import EntGrandParentSchema
-from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy import String
-from .ent_model import EntModel
-from typing import Any, TypeVar, Generic
+from ent_grand_parent_schema import EntGrandParentSchema
 from sqlalchemy import select, Select, func
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any, TypeVar, Generic
+from .ent_model import EntModel
 
 
 class EntGrandParentModel(EntModel):
@@ -148,6 +148,12 @@ class EntGrandParentListQuery(EntGrandParentQuery[EntGrandParentModel]):
         result = await session.execute(self.query.limit(1))
         model = result.scalar_one_or_none()
         return await EntGrandParent._gen_from_model(self.vc, model)
+
+    async def genx_first(self) -> EntGrandParent:
+        ent = await self.gen_first()
+        if not ent:
+            raise EntNotFoundError("Expected query to return an ent, got None.")
+        return ent
 
 
 class EntGrandParentCountQuery(EntGrandParentQuery[int]):

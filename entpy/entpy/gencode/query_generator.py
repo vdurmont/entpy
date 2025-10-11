@@ -54,6 +54,12 @@ class {base_name}ListQuery({base_name}Query[{base_name}Model]):
         model = result.scalar_one_or_none()
         return await {base_name}._gen_from_model(self.vc, model)
 
+    async def genx_first(self) -> {base_name}:
+        ent = await self.gen_first()
+        if not ent:
+            raise EntNotFoundError(f"Expected query to return an ent, got None.")
+        return ent
+
 class {base_name}CountQuery({base_name}Query[int]):
     def __init__(self) -> None:
         self.query = select(func.count()).select_from({base_name}Model)
