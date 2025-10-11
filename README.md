@@ -215,6 +215,16 @@ StringField("my_string", 100).example("Hello!")
 TextField("my_large_text")
 ```
 
+# Other attributes
+
+## Immutability
+
+If you want your Ent to be immutable (can be read/created/deleted, but not updated), override the `is_immutable` function:
+```python
+def is_immutable(self) -> bool:
+    return True
+```
+
 # Gencode
 
 // TODO write me: explain how the gencode works, and how to configure your gencode script

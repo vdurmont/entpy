@@ -48,6 +48,19 @@ def _generate_base(schema: Schema, base_name: str, vc_name: str) -> GeneratedCon
         [f", {field.name}={field.name}" for field in schema.get_all_fields()]
     )
 
+    # If the schema is not immutable, we generate the update
+    update_function = (
+        ""
+        if schema.is_immutable()
+        else f"""
+    @classmethod
+    def update(
+        cls, vc: {vc_name}, ent: {base_name}
+    ) -> {base_name}MutatorUpdateAction:
+        return {base_name}MutatorUpdateAction(vc=vc, ent=ent)
+"""
+    )
+
     return GeneratedContent(
         code=f"""
 class {base_name}Mutator:
@@ -56,13 +69,7 @@ class {base_name}Mutator:
         cls, vc: {vc_name}{arguments_definition}, id: UUID | None = None, created_at: datetime | None = None
     ) -> {base_name}MutatorCreationAction:
         return {base_name}MutatorCreationAction(vc=vc, id=id, created_at=created_at{arguments_usage})
-
-    @classmethod
-    def update(
-        cls, vc: {vc_name}, ent: {base_name}
-    ) -> {base_name}MutatorUpdateAction:
-        return {base_name}MutatorUpdateAction(vc=vc, ent=ent)
-
+{update_function}
     @classmethod
     def delete(
         cls, vc: {vc_name}, ent: {base_name}
@@ -136,6 +143,9 @@ class {base_name}MutatorCreationAction:
 def _generate_update(
     schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
 ) -> GeneratedContent:
+    if schema.is_immutable():
+        return GeneratedContent("")
+
     fields = schema.get_all_fields()
 
     # Build up the list of local variables we will store in the class

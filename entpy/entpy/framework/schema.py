@@ -12,3 +12,6 @@ class Schema(Descriptor, ABC):
 
     def get_composite_indexes(self) -> list[CompositeIndex]:
         return []
+
+    def is_immutable(self) -> bool:
+        return False
