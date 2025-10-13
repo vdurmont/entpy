@@ -1,4 +1,5 @@
 import subprocess
+from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
 
@@ -38,18 +39,18 @@ def run(
 
     # Gencode all the things!
     models_list = ""
+    models_list_mapping = ""
     for config in configs:
         descriptor_class = config[0]
         descriptor_output_path = config[1]
         print(f"Processing: {descriptor_class.__name__}")
         if issubclass(descriptor_class, Schema):
-            models_list += (
-                "\nfrom ."
-                + descriptor_output_path.stem
-                + " import "
-                + descriptor_class.__name__.replace("Schema", "Model")
-                + "  # noqa: F401"
-            )
+            base_name = descriptor_class.__name__.replace("Schema", "")
+            uuid_type = sha256(base_name.encode()).digest()[:2]
+            uuid_hex = "".join(f"\\x{b:02x}" for b in uuid_type)
+            models_list_mapping += f'\n    b"{uuid_hex}": {base_name},'
+            models_list += f"\nfrom .{descriptor_output_path.stem} import {base_name}Model  # noqa: F401"  # noqa: E501
+            models_list += f"\nfrom .{descriptor_output_path.stem} import {base_name}"
             code = generate_schema(
                 schema_class=descriptor_class,
                 ent_model_import="from .ent_model import EntModel",
@@ -71,7 +72,15 @@ def run(
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
         _write_file(descriptor_output_path, code)
 
-    _write_file(output_path / "all_models.py", models_list)
+    models_list_code = f"""
+from entpy import Ent
+{models_list}
+
+UUID_TO_ENT: dict[bytes, type[Ent]] = {{
+{models_list_mapping}
+}}
+"""
+    _write_file(output_path / "all_models.py", models_list_code)
 
     # Format the code before returning
     # TODO make this a config, not everyone uses ruff
