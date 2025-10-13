@@ -10,27 +10,27 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import String
-from sqlalchemy import JSON
-from sqlalchemy import DateTime
-from .ent_test_thing import IEntTestThing
+from sentinels import NOTHING, Sentinel  # type: ignore
 from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import Enum as DBEnum
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy.orm import Mapped, mapped_column
+from .ent_test_sub_object import EntTestSubObjectExample
+from ent_test_object_schema import EntTestObjectSchema
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import ForeignKey
-from .ent_model import EntModel
 from sqlalchemy import select
-from sqlalchemy import Text
+from sqlalchemy import JSON
 from sqlalchemy import Integer
-from ent_test_object_schema import Status
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import Enum as DBEnum
+from .ent_model import EntModel
 from sqlalchemy import Select, func
 from typing import Any, TypeVar, Generic
-from entpy import Field, FieldWithDynamicExample
-from .ent_test_sub_object import EntTestSubObjectExample
-from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import Text
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from .ent_test_thing import IEntTestThing
+from ent_test_object_schema import Status
+from sqlalchemy import String
 
 
 class EntTestObjectModel(EntModel):

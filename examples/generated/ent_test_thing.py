@@ -55,4 +55,6 @@ class IEntTestThingExample:
         # EntPy selected a random implementation of the pattern to use for examples
         from .ent_test_object import EntTestObjectExample
 
-        return await EntTestObjectExample.gen_create(vc=vc, created_at=created_at)
+        return await EntTestObjectExample.gen_create(
+            vc=vc, created_at=created_at, a_good_thing=a_good_thing
+        )
