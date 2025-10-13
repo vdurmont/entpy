@@ -10,6 +10,7 @@ class Field(ABC):
     original_name: str
     nullable: bool = True
     is_unique: bool = False
+    is_immutable: bool = False
     description: str | None = None
 
     def __init__(self, name: str, actual_name: str | None = None):
@@ -30,6 +31,10 @@ class Field(ABC):
 
     def documentation(self, doc: str) -> Self:
         self.description = doc
+        return self
+
+    def immutable(self) -> Self:
+        self.is_immutable = True
         return self
 
 

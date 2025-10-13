@@ -10,27 +10,27 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
+from ent_test_object_schema import EntTestObjectSchema
 from sqlalchemy import String
 from sqlalchemy import JSON
-from .ent_model import EntModel
-from ent_test_object_schema import Status
 from sqlalchemy import DateTime
+from .ent_test_thing import IEntTestThing
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import Enum as DBEnum
 from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy.orm import Mapped, mapped_column
-from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import Text
-from entpy import Field, FieldWithDynamicExample
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_test_thing import IEntTestThing
-from typing import Any, TypeVar, Generic
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import Enum as DBEnum
-from sqlalchemy import Integer
-from .ent_test_sub_object import EntTestSubObject
-from sqlalchemy import ForeignKey
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import ForeignKey
+from .ent_model import EntModel
+from sqlalchemy import select
+from sqlalchemy import Text
+from sqlalchemy import Integer
+from ent_test_object_schema import Status
 from sqlalchemy import Select, func
+from typing import Any, TypeVar, Generic
+from entpy import Field, FieldWithDynamicExample
+from .ent_test_sub_object import EntTestSubObjectExample
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestObjectModel(EntModel):
@@ -484,7 +484,6 @@ class EntTestObjectMutatorUpdateAction:
     required_sub_object_id: UUID
     username: str
     city: str | None = None
-    context: str | None = None
     lastname: str | None = None
     optional_sub_object_id: UUID | None = None
     optional_sub_object_no_ex_id: UUID | None = None
@@ -504,7 +503,6 @@ class EntTestObjectMutatorUpdateAction:
         self.required_sub_object_id = ent.required_sub_object_id
         self.username = ent.username
         self.city = ent.city
-        self.context = ent.context
         self.lastname = ent.lastname
         self.optional_sub_object_id = ent.optional_sub_object_id
         self.optional_sub_object_no_ex_id = ent.optional_sub_object_no_ex_id
@@ -524,7 +522,6 @@ class EntTestObjectMutatorUpdateAction:
         model.required_sub_object_id = self.required_sub_object_id
         model.username = self.username
         model.city = self.city
-        model.context = self.context
         model.lastname = self.lastname
         model.optional_sub_object_id = self.optional_sub_object_id
         model.optional_sub_object_no_ex_id = self.optional_sub_object_no_ex_id

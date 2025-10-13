@@ -147,24 +147,25 @@ def _generate_update(
         return GeneratedContent("")
 
     fields = schema.get_all_fields()
+    mutable_fields = list(filter(lambda f: not f.is_immutable, fields))
 
     # Build up the list of local variables we will store in the class
     local_variables = "\n".join(
         [
             f"    {field.name}: {field.get_python_type()}"
             + (" | None = None" if field.nullable else "")
-            for field in fields
+            for field in mutable_fields
         ]
     )
 
     # Build up the list of assignments in the constructor
     local_variables_assignments = "\n".join(
-        [f"        self.{field.name} = ent.{field.name}" for field in fields]
+        [f"        self.{field.name} = ent.{field.name}" for field in mutable_fields]
     )
 
     # Build up the list of variables to assign to the model
     model_assignments = "\n".join(
-        [f"        model.{field.name}=self.{field.name}" for field in fields]
+        [f"        model.{field.name}=self.{field.name}" for field in mutable_fields]
     )
 
     return GeneratedContent(

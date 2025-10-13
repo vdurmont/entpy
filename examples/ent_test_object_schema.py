@@ -47,7 +47,7 @@ class EntTestObjectSchema(Schema):
             EdgeField("required_sub_object", EntTestSubObjectSchema).not_null(),
             EdgeField("optional_sub_object", EntTestSubObjectSchema),
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),
-            TextField("context").example("This is some good context."),
+            TextField("context").example("This is some good context.").immutable(),
             EnumField("status", Status).example(Status.HAPPY),
             EnumField("sadness", Status).default(Status.SAD),
             DatetimeField("when_is_it_cool").dynamic_example(
