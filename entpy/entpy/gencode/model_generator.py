@@ -7,17 +7,21 @@ from entpy import (
     EnumField,
     IntField,
     JsonField,
+    Pattern,
     Schema,
     StringField,
     TextField,
 )
+from entpy.framework.descriptor import Descriptor
 from entpy.framework.fields.core import FieldWithDefault
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import to_snake_case
 
 
-def generate(schema: Schema, base_name: str) -> GeneratedContent:
-    fields = schema.get_all_fields()
+def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
+    # Only use the fields for this specific descriptor. The patterns fields will
+    # be handled by inheritance.
+    fields = descriptor.get_sorted_fields()
 
     fields_code = ""
     edges_imports = []
@@ -88,7 +92,19 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
 
-    indexes = _generate_indexes(schema=schema, base_name=base_name)
+    indexes = (
+        _generate_indexes(schema=descriptor, base_name=base_name)
+        if isinstance(descriptor, Schema)
+        else GeneratedContent("")
+    )
+
+    metadata = (
+        "__abstract__ = True"
+        if isinstance(descriptor, Pattern)
+        else f'__tablename__ = "{_get_table_name(base_name)}"'
+    )
+
+    extends = _generate_extends(descriptor=descriptor)
 
     return GeneratedContent(
         imports=[
@@ -97,10 +113,11 @@ def generate(schema: Schema, base_name: str) -> GeneratedContent:
         ]
         + types_imports
         + edges_imports
-        + indexes.imports,
+        + indexes.imports
+        + extends.imports,
         code=f"""
-class {base_name}Model(EntModel):
-    __tablename__ = "{_get_table_name(base_name)}"
+class {base_name}Model({extends.code}):
+    {metadata}
 
 {fields_code}
 
@@ -138,3 +155,21 @@ def _get_table_name(base_name: str) -> str:
 
     # Convert to lowercase
     return base_name.lower()
+
+
+def _generate_extends(descriptor: Descriptor) -> GeneratedContent:
+    patterns = descriptor.get_patterns()
+    code = ", ".join(
+        [p.__class__.__name__.replace("Pattern", "") + "Model" for p in patterns]
+    )
+
+    def get_import(pattern: Pattern):
+        base_name = pattern.__class__.__name__.replace("Pattern", "")
+        return f"from .{to_snake_case(base_name)} import {base_name}Model"
+
+    imports = [get_import(p) for p in patterns]
+    return (
+        GeneratedContent(code=code, imports=imports)
+        if code
+        else GeneratedContent(code="EntModel")
+    )

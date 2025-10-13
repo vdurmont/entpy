@@ -7,6 +7,7 @@ from entpy import Pattern, Schema
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
+from entpy.gencode.view_generator import generate as generate_view
 
 
 def run(
@@ -60,13 +61,29 @@ def run(
                 vc_name=vc_name,
             )
         elif issubclass(descriptor_class, Pattern):
+            children = get_children_schema_classes(
+                pattern_class=descriptor_class,
+            )
             code = generate_pattern(
                 pattern_class=descriptor_class,
-                children_schema_classes=get_children_schema_classes(
-                    pattern_class=descriptor_class,
-                ),
+                children_schema_classes=children,
+                ent_model_import="from .ent_model import EntModel",
                 vc_import=vc_import,
                 vc_name=vc_name,
+            )
+            view_code = generate_view(
+                pattern_class=descriptor_class, children_schema_classes=children
+            )
+            _write_file(
+                descriptor_output_path.with_stem(f"{descriptor_output_path.stem}_view"),
+                view_code,
+            )
+            models_list += (
+                "\nfrom ."
+                + descriptor_output_path.stem
+                + "_view import "
+                + descriptor_class.__name__.replace("Pattern", "View")
+                + "  # noqa: F401"
             )
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
@@ -117,12 +134,12 @@ def _load_descriptors_configs(
         ] + [pattern for pattern in patterns if pattern.__name__ == descriptor_name]
         if not matching_descriptors:
             print(
-                f"Warning: No matching schema or pattern class found for file {descriptor_file}"
+                f"Warning: No matching descriptor class found for file {descriptor_file}"  # noqa: E501
             )
             continue
         if len(matching_descriptors) > 1:
             print(
-                "Warning: Multiple matching schema or pattern classes found for "
+                "Warning: Multiple matching descriptor classes found for "
                 + f"file {descriptor_file}"
             )
             continue
@@ -130,7 +147,7 @@ def _load_descriptors_configs(
             (
                 matching_descriptors[0],
                 output_path
-                / f"{descriptor_file.stem.replace('_schema', '').replace('_pattern', '')}.py",
+                / f"{descriptor_file.stem.replace('_schema', '').replace('_pattern', '')}.py",  # noqa: E501
             )
         )
 

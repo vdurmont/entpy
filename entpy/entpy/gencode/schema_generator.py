@@ -28,7 +28,7 @@ def generate(
     # Validate that field names only contain lowercase letters, numbers, and underscores
     _validate_field_name_format(schema)
 
-    model_content = generate_model(schema=schema, base_name=base_name)
+    model_content = generate_model(descriptor=schema, base_name=base_name)
     base_content = generate_base(
         schema=schema,
         base_name=base_name,

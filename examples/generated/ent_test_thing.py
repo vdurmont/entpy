@@ -8,7 +8,16 @@ from uuid import UUID
 from entpy import Ent
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
+from .ent_model import EntModel
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 from evc import ExampleViewerContext
+
+
+class EntTestThingModel(EntModel):
+    __abstract__ = True
+
+    a_good_thing: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
 class IEntTestThing(Ent):
@@ -27,6 +36,12 @@ class IEntTestThing(Ent):
         if ent_test_object:
             return ent_test_object
 
+        from .ent_test_object2 import EntTestObject2
+
+        ent_test_object2 = await EntTestObject2.gen(vc, ent_id)
+        if ent_test_object2:
+            return ent_test_object2
+
         return None
 
     @classmethod
@@ -38,6 +53,12 @@ class IEntTestThing(Ent):
         ent_test_object = await EntTestObject.genx(vc, ent_id)
         if ent_test_object:
             return ent_test_object
+
+        from .ent_test_object2 import EntTestObject2
+
+        ent_test_object2 = await EntTestObject2.genx(vc, ent_id)
+        if ent_test_object2:
+            return ent_test_object2
 
         raise ValueError(f"No EntTestThing found for ID {ent_id}")
 

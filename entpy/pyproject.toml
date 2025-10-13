@@ -9,6 +9,8 @@ dependencies = [
     "greenlet>=3.2.4",
     "sentinels>=1.1.1",
     "sqlalchemy==2.0.43",
+    "sqlalchemy-utils>=0.42.0",
+    "types-sqlalchemy-utils>=1.1.0",
 ]
 
 [project.optional-dependencies]

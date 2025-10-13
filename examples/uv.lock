@@ -32,6 +32,8 @@ dependencies = [
     { name = "greenlet" },
     { name = "sentinels" },
     { name = "sqlalchemy" },
+    { name = "sqlalchemy-utils" },
+    { name = "types-sqlalchemy-utils" },
 ]
 
 [package.metadata]
@@ -42,6 +44,8 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = "==0.6.8" },
     { name = "sentinels", specifier = ">=1.1.1" },
     { name = "sqlalchemy", specifier = "==2.0.43" },
+    { name = "sqlalchemy-utils", specifier = ">=0.42.0" },
+    { name = "types-sqlalchemy-utils", specifier = ">=1.1.0" },
 ]
 provides-extras = ["dev"]
 
@@ -281,6 +285,27 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b6/e4/bd78b01919c524f190b4905d47e7630bf4130b9f48fd971ae1c6225b6f6a/sqlalchemy-2.0.43-cp313-cp313-win32.whl", hash = "sha256:7f1ac7828857fcedb0361b48b9ac4821469f7694089d15550bbcf9ab22564a1d", size = 2096718, upload-time = "2025-08-11T15:55:05.349Z" },
     { url = "https://files.pythonhosted.org/packages/ac/a5/ca2f07a2a201f9497de1928f787926613db6307992fe5cda97624eb07c2f/sqlalchemy-2.0.43-cp313-cp313-win_amd64.whl", hash = "sha256:971ba928fcde01869361f504fcff3b7143b47d30de188b11c6357c0505824197", size = 2123200, upload-time = "2025-08-11T15:55:07.932Z" },
     { url = "https://files.pythonhosted.org/packages/b8/d9/13bdde6521f322861fab67473cec4b1cc8999f3871953531cf61945fad92/sqlalchemy-2.0.43-py3-none-any.whl", hash = "sha256:1681c21dd2ccee222c2fe0bef671d1aef7c504087c9c4e800371cfcc8ac966fc", size = 1924759, upload-time = "2025-08-11T15:39:53.024Z" },
+]
+
+[[package]]
+name = "sqlalchemy-utils"
+version = "0.42.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sqlalchemy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/63/80/4e15fdcfc25a2226122bf316f0ebac86d840ab3fb38b38ca4cabc395865e/sqlalchemy_utils-0.42.0.tar.gz", hash = "sha256:6d1ecd3eed8b941f0faf8a531f5d5cee7cffa2598fcf8163de8c31c7a417a5e0", size = 130531, upload-time = "2025-08-30T18:43:41.904Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/52/86/21e97809b017a4ebc88971eea335130782421851b0ed8dc3ab6126b479f1/sqlalchemy_utils-0.42.0-py3-none-any.whl", hash = "sha256:c8c0b7f00f4734f6f20e9a4d06b39d79d58c8629cba50924fcaeb20e28eb4f48", size = 91744, upload-time = "2025-08-30T18:43:40.199Z" },
+]
+
+[[package]]
+name = "types-sqlalchemy-utils"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a5/5d/747310a5b105facc74c5b466e3e234f187df6bd5168dba6e28884f9be4d8/types_sqlalchemy_utils-1.1.0.tar.gz", hash = "sha256:af9d92992687c9e7c920b9a1b814fd10915b9b3a7b1f731b7fd2fff8ce2f3bfb", size = 22676, upload-time = "2024-05-13T08:33:01.853Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/82/ff6cd783b288130577cb516d1f65d8efb650bcd7723d0e7774f632b3df16/types_sqlalchemy_utils-1.1.0-py3-none-any.whl", hash = "sha256:60b28fe3453f67fc90bb0a106063025cffc1efa6eedb59a7ea5b043644c3d16a", size = 38415, upload-time = "2024-05-13T08:32:59.746Z" },
 ]
 
 [[package]]

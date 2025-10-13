@@ -1,0 +1,31 @@
+from sqlalchemy import literal_column, select, union_all, Table, Selectable
+from sqlalchemy_utils import create_view
+from .ent_test_thing import EntTestThingModel
+from .ent_test_object import EntTestObjectModel
+from .ent_test_object2 import EntTestObject2Model
+
+
+view_query: Selectable = union_all(
+    select(
+        EntTestObjectModel.id,
+        EntTestObjectModel.created_at,
+        EntTestObjectModel.updated_at,
+        EntTestObjectModel.a_good_thing,
+        literal_column("'EntTestObjectModel'").label("ent_type"),
+    ),
+    select(
+        EntTestObject2Model.id,
+        EntTestObject2Model.created_at,
+        EntTestObject2Model.updated_at,
+        EntTestObject2Model.a_good_thing,
+        literal_column("'EntTestObject2Model'").label("ent_type"),
+    ),
+)
+
+
+class EntTestThingView(EntTestThingModel):
+    __table__: Table = create_view(
+        name="ent_test_thing_view",
+        selectable=view_query,
+        metadata=EntTestThingModel.metadata,
+    )

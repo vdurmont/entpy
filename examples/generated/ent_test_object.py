@@ -10,33 +10,33 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_test_thing import IEntTestThing
 from sqlalchemy import select
-from sqlalchemy import String
-from .ent_test_sub_object import EntTestSubObject
-from .ent_model import EntModel
-from sqlalchemy import Text
-from sqlalchemy import Integer
-from sentinels import NOTHING, Sentinel  # type: ignore
-from ent_test_object_schema import Status
-from entpy import Field, FieldWithDynamicExample
 from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import DateTime
-from sqlalchemy import Select, func
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import JSON
-from sqlalchemy import ForeignKey
-from sqlalchemy.sql.expression import ColumnElement
-from typing import Any, TypeVar, Generic
-from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Enum as DBEnum
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import Text
+from sqlalchemy import JSON
+from sqlalchemy import Select, func
+from ent_test_object_schema import Status
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from .ent_test_thing import EntTestThingModel
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime
+from sentinels import NOTHING, Sentinel  # type: ignore
+from typing import Any, TypeVar, Generic
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from .ent_model import EntModel
+from sqlalchemy import Integer
+from entpy import Field, FieldWithDynamicExample
+from .ent_test_sub_object import EntTestSubObjectExample
+from .ent_test_thing import IEntTestThing
 
 
-class EntTestObjectModel(EntModel):
+class EntTestObjectModel(EntTestThingModel):
     __tablename__ = "test_object"
 
-    a_good_thing: Mapped[str] = mapped_column(String(100), nullable=False)
     firstname: Mapped[str] = mapped_column(String(100), nullable=False)
     required_sub_object_id: Mapped[UUID] = mapped_column(
         DBUUID(as_uuid=True), ForeignKey("test_sub_object.id"), nullable=False

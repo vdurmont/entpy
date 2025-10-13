@@ -12,26 +12,28 @@ from evc import ExampleViewerContext
 from database import get_session
 from typing import Any, TypeVar, Generic
 from .ent_model import EntModel
-from ent_test_sub_object_schema import EntTestSubObjectSchema
 from entpy import Field
 from sqlalchemy import String
+from .ent_test_thing import EntTestThingModel
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import select, Select, func
 from sqlalchemy.sql.expression import ColumnElement
+from .ent_test_thing import IEntTestThing
 from sentinels import NOTHING, Sentinel  # type: ignore
+from ent_test_object2_schema import EntTestObject2Schema
 
 
-class EntTestSubObjectModel(EntModel):
-    __tablename__ = "test_sub_object"
+class EntTestObject2Model(EntTestThingModel):
+    __tablename__ = "test_object2"
 
-    email: Mapped[str] = mapped_column(String(100), nullable=False)
+    some_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
-class EntTestSubObject(Ent):
+class EntTestObject2(IEntTestThing, Ent):
     vc: ExampleViewerContext
-    model: EntTestSubObjectModel
+    model: EntTestObject2Model
 
-    def __init__(self, vc: ExampleViewerContext, model: EntTestSubObjectModel) -> None:
+    def __init__(self, vc: ExampleViewerContext, model: EntTestObject2Model) -> None:
         self.vc = vc
         self.model = model
 
@@ -48,13 +50,17 @@ class EntTestSubObject(Ent):
         return self.model.updated_at
 
     @property
-    def email(self) -> str:
-        return self.model.email
+    def a_good_thing(self) -> str:
+        return self.model.a_good_thing
+
+    @property
+    def some_field(self) -> str | None:
+        return self.model.some_field
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
-        rules = EntTestSubObjectSchema().get_privacy_rules(action)
+        rules = EntTestObject2Schema().get_privacy_rules(action)
         for rule in rules:
             decision = await rule.gen_evaluate(vc, self)
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
@@ -64,52 +70,50 @@ class EntTestSubObject(Ent):
         return Decision.DENY
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestSubObject:
+    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject2:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise EntNotFoundError(f"No EntTestSubObject found for ID {ent_id}")
+            raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
         return ent
 
     @classmethod
-    async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID
-    ) -> EntTestSubObject | None:
+    async def gen(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject2 | None:
         session = get_session()
-        model = await session.get(EntTestSubObjectModel, ent_id)
+        model = await session.get(EntTestObject2Model, ent_id)
         return await cls._gen_from_model(vc, model)
 
     @classmethod
     async def _gen_from_model(
-        cls, vc: ExampleViewerContext, model: EntTestSubObjectModel | None
-    ) -> EntTestSubObject | None:
+        cls, vc: ExampleViewerContext, model: EntTestObject2Model | None
+    ) -> EntTestObject2 | None:
         if not model:
             return None
-        ent = EntTestSubObject(vc=vc, model=model)
+        ent = EntTestObject2(vc=vc, model=model)
         decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
         return ent if decision == Decision.ALLOW else None
 
     @classmethod
     async def _genx_from_model(
-        cls, vc: ExampleViewerContext, model: EntTestSubObjectModel
-    ) -> EntTestSubObject:
-        ent = await EntTestSubObject._gen_from_model(vc=vc, model=model)
+        cls, vc: ExampleViewerContext, model: EntTestObject2Model
+    ) -> EntTestObject2:
+        ent = await EntTestObject2._gen_from_model(vc=vc, model=model)
         if not ent:
-            raise EntNotFoundError(f"No EntTestSubObject found for ID {model.id}")
+            raise EntNotFoundError(f"No EntTestObject2 found for ID {model.id}")
         return ent
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestSubObjectListQuery:
-        return EntTestSubObjectListQuery(vc=vc)
+    def query(cls, vc: ExampleViewerContext) -> EntTestObject2ListQuery:
+        return EntTestObject2ListQuery(vc=vc)
 
     @classmethod
-    def query_count(cls, vc: ExampleViewerContext) -> EntTestSubObjectCountQuery:
-        return EntTestSubObjectCountQuery()
+    def query_count(cls, vc: ExampleViewerContext) -> EntTestObject2CountQuery:
+        return EntTestObject2CountQuery()
 
 
 T = TypeVar("T")
 
 
-class EntTestSubObjectQuery(ABC, Generic[T]):
+class EntTestObject2Query(ABC, Generic[T]):
     query: Select[tuple[T]]
 
     def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
@@ -129,38 +133,38 @@ class EntTestSubObjectQuery(ABC, Generic[T]):
         return self
 
 
-class EntTestSubObjectListQuery(EntTestSubObjectQuery[EntTestSubObjectModel]):
+class EntTestObject2ListQuery(EntTestObject2Query[EntTestObject2Model]):
     vc: ExampleViewerContext
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-        self.query = select(EntTestSubObjectModel)
+        self.query = select(EntTestObject2Model)
 
-    async def gen(self) -> list[EntTestSubObject]:
+    async def gen(self) -> list[EntTestObject2]:
         session = get_session()
         result = await session.execute(self.query)
         models = result.scalars().all()
         ents = [
-            await EntTestSubObject._gen_from_model(self.vc, model) for model in models
+            await EntTestObject2._gen_from_model(self.vc, model) for model in models
         ]
         return list(filter(None, ents))
 
-    async def gen_first(self) -> EntTestSubObject | None:
+    async def gen_first(self) -> EntTestObject2 | None:
         session = get_session()
         result = await session.execute(self.query.limit(1))
         model = result.scalar_one_or_none()
-        return await EntTestSubObject._gen_from_model(self.vc, model)
+        return await EntTestObject2._gen_from_model(self.vc, model)
 
-    async def genx_first(self) -> EntTestSubObject:
+    async def genx_first(self) -> EntTestObject2:
         ent = await self.gen_first()
         if not ent:
             raise EntNotFoundError("Expected query to return an ent, got None.")
         return ent
 
 
-class EntTestSubObjectCountQuery(EntTestSubObjectQuery[int]):
+class EntTestObject2CountQuery(EntTestObject2Query[int]):
     def __init__(self) -> None:
-        self.query = select(func.count()).select_from(EntTestSubObjectModel)
+        self.query = select(func.count()).select_from(EntTestObject2Model)
 
     async def gen_NO_PRIVACY(self) -> int:
         session = get_session()
@@ -171,88 +175,100 @@ class EntTestSubObjectCountQuery(EntTestSubObjectQuery[int]):
         return count
 
 
-class EntTestSubObjectMutator:
+class EntTestObject2Mutator:
     @classmethod
     def create(
         cls,
         vc: ExampleViewerContext,
-        email: str,
+        a_good_thing: str,
+        some_field: str | None = None,
         id: UUID | None = None,
         created_at: datetime | None = None,
-    ) -> EntTestSubObjectMutatorCreationAction:
-        return EntTestSubObjectMutatorCreationAction(
-            vc=vc, id=id, created_at=created_at, email=email
+    ) -> EntTestObject2MutatorCreationAction:
+        return EntTestObject2MutatorCreationAction(
+            vc=vc,
+            id=id,
+            created_at=created_at,
+            a_good_thing=a_good_thing,
+            some_field=some_field,
         )
 
     @classmethod
     def update(
-        cls, vc: ExampleViewerContext, ent: EntTestSubObject
-    ) -> EntTestSubObjectMutatorUpdateAction:
-        return EntTestSubObjectMutatorUpdateAction(vc=vc, ent=ent)
+        cls, vc: ExampleViewerContext, ent: EntTestObject2
+    ) -> EntTestObject2MutatorUpdateAction:
+        return EntTestObject2MutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
     def delete(
-        cls, vc: ExampleViewerContext, ent: EntTestSubObject
-    ) -> EntTestSubObjectMutatorDeletionAction:
-        return EntTestSubObjectMutatorDeletionAction(vc=vc, ent=ent)
+        cls, vc: ExampleViewerContext, ent: EntTestObject2
+    ) -> EntTestObject2MutatorDeletionAction:
+        return EntTestObject2MutatorDeletionAction(vc=vc, ent=ent)
 
 
-class EntTestSubObjectMutatorCreationAction:
+class EntTestObject2MutatorCreationAction:
     vc: ExampleViewerContext
     id: UUID
-    email: str
+    a_good_thing: str
+    some_field: str | None = None
 
     def __init__(
         self,
         vc: ExampleViewerContext,
         id: UUID | None,
         created_at: datetime | None,
-        email: str,
+        a_good_thing: str,
+        some_field: str | None,
     ) -> None:
         self.vc = vc
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.id = id if id else generate_uuid(EntTestSubObject, self.created_at)
-        self.email = email
+        self.id = id if id else generate_uuid(EntTestObject2, self.created_at)
+        self.a_good_thing = a_good_thing
+        self.some_field = some_field
 
-    async def gen_savex(self) -> EntTestSubObject:
+    async def gen_savex(self) -> EntTestObject2:
         session = get_session()
-        model = EntTestSubObjectModel(
+        model = EntTestObject2Model(
             id=self.id,
             created_at=self.created_at,
-            email=self.email,
+            a_good_thing=self.a_good_thing,
+            some_field=self.some_field,
         )
         session.add(model)
         await session.flush()
         # TODO privacy checks
-        return await EntTestSubObject._genx_from_model(self.vc, model)
+        return await EntTestObject2._genx_from_model(self.vc, model)
 
 
-class EntTestSubObjectMutatorUpdateAction:
+class EntTestObject2MutatorUpdateAction:
     vc: ExampleViewerContext
-    ent: EntTestSubObject
+    ent: EntTestObject2
     id: UUID
-    email: str
+    a_good_thing: str
+    some_field: str | None = None
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestSubObject) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject2) -> None:
         self.vc = vc
         self.ent = ent
-        self.email = ent.email
+        self.a_good_thing = ent.a_good_thing
+        self.some_field = ent.some_field
 
-    async def gen_savex(self) -> EntTestSubObject:
+    async def gen_savex(self) -> EntTestObject2:
         session = get_session()
         model = self.ent.model
-        model.email = self.email
+        model.a_good_thing = self.a_good_thing
+        model.some_field = self.some_field
         session.add(model)
         await session.flush()
         # TODO privacy checks
-        return await EntTestSubObject._genx_from_model(self.vc, model)
+        return await EntTestObject2._genx_from_model(self.vc, model)
 
 
-class EntTestSubObjectMutatorDeletionAction:
+class EntTestObject2MutatorDeletionAction:
     vc: ExampleViewerContext
-    ent: EntTestSubObject
+    ent: EntTestObject2
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestSubObject) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject2) -> None:
         self.vc = vc
         self.ent = ent
 
@@ -264,25 +280,31 @@ class EntTestSubObjectMutatorDeletionAction:
         await session.flush()
 
 
-class EntTestSubObjectExample:
+class EntTestObject2Example:
     @classmethod
     async def gen_create(
         cls,
         vc: ExampleViewerContext,
         created_at: datetime | None = None,
-        email: str | Sentinel = NOTHING,
-    ) -> EntTestSubObject:
+        a_good_thing: str | Sentinel = NOTHING,
+        some_field: str | None = None,
+    ) -> EntTestObject2:
         # TODO make sure we only use this in test mode
 
-        email = "vdurmont@gmail.com" if isinstance(email, Sentinel) else email
+        a_good_thing = (
+            "A sunny day" if isinstance(a_good_thing, Sentinel) else a_good_thing
+        )
 
-        return await EntTestSubObjectMutator.create(
-            vc=vc, created_at=created_at, email=email
+        return await EntTestObject2Mutator.create(
+            vc=vc,
+            created_at=created_at,
+            a_good_thing=a_good_thing,
+            some_field=some_field,
         ).gen_savex()
 
     @classmethod
     def _get_field(cls, field_name: str) -> Field:
-        schema = EntTestSubObjectSchema()
+        schema = EntTestObject2Schema()
         fields = schema.get_fields()
         field = list(
             filter(

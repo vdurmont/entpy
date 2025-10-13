@@ -10,6 +10,9 @@ from .ent_parent import EntParentModel  # noqa: F401
 from .ent_parent import EntParent
 from .ent_grand_parent import EntGrandParentModel  # noqa: F401
 from .ent_grand_parent import EntGrandParent
+from .ent_test_object2 import EntTestObject2Model  # noqa: F401
+from .ent_test_object2 import EntTestObject2
+from .ent_test_thing_view import EntTestThingView  # noqa: F401
 
 UUID_TO_ENT: dict[bytes, type[Ent]] = {
     b"\x23\x1c": EntTestObject,
@@ -17,4 +20,5 @@ UUID_TO_ENT: dict[bytes, type[Ent]] = {
     b"\x16\xd7": EntTestSubObject,
     b"\x20\x33": EntParent,
     b"\x3b\xdf": EntGrandParent,
+    b"\x7c\x9a": EntTestObject2,
 }
