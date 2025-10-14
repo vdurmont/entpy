@@ -9,16 +9,16 @@ from entpy import Ent
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
 from typing import Self
+from database import get_session
+from sqlalchemy import select, Select, func, Result
+from sqlalchemy.sql.expression import ColumnElement
+from typing import cast
+from sqlalchemy.orm import Mapped, mapped_column
+from typing import Any, TypeVar, Generic
+from entpy import EntNotFoundError, ExecutionError
 from sqlalchemy import String
 from .ent_model import EntModel
-from entpy import EntNotFoundError, ExecutionError
-from typing import Any, TypeVar, Generic
-from sqlalchemy.sql.expression import ColumnElement
 from evc import ExampleViewerContext
-from typing import cast
-from sqlalchemy import select, Select, func, Result
-from sqlalchemy.orm import Mapped, mapped_column
-from database import get_session
 
 
 class EntTestThingModel(EntModel):

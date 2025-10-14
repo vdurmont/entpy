@@ -154,6 +154,9 @@ def _load_descriptors_configs(
             )
         )
 
+    # Sort configs by descriptor class name for stable output
+    configs.sort(key=lambda config: config[0].__name__)
+
     return configs
 
 
