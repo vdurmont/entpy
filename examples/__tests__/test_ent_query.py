@@ -1,6 +1,5 @@
 from uuid import uuid4
 from datetime import datetime, UTC, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
 from generated.ent_grand_parent import EntGrandParentExample
 from generated.ent_parent import EntParentExample, EntParentModel
 from generated.ent_child import EntChildExample, EntChild, EntChildModel
@@ -13,7 +12,7 @@ from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
 from evc import ExampleViewerContext
 
 
-async def test_ent_query(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
+async def test_ent_query(vc: ExampleViewerContext) -> None:
     firstname = str(uuid4())
     now = datetime.now(tz=UTC)
 
@@ -47,9 +46,7 @@ async def test_ent_query(db_session: AsyncSession, vc: ExampleViewerContext) -> 
     assert results[1].id == yes2.id
 
 
-async def test_ent_query_join(
-    db_session: AsyncSession, vc: ExampleViewerContext
-) -> None:
+async def test_ent_query_join(vc: ExampleViewerContext) -> None:
     now = datetime.now(tz=UTC)
 
     grand_parent1 = await EntGrandParentExample.gen_create(vc, name="Anne")
@@ -90,9 +87,7 @@ async def test_ent_query_join(
     assert results[1].id == child1.id
 
 
-async def test_ent_query_count(
-    db_session: AsyncSession, vc: ExampleViewerContext
-) -> None:
+async def test_ent_query_count(vc: ExampleViewerContext) -> None:
     firstname = "john"
     await EntTestObjectExample.gen_create(vc, firstname=firstname)
     await EntTestObjectExample.gen_create(vc, firstname=firstname)

@@ -10,15 +10,15 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from typing import Any, TypeVar, Generic
-from .ent_model import EntModel
-from ent_grand_parent_schema import EntGrandParentSchema
-from entpy import Field
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import select, Select, func
-from sqlalchemy.sql.expression import ColumnElement
+from .ent_model import EntModel
+from entpy import Field
 from sentinels import NOTHING, Sentinel  # type: ignore
+from typing import Any, TypeVar, Generic
+from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import select, Select, func, Result
+from sqlalchemy.orm import Mapped, mapped_column
+from ent_grand_parent_schema import EntGrandParentSchema
 
 
 class EntGrandParentModel(EntModel):
@@ -27,7 +27,7 @@ class EntGrandParentModel(EntModel):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
-class EntGrandParent(Ent):
+class EntGrandParent(Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
     model: EntGrandParentModel
 
@@ -132,20 +132,31 @@ class EntGrandParentListQuery(EntGrandParentQuery[EntGrandParentModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
+
         self.query = select(EntGrandParentModel)
 
     async def gen(self) -> list[EntGrandParent]:
         session = get_session()
         result = await session.execute(self.query)
+        ents = await self._gen_ents(result)
+        return list(filter(None, ents))
+
+    async def _gen_ents(
+        self, result: Result[tuple[EntGrandParentModel]]
+    ) -> list[EntGrandParent | None]:
         models = result.scalars().all()
-        ents = [
+        return [
             await EntGrandParent._gen_from_model(self.vc, model) for model in models
         ]
-        return list(filter(None, ents))
 
     async def gen_first(self) -> EntGrandParent | None:
         session = get_session()
         result = await session.execute(self.query.limit(1))
+        return await self._gen_ent(result)
+
+    async def _gen_ent(
+        self, result: Result[tuple[EntGrandParentModel]]
+    ) -> EntGrandParent | None:
         model = result.scalar_one_or_none()
         return await EntGrandParent._gen_from_model(self.vc, model)
 

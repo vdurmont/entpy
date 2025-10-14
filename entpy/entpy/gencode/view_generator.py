@@ -33,6 +33,14 @@ def generate(
 
     imports_code = "\n".join(set(imports))
 
+    # Generate column accessors for the view
+    column_accessors = ""
+    standard_fields = ["id", "created_at", "updated_at", "ent_type"]
+    for field_name in standard_fields:
+        column_accessors += f"\n    {field_name} = __table__.c.{field_name}"
+    for field in pattern.get_all_fields():
+        column_accessors += f"\n    {field.name} = __table__.c.{field.name}"
+
     return f"""
 from sqlalchemy import literal_column, select, union_all, Table, Selectable
 from sqlalchemy_utils import create_view
@@ -45,10 +53,12 @@ view_query: Selectable = union_all(
 )
 
 
-class {base_name}View({base_name}Model):
+class {base_name}View():
     __table__: Table = create_view(
         name="{to_snake_case(base_name)}_view",
         selectable=view_query,
         metadata={base_name}Model.metadata,
+        cascade_on_drop=None,
     )
+{column_accessors}
 """

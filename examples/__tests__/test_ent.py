@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 from entpy import EntNotFoundError
 from ent_test_object_schema import Status
 from generated.ent_test_object import (
@@ -13,7 +12,7 @@ from evc import ExampleViewerContext
 
 
 async def test_ent_test_object_gen_with_existing_model(
-    db_session: AsyncSession, vc: ExampleViewerContext
+    vc: ExampleViewerContext,
 ) -> None:
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
@@ -24,7 +23,7 @@ async def test_ent_test_object_gen_with_existing_model(
 
 
 async def test_ent_test_object_gen_with_unknown_model(
-    db_session: AsyncSession, vc: ExampleViewerContext
+    vc: ExampleViewerContext,
 ) -> None:
     ent_id = uuid.uuid4()
     result = await EntTestObject.gen(vc, ent_id)
@@ -33,7 +32,7 @@ async def test_ent_test_object_gen_with_unknown_model(
 
 
 async def test_ent_test_object_genx_with_existing_model(
-    db_session: AsyncSession, vc: ExampleViewerContext
+    vc: ExampleViewerContext,
 ) -> None:
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
@@ -44,16 +43,14 @@ async def test_ent_test_object_genx_with_existing_model(
 
 
 async def test_ent_test_object_genx_with_unknown_model(
-    db_session: AsyncSession, vc: ExampleViewerContext
+    vc: ExampleViewerContext,
 ) -> None:
     ent_id = uuid.uuid4()
     with pytest.raises(EntNotFoundError):
         await EntTestObject.genx(vc, ent_id)
 
 
-async def test_edges_work_well(
-    db_session: AsyncSession, vc: ExampleViewerContext
-) -> None:
+async def test_edges_work_well(vc: ExampleViewerContext) -> None:
     ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
 
     # Check required
@@ -79,7 +76,7 @@ async def test_edges_work_well(
 
 
 async def test_pattern_fields_are_written_properly(
-    db_session: AsyncSession, vc: ExampleViewerContext
+    vc: ExampleViewerContext,
 ) -> None:
     good = "Taking a nap"
     ent = await EntTestObjectExample.gen_create(vc, a_good_thing=good)
@@ -89,9 +86,7 @@ async def test_pattern_fields_are_written_properly(
     assert result.a_good_thing == good
 
 
-async def test_gen_and_genx_from_unique_field(
-    db_session: AsyncSession, vc: ExampleViewerContext
-) -> None:
+async def test_gen_and_genx_from_unique_field(vc: ExampleViewerContext) -> None:
     username = "vdurmont_" + str(uuid.uuid4())
     other_username = "vdurmont_" + str(uuid.uuid4())
 
@@ -112,21 +107,17 @@ async def test_gen_and_genx_from_unique_field(
         await EntTestObject.genx_from_username(vc, other_username)
 
 
-async def test_enum_field(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
+async def test_enum_field(vc: ExampleViewerContext) -> None:
     status = Status.SAD
     ent = await EntTestObjectExample.gen_create(vc, status=status)
     assert ent.status == status
 
 
-async def test_string_field_with_default(
-    db_session: AsyncSession, vc: ExampleViewerContext
-) -> None:
+async def test_string_field_with_default(vc: ExampleViewerContext) -> None:
     ent = await EntTestObjectExample.gen_create(vc)
     assert ent.lastname == "Doe"
 
 
-async def test_enum_field_with_default(
-    db_session: AsyncSession, vc: ExampleViewerContext
-) -> None:
+async def test_enum_field_with_default(vc: ExampleViewerContext) -> None:
     ent = await EntTestObjectExample.gen_create(vc)
     assert ent.sadness == Status.SAD

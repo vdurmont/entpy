@@ -1,5 +1,6 @@
 from entpy import Pattern, Schema
 from entpy.gencode.model_generator import generate as generate_model
+from entpy.gencode.query_generator import generate as generate_query
 from entpy.gencode.utils import get_description, to_snake_case
 
 
@@ -7,6 +8,8 @@ def generate(
     pattern_class: type[Pattern],
     children_schema_classes: list[type[Schema]],
     ent_model_import: str,
+    session_getter_import: str,
+    session_getter_fn_name: str,
     vc_import: str,
     vc_name: str,
 ) -> str:
@@ -33,6 +36,13 @@ def generate(
         required=True, children_schema_classes=children_schema_classes
     )
 
+    query_content = generate_query(
+        descriptor=pattern,
+        base_name=base_name,
+        session_getter_fn_name=session_getter_fn_name,
+        vc_name=vc_name,
+    )
+
     # Get the first implementation we can find to use for the example
     if not children_schema_classes:
         raise ValueError(f"No concrete implementation found for {base_name}")
@@ -50,7 +60,11 @@ def generate(
         example_arguments_assignment += f", {field.name}={field.name}"
 
     # Make sure to import all the things!
-    imports = [vc_import, ent_model_import] + model.imports
+    imports = (
+        [vc_import, ent_model_import, session_getter_import]
+        + model.imports
+        + query_content.imports
+    )
     imports = list(set(imports))  # Remove duplicates
     imports_code = "\n".join(imports)
 
@@ -59,11 +73,12 @@ def generate(
 ####################
 
 from __future__ import annotations
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from uuid import UUID
 from entpy import Ent
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
+from typing import Self
 {imports_code}
 
 {model.code}
@@ -82,6 +97,16 @@ class I{base_name}(Ent):{get_description(pattern)}
         # TODO refactor this to read the bytes from the UUID
         {loaders_genx}
         raise ValueError(f"No {base_name} found for ID {{ent_id}}")
+
+    @classmethod
+    def query_{to_snake_case(base_name)}(cls, vc: {vc_name}) -> I{base_name}ListQuery:
+        return I{base_name}ListQuery(vc=vc)
+
+    @classmethod
+    def query_{to_snake_case(base_name)}_count(cls, vc: {vc_name}) -> I{base_name}CountQuery:
+        return I{base_name}CountQuery()
+
+{query_content.code}
 
 class I{base_name}Example:
     @classmethod

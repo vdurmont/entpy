@@ -68,6 +68,8 @@ def run(
                 pattern_class=descriptor_class,
                 children_schema_classes=children,
                 ent_model_import="from .ent_model import EntModel",
+                session_getter_import=session_getter_import,
+                session_getter_fn_name=session_getter_fn_name,
                 vc_import=vc_import,
                 vc_name=vc_name,
             )
@@ -91,9 +93,10 @@ def run(
 
     models_list_code = f"""
 from entpy import Ent
+{vc_import}
 {models_list}
 
-UUID_TO_ENT: dict[bytes, type[Ent]] = {{
+UUID_TO_ENT: dict[bytes, type[Ent[{vc_name}]]] = {{
 {models_list_mapping}
 }}
 """

@@ -36,7 +36,7 @@ def generate(
         vc_name=vc_name,
     )
     query_content = generate_query(
-        schema=schema,
+        descriptor=schema,
         base_name=base_name,
         session_getter_fn_name=session_getter_fn_name,
         vc_name=vc_name,

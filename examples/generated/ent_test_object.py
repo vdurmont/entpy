@@ -11,27 +11,27 @@ from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
 from sqlalchemy import select
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import Enum as DBEnum
-from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import Select, func, Result
+from entpy import Field, FieldWithDynamicExample
 from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import Text
-from sqlalchemy import JSON
-from sqlalchemy import Select, func
-from ent_test_object_schema import Status
-from sqlalchemy import ForeignKey
-from sqlalchemy import String
+from sqlalchemy import Enum as DBEnum
+from ent_test_object_schema import EntTestObjectSchema
 from .ent_test_thing import EntTestThingModel
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import DateTime
-from sentinels import NOTHING, Sentinel  # type: ignore
-from typing import Any, TypeVar, Generic
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from .ent_test_thing import IEntTestThing
 from .ent_model import EntModel
 from sqlalchemy import Integer
-from entpy import Field, FieldWithDynamicExample
+from ent_test_object_schema import Status
+from sqlalchemy import String
+from sqlalchemy import Text
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import ForeignKey
+from typing import Any, TypeVar, Generic
+from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import DateTime
+from sqlalchemy import JSON
+from sqlalchemy.orm import Mapped, mapped_column
 from .ent_test_sub_object import EntTestSubObjectExample
-from .ent_test_thing import IEntTestThing
 
 
 class EntTestObjectModel(EntTestThingModel):
@@ -72,7 +72,7 @@ class EntTestObjectModel(EntTestThingModel):
     )
 
 
-class EntTestObject(IEntTestThing, Ent):
+class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     """
     This is an object we use to test all the ent framework features!
     """
@@ -291,18 +291,29 @@ class EntTestObjectListQuery(EntTestObjectQuery[EntTestObjectModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
+
         self.query = select(EntTestObjectModel)
 
     async def gen(self) -> list[EntTestObject]:
         session = get_session()
         result = await session.execute(self.query)
-        models = result.scalars().all()
-        ents = [await EntTestObject._gen_from_model(self.vc, model) for model in models]
+        ents = await self._gen_ents(result)
         return list(filter(None, ents))
+
+    async def _gen_ents(
+        self, result: Result[tuple[EntTestObjectModel]]
+    ) -> list[EntTestObject | None]:
+        models = result.scalars().all()
+        return [await EntTestObject._gen_from_model(self.vc, model) for model in models]
 
     async def gen_first(self) -> EntTestObject | None:
         session = get_session()
         result = await session.execute(self.query.limit(1))
+        return await self._gen_ent(result)
+
+    async def _gen_ent(
+        self, result: Result[tuple[EntTestObjectModel]]
+    ) -> EntTestObject | None:
         model = result.scalar_one_or_none()
         return await EntTestObject._gen_from_model(self.vc, model)
 

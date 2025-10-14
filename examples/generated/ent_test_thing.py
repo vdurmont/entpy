@@ -3,15 +3,22 @@
 ####################
 
 from __future__ import annotations
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from uuid import UUID
 from entpy import Ent
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
-from .ent_model import EntModel
+from typing import Self
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
+from .ent_model import EntModel
+from entpy import EntNotFoundError, ExecutionError
+from typing import Any, TypeVar, Generic
+from sqlalchemy.sql.expression import ColumnElement
 from evc import ExampleViewerContext
+from typing import cast
+from sqlalchemy import select, Select, func, Result
+from sqlalchemy.orm import Mapped, mapped_column
+from database import get_session
 
 
 class EntTestThingModel(EntModel):
@@ -61,6 +68,101 @@ class IEntTestThing(Ent):
             return ent_test_object2
 
         raise ValueError(f"No EntTestThing found for ID {ent_id}")
+
+    @classmethod
+    def query_ent_test_thing(cls, vc: ExampleViewerContext) -> IEntTestThingListQuery:
+        return IEntTestThingListQuery(vc=vc)
+
+    @classmethod
+    def query_ent_test_thing_count(
+        cls, vc: ExampleViewerContext
+    ) -> IEntTestThingCountQuery:
+        return IEntTestThingCountQuery()
+
+
+T = TypeVar("T")
+
+
+class IEntTestThingQuery(ABC, Generic[T]):
+    query: Select[tuple[T]]
+
+    def join(self, model_class: type[EntModel], predicate: ColumnElement[bool]) -> Self:
+        self.query = self.query.join(model_class, predicate)
+        return self
+
+    def where(self, predicate: ColumnElement[bool]) -> Self:
+        self.query = self.query.where(predicate)
+        return self
+
+    def order_by(self, predicate: ColumnElement[Any]) -> Self:
+        self.query = self.query.order_by(predicate)
+        return self
+
+    def limit(self, limit: int) -> Self:
+        self.query = self.query.limit(limit)
+        return self
+
+
+class IEntTestThingListQuery(IEntTestThingQuery[UUID]):
+    vc: ExampleViewerContext
+
+    def __init__(self, vc: ExampleViewerContext) -> None:
+        self.vc = vc
+        from .ent_test_thing_view import EntTestThingView
+
+        self.query = select(EntTestThingView.__table__)
+
+    async def gen(self) -> list[IEntTestThing]:
+        session = get_session()
+        result = await session.execute(self.query)
+        ents = await self._gen_ents(result)
+        return list(filter(None, ents))
+
+    async def _gen_ents(
+        self, result: Result[tuple[UUID]]
+    ) -> list[IEntTestThing | None]:
+        ent_ids = result.scalars().all()
+        return [await self._gen_single_ent(ent_id) for ent_id in ent_ids]
+
+    async def gen_first(self) -> IEntTestThing | None:
+        session = get_session()
+        result = await session.execute(self.query.limit(1))
+        return await self._gen_ent(result)
+
+    async def _gen_ent(self, result: Result[tuple[UUID]]) -> IEntTestThing | None:
+        ent_id = result.scalar_one_or_none()
+        if not ent_id:
+            return None
+        return await self._gen_single_ent(ent_id)
+
+    async def _gen_single_ent(self, ent_id: UUID) -> IEntTestThing | None:
+        from .all_models import UUID_TO_ENT
+
+        uuid_type = ent_id.bytes[6:8]
+        ent_type = UUID_TO_ENT[uuid_type]
+        # Casting is ok here, the id always inherits IEntTestThing
+        return await cast(type[IEntTestThing], ent_type).gen(self.vc, ent_id)
+
+    async def genx_first(self) -> IEntTestThing:
+        ent = await self.gen_first()
+        if not ent:
+            raise EntNotFoundError("Expected query to return an ent, got None.")
+        return ent
+
+
+class IEntTestThingCountQuery(IEntTestThingQuery[int]):
+    def __init__(self) -> None:
+        from .ent_test_thing_view import EntTestThingView
+
+        self.query = select(func.count()).select_from(EntTestThingView.__table__)
+
+    async def gen_NO_PRIVACY(self) -> int:
+        session = get_session()
+        result = await session.execute(self.query)
+        count = result.scalar()
+        if count is None:
+            raise ExecutionError("Unable to get the count")
+        return count
 
 
 class IEntTestThingExample:

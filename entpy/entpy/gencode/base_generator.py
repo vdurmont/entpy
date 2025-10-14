@@ -11,7 +11,7 @@ def generate(
             f"I{pattern.__class__.__name__.replace("Pattern", "")}"
             for pattern in schema.get_patterns()
         ]
-        + ["Ent"]
+        + [f"Ent[{vc_name}]"]
     )
 
     accessors = _generate_accessors(schema)

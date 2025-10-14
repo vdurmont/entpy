@@ -1,7 +1,5 @@
 import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
@@ -11,7 +9,7 @@ from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
 from evc import ExampleViewerContext
 
 
-async def test_creation(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
+async def test_creation(vc: ExampleViewerContext) -> None:
     ent = await EntTestObjectMutator.create(
         vc=vc,
         a_good_thing="Eating cheese",
@@ -29,7 +27,7 @@ async def test_creation(db_session: AsyncSession, vc: ExampleViewerContext) -> N
     assert ent.firstname == "Vincent"
 
 
-async def test_update(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
+async def test_update(vc: ExampleViewerContext) -> None:
     name = "Chris"
 
     ent = await EntTestObjectExample.gen_create(vc=vc)
@@ -43,7 +41,7 @@ async def test_update(db_session: AsyncSession, vc: ExampleViewerContext) -> Non
     assert ent.firstname == name, "Name should have been updated"
 
 
-async def test_deletion(db_session: AsyncSession, vc: ExampleViewerContext) -> None:
+async def test_deletion(vc: ExampleViewerContext) -> None:
     ent = await EntTestObjectExample.gen_create(vc=vc)
 
     await EntTestObjectMutator.delete(vc, ent).gen_save()
@@ -53,9 +51,7 @@ async def test_deletion(db_session: AsyncSession, vc: ExampleViewerContext) -> N
     assert reloaded_ent is None, "Ent should have been deleted"
 
 
-async def test_creation_with_assigned_id(
-    db_session: AsyncSession, vc: ExampleViewerContext
-) -> None:
+async def test_creation_with_assigned_id(vc: ExampleViewerContext) -> None:
     custom_uuid = uuid.uuid4()
     ent = await EntTestObjectMutator.create(
         vc=vc,

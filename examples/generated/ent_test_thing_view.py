@@ -23,9 +23,16 @@ view_query: Selectable = union_all(
 )
 
 
-class EntTestThingView(EntTestThingModel):
+class EntTestThingView:
     __table__: Table = create_view(
         name="ent_test_thing_view",
         selectable=view_query,
         metadata=EntTestThingModel.metadata,
+        cascade_on_drop=None,
     )
+
+    id = __table__.c.id
+    created_at = __table__.c.created_at
+    updated_at = __table__.c.updated_at
+    ent_type = __table__.c.ent_type
+    a_good_thing = __table__.c.a_good_thing

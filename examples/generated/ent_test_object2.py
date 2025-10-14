@@ -10,17 +10,17 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from typing import Any, TypeVar, Generic
+from sqlalchemy import String
 from .ent_model import EntModel
 from entpy import Field
-from sqlalchemy import String
-from .ent_test_thing import EntTestThingModel
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import select, Select, func
-from sqlalchemy.sql.expression import ColumnElement
-from .ent_test_thing import IEntTestThing
 from sentinels import NOTHING, Sentinel  # type: ignore
+from typing import Any, TypeVar, Generic
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_test_thing import EntTestThingModel
 from ent_test_object2_schema import EntTestObject2Schema
+from sqlalchemy import select, Select, func, Result
+from sqlalchemy.orm import Mapped, mapped_column
+from .ent_test_thing import IEntTestThing
 
 
 class EntTestObject2Model(EntTestThingModel):
@@ -29,7 +29,7 @@ class EntTestObject2Model(EntTestThingModel):
     some_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
-class EntTestObject2(IEntTestThing, Ent):
+class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
     model: EntTestObject2Model
 
@@ -138,20 +138,31 @@ class EntTestObject2ListQuery(EntTestObject2Query[EntTestObject2Model]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
+
         self.query = select(EntTestObject2Model)
 
     async def gen(self) -> list[EntTestObject2]:
         session = get_session()
         result = await session.execute(self.query)
+        ents = await self._gen_ents(result)
+        return list(filter(None, ents))
+
+    async def _gen_ents(
+        self, result: Result[tuple[EntTestObject2Model]]
+    ) -> list[EntTestObject2 | None]:
         models = result.scalars().all()
-        ents = [
+        return [
             await EntTestObject2._gen_from_model(self.vc, model) for model in models
         ]
-        return list(filter(None, ents))
 
     async def gen_first(self) -> EntTestObject2 | None:
         session = get_session()
         result = await session.execute(self.query.limit(1))
+        return await self._gen_ent(result)
+
+    async def _gen_ent(
+        self, result: Result[tuple[EntTestObject2Model]]
+    ) -> EntTestObject2 | None:
         model = result.scalar_one_or_none()
         return await EntTestObject2._gen_from_model(self.vc, model)
 
