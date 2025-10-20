@@ -34,7 +34,7 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
             if generator:
                 arguments_assignments += f"""
         if isinstance({field.name}, Sentinel):
-            field = cls._get_field("{field.name}")
+            field = _get_field("{field.name}")
             if not isinstance(field, FieldWithDynamicExample):
                 raise TypeError("Internal ent error: "+f"field {{field.name}} must support dynamic examples.")
             generator = field.get_example_generator()
@@ -89,19 +89,5 @@ class {base_name}Example:
 {arguments_assignments}
 
         return await {base_name}Mutator.create(vc=vc, created_at=created_at{mutator_arguments}).gen_savex()
-
-    @classmethod
-    def _get_field(cls, field_name: str) -> Field:
-        schema = {base_name}Schema()
-        fields = schema.get_fields()
-        field = list(
-            filter(
-                lambda field: field.name == field_name,
-                fields,
-            )
-        )[0]
-        if not field:
-            raise ValueError(f"Unknown field: {{field_name}}")
-        return field
 """,  # noqa: E501
     )

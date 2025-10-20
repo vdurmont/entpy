@@ -6,6 +6,7 @@ from .framework.errors import (  # noqa: F401
     EntNotFoundError,
     ExecutionError,
     PrivacyError,
+    ValidationError,
 )
 from .framework.fields.core import Field, FieldWithDynamicExample  # noqa: F401
 from .framework.fields.datetime_field import DatetimeField  # noqa: F401
@@ -15,6 +16,7 @@ from .framework.fields.int_field import IntField  # noqa: F401
 from .framework.fields.json_field import JsonField  # noqa: F401
 from .framework.fields.string_field import StringField  # noqa: F401
 from .framework.fields.text_field import TextField  # noqa: F401
+from .framework.fields.validator import FieldValidator  # noqa: F401
 from .framework.id_factory import generate_uuid  # noqa: F401
 from .framework.pattern import Pattern  # noqa: F401
 from .framework.privacy_rule import PrivacyRule  # noqa: F401

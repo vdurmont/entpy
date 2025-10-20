@@ -1,4 +1,5 @@
 from entpy import Schema
+from entpy.framework.fields.core import Field
 from entpy.gencode.generated_content import GeneratedContent
 
 
@@ -25,7 +26,7 @@ def generate(
         vc_name=vc_name,
     )
     return GeneratedContent(
-        imports=base.imports + creation.imports + deletion.imports,
+        imports=base.imports + creation.imports + update.imports + deletion.imports,
         code=base.code
         + "\n\n"
         + creation.code
@@ -82,37 +83,36 @@ class {base_name}Mutator:
 def _generate_creation(
     schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
 ) -> GeneratedContent:
+    fields = schema.get_all_fields()
+
     # Build up the list of local variables we will store in the class
     local_variables = ""
-    for field in schema.get_all_fields():
+    for field in fields:
         or_not = " | None = None" if field.nullable else ""
         local_variables += f"    {field.name}: {field.get_python_type()}{or_not}\n"
 
     # Build up the list of arguments the __init__ function takes
     constructor_arguments = ""
-    for field in schema.get_all_fields():
+    for field in fields:
         or_not = " | None" if field.nullable else ""
         constructor_arguments += f", {field.name}: {field.get_python_type()}{or_not}"
 
     # Build up the list of assignments in the constructor
     constructor_assignments = "\n".join(
-        [
-            f"        self.{field.name} = {field.name}"
-            for field in schema.get_all_fields()
-        ]
+        [f"        self.{field.name} = {field.name}" for field in fields]
     )
+
+    validations = _generate_validations(base_name=base_name, fields=fields)
 
     # Build up the list of variables to assign to the model
     model_assignments = "\n".join(
-        [
-            f"                {field.name}=self.{field.name},"
-            for field in schema.get_all_fields()
-        ]
+        [f"                {field.name}=self.{field.name}," for field in fields]
     )
 
     # TODO support UUID factory
 
     return GeneratedContent(
+        imports=validations.imports,
         code=f"""
 class {base_name}MutatorCreationAction:
     vc: {vc_name}
@@ -127,6 +127,7 @@ class {base_name}MutatorCreationAction:
 
     async def gen_savex(self) -> {base_name}:
         session = {session_getter_fn_name}()
+{validations.code}
         model = {base_name}Model(
             id=self.id,
             created_at=self.created_at,
@@ -163,12 +164,15 @@ def _generate_update(
         [f"        self.{field.name} = ent.{field.name}" for field in mutable_fields]
     )
 
+    validations = _generate_validations(base_name=base_name, fields=mutable_fields)
+
     # Build up the list of variables to assign to the model
     model_assignments = "\n".join(
         [f"        model.{field.name}=self.{field.name}" for field in mutable_fields]
     )
 
     return GeneratedContent(
+        imports=validations.imports,
         code=f"""
 class {base_name}MutatorUpdateAction:
     vc: {vc_name}
@@ -183,6 +187,7 @@ class {base_name}MutatorUpdateAction:
 
     async def gen_savex(self) -> {base_name}:
         session = {session_getter_fn_name}()
+{validations.code}
         model = self.ent.model
 {model_assignments}
         session.add(model)
@@ -213,4 +218,20 @@ class {base_name}MutatorDeletionAction:
         await session.delete(model)
         await session.flush()
 """,
+    )
+
+
+def _generate_validations(base_name: str, fields: list[Field]) -> GeneratedContent:
+    validations = ""
+    for field in fields:
+        if field._validators:
+            validations += f"""
+        {field.name}_validators = _get_field("{field.name}")._validators
+        for validator in {field.name}_validators:
+            if not validator.validate(self.{field.name}):
+                raise ValidationError("Invalid value for {base_name}.{field.name}")
+"""
+    return GeneratedContent(
+        imports=["from entpy import ValidationError"] if validations else [],
+        code=validations,
     )

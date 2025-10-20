@@ -4,6 +4,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Generic, Self, TypeVar
 
+from .validator import FieldValidator
+
+T = TypeVar("T")
+
 
 class Field(ABC):
     name: str
@@ -12,6 +16,7 @@ class Field(ABC):
     is_unique: bool = False
     is_immutable: bool = False
     description: str | None = None
+    _validators: list[FieldValidator[T]] = []
 
     def __init__(self, name: str, actual_name: str | None = None):
         self.original_name = name
@@ -37,8 +42,9 @@ class Field(ABC):
         self.is_immutable = True
         return self
 
-
-T = TypeVar("T")
+    def validators(self, validators: list[FieldValidator[T]]) -> Self:
+        self._validators = validators
+        return self
 
 
 class FieldWithExample(ABC, Generic[T]):

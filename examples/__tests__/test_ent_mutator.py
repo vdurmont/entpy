@@ -1,4 +1,5 @@
 import uuid
+import pytest
 
 from generated.ent_test_object import (
     EntTestObject,
@@ -7,6 +8,7 @@ from generated.ent_test_object import (
 )
 from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
 from evc import ExampleViewerContext
+from entpy import ValidationError
 
 
 async def test_creation(vc: ExampleViewerContext) -> None:
@@ -63,3 +65,22 @@ async def test_creation_with_assigned_id(vc: ExampleViewerContext) -> None:
     ).gen_savex()
 
     assert ent.id == custom_uuid, "Mutator.create should honor custom uuids"
+
+
+async def test_create_validated_field(vc: ExampleViewerContext) -> None:
+    with pytest.raises(ValidationError):
+        await EntTestObjectExample.gen_create(vc=vc, validated_field="Yolo")
+
+
+async def test_update_validated_field(vc: ExampleViewerContext) -> None:
+    ent = await EntTestObjectExample.gen_create(vc=vc)
+
+    mut = EntTestObjectMutator.update(vc, ent)
+    mut.validated_field = "Yolo"
+    with pytest.raises(ValidationError):
+        await mut.gen_savex()
+
+    mut.validated_field = "y_olo"
+    ent = await mut.gen_savex()
+
+    assert ent.validated_field == "y_olo"

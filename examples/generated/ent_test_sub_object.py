@@ -10,15 +10,15 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from ent_test_sub_object_schema import EntTestSubObjectSchema
-from sqlalchemy import select, Select, func, Result
-from sqlalchemy.sql.expression import ColumnElement
-from sentinels import NOTHING, Sentinel  # type: ignore
-from typing import Any, TypeVar, Generic
 from sqlalchemy import String
+from typing import Any, TypeVar, Generic
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import select, Select, func, Result
+from ent_test_sub_object_schema import EntTestSubObjectSchema
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import ColumnElement
 from entpy import Field
 from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
 
 
 class EntTestSubObjectModel(EntModel):
@@ -227,6 +227,7 @@ class EntTestSubObjectMutatorCreationAction:
 
     async def gen_savex(self) -> EntTestSubObject:
         session = get_session()
+
         model = EntTestSubObjectModel(
             id=self.id,
             created_at=self.created_at,
@@ -251,6 +252,7 @@ class EntTestSubObjectMutatorUpdateAction:
 
     async def gen_savex(self) -> EntTestSubObject:
         session = get_session()
+
         model = self.ent.model
         model.email = self.email
         session.add(model)
@@ -291,16 +293,16 @@ class EntTestSubObjectExample:
             vc=vc, created_at=created_at, email=email
         ).gen_savex()
 
-    @classmethod
-    def _get_field(cls, field_name: str) -> Field:
-        schema = EntTestSubObjectSchema()
-        fields = schema.get_fields()
-        field = list(
-            filter(
-                lambda field: field.name == field_name,
-                fields,
-            )
-        )[0]
-        if not field:
-            raise ValueError(f"Unknown field: {field_name}")
-        return field
+
+def _get_field(field_name: str) -> Field:
+    schema = EntTestSubObjectSchema()
+    fields = schema.get_fields()
+    field = list(
+        filter(
+            lambda field: field.name == field_name,
+            fields,
+        )
+    )[0]
+    if not field:
+        raise ValueError(f"Unknown field: {field_name}")
+    return field

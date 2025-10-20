@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime, UTC
 from ent_test_sub_object_schema import EntTestSubObjectSchema
@@ -6,6 +7,7 @@ from entpy import (
     Action,
     AllowAll,
     PrivacyRule,
+    FieldValidator,
     EdgeField,
     JsonField,
     Field,
@@ -55,7 +57,15 @@ class EntTestObjectSchema(Schema):
             ),
             IntField("status_code").example(404),
             JsonField("some_json", "list[str]").example(["hello", "world"]),
+            StringField("validated_field", 100).validators([CustomValidator()]),
         ]
 
     def get_privacy_rules(self, action: Action) -> list[PrivacyRule]:
         return [AllowAll()]
+
+
+class CustomValidator(FieldValidator[str | None]):
+    def validate(self, value: str | None) -> bool:
+        if not value:
+            return True
+        return bool(re.match(r"^[a-z0-9_-]+$", value))

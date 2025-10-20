@@ -10,19 +10,19 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from ent_child_schema import EntChildSchema
-from sqlalchemy import select, Select, func, Result
-from sqlalchemy.sql.expression import ColumnElement
-from sentinels import NOTHING, Sentinel  # type: ignore
-from typing import Any, TypeVar, Generic
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import ForeignKey
 from sqlalchemy import String
+from typing import Any, TypeVar, Generic
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import select, Select, func, Result
+from ent_child_schema import EntChildSchema
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from .ent_parent import EntParent
 from .ent_parent import EntParentExample
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import ColumnElement
 from entpy import Field
 from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
-from .ent_parent import EntParent
 
 
 class EntChildModel(EntModel):
@@ -239,6 +239,7 @@ class EntChildMutatorCreationAction:
 
     async def gen_savex(self) -> EntChild:
         session = get_session()
+
         model = EntChildModel(
             id=self.id,
             created_at=self.created_at,
@@ -266,6 +267,7 @@ class EntChildMutatorUpdateAction:
 
     async def gen_savex(self) -> EntChild:
         session = get_session()
+
         model = self.ent.model
         model.name = self.name
         model.parent_id = self.parent_id
@@ -312,16 +314,16 @@ class EntChildExample:
             vc=vc, created_at=created_at, name=name, parent_id=parent_id
         ).gen_savex()
 
-    @classmethod
-    def _get_field(cls, field_name: str) -> Field:
-        schema = EntChildSchema()
-        fields = schema.get_fields()
-        field = list(
-            filter(
-                lambda field: field.name == field_name,
-                fields,
-            )
-        )[0]
-        if not field:
-            raise ValueError(f"Unknown field: {field_name}")
-        return field
+
+def _get_field(field_name: str) -> Field:
+    schema = EntChildSchema()
+    fields = schema.get_fields()
+    field = list(
+        filter(
+            lambda field: field.name == field_name,
+            fields,
+        )
+    )[0]
+    if not field:
+        raise ValueError(f"Unknown field: {field_name}")
+    return field

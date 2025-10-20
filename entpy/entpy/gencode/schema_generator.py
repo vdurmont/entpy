@@ -3,6 +3,7 @@ import re
 from entpy import EdgeField, Schema
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
+from entpy.gencode.introspection_generator import generate as generate_introspection
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.mutator_generator import generate as generate_mutator
 from entpy.gencode.query_generator import generate as generate_query
@@ -50,6 +51,7 @@ def generate(
     example_content = generate_example(
         schema=schema, base_name=base_name, vc_name=vc_name
     )
+    introspection_code = generate_introspection(base_name=base_name)
 
     imports = (
         [ent_model_import]
@@ -85,6 +87,8 @@ from abc import ABC
 {mutator_content.code}
 
 {example_content.code}
+
+{introspection_code}
 """
 
 

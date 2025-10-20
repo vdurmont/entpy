@@ -22,3 +22,11 @@ class ExecutionError(Exception):
     """
 
     pass
+
+
+class ValidationError(Exception):
+    """
+    Used when an invalid value was passed to EntPy.
+    """
+
+    pass

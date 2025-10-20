@@ -10,17 +10,17 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_test_thing import EntTestThingModel
-from sqlalchemy import select, Select, func, Result
-from sqlalchemy.sql.expression import ColumnElement
-from sentinels import NOTHING, Sentinel  # type: ignore
-from ent_test_object2_schema import EntTestObject2Schema
-from typing import Any, TypeVar, Generic
 from sqlalchemy import String
-from entpy import Field
+from typing import Any, TypeVar, Generic
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import select, Select, func, Result
 from .ent_test_thing import IEntTestThing
-from .ent_model import EntModel
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_test_thing import EntTestThingModel
+from entpy import Field
+from ent_test_object2_schema import EntTestObject2Schema
+from .ent_model import EntModel
 
 
 class EntTestObject2Model(EntTestThingModel):
@@ -239,6 +239,7 @@ class EntTestObject2MutatorCreationAction:
 
     async def gen_savex(self) -> EntTestObject2:
         session = get_session()
+
         model = EntTestObject2Model(
             id=self.id,
             created_at=self.created_at,
@@ -266,6 +267,7 @@ class EntTestObject2MutatorUpdateAction:
 
     async def gen_savex(self) -> EntTestObject2:
         session = get_session()
+
         model = self.ent.model
         model.a_good_thing = self.a_good_thing
         model.some_field = self.some_field
@@ -313,16 +315,16 @@ class EntTestObject2Example:
             some_field=some_field,
         ).gen_savex()
 
-    @classmethod
-    def _get_field(cls, field_name: str) -> Field:
-        schema = EntTestObject2Schema()
-        fields = schema.get_fields()
-        field = list(
-            filter(
-                lambda field: field.name == field_name,
-                fields,
-            )
-        )[0]
-        if not field:
-            raise ValueError(f"Unknown field: {field_name}")
-        return field
+
+def _get_field(field_name: str) -> Field:
+    schema = EntTestObject2Schema()
+    fields = schema.get_fields()
+    field = list(
+        filter(
+            lambda field: field.name == field_name,
+            fields,
+        )
+    )[0]
+    if not field:
+        raise ValueError(f"Unknown field: {field_name}")
+    return field

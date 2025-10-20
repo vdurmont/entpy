@@ -10,27 +10,28 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from ent_test_object_schema import EntTestObjectSchema
-from typing import Any, TypeVar, Generic
-from .ent_test_sub_object import EntTestSubObjectExample
-from sqlalchemy import Integer
 from sqlalchemy import select, Select, func, Result
-from sqlalchemy import Text
-from ent_test_object_schema import Status
-from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy import JSON
 from entpy import Field, FieldWithDynamicExample
-from .ent_model import EntModel
-from .ent_test_thing import EntTestThingModel
-from .ent_test_sub_object import EntTestSubObject
+from sqlalchemy import Text
+from ent_test_object_schema import Status
 from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import ForeignKey
-from sqlalchemy import Enum as DBEnum
+from .ent_test_sub_object import EntTestSubObjectExample
+from typing import Any, TypeVar, Generic
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import Integer
+from entpy import ValidationError
 from .ent_test_thing import IEntTestThing
+from sqlalchemy import String
 from sqlalchemy import DateTime
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import String
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
+from .ent_test_sub_object import EntTestSubObject
+from .ent_test_thing import EntTestThingModel
+from .ent_model import EntModel
+from sqlalchemy import Enum as DBEnum
 
 
 class EntTestObjectModel(EntTestThingModel):
@@ -66,6 +67,7 @@ class EntTestObjectModel(EntTestThingModel):
         DBEnum(Status, native_enum=True), nullable=True
     )
     status_code: Mapped[int | None] = mapped_column(Integer(), nullable=True)
+    validated_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
     when_is_it_cool: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -184,6 +186,10 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     @property
     def status_code(self) -> int | None:
         return self.model.status_code
+
+    @property
+    def validated_field(self) -> str | None:
+        return self.model.validated_field
 
     @property
     def when_is_it_cool(self) -> datetime | None:
@@ -356,6 +362,7 @@ class EntTestObjectMutator:
         some_pattern_id: UUID | None = None,
         status: Status | None = None,
         status_code: int | None = None,
+        validated_field: str | None = None,
         when_is_it_cool: datetime | None = None,
         id: UUID | None = None,
         created_at: datetime | None = None,
@@ -379,6 +386,7 @@ class EntTestObjectMutator:
             some_pattern_id=some_pattern_id,
             status=status,
             status_code=status_code,
+            validated_field=validated_field,
             when_is_it_cool=when_is_it_cool,
         )
 
@@ -413,6 +421,7 @@ class EntTestObjectMutatorCreationAction:
     some_pattern_id: UUID | None = None
     status: Status | None = None
     status_code: int | None = None
+    validated_field: str | None = None
     when_is_it_cool: datetime | None = None
 
     def __init__(
@@ -435,6 +444,7 @@ class EntTestObjectMutatorCreationAction:
         some_pattern_id: UUID | None,
         status: Status | None,
         status_code: int | None,
+        validated_field: str | None,
         when_is_it_cool: datetime | None,
     ) -> None:
         self.vc = vc
@@ -455,10 +465,17 @@ class EntTestObjectMutatorCreationAction:
         self.some_pattern_id = some_pattern_id
         self.status = status
         self.status_code = status_code
+        self.validated_field = validated_field
         self.when_is_it_cool = when_is_it_cool
 
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
+
+        validated_field_validators = _get_field("validated_field")._validators
+        for validator in validated_field_validators:
+            if not validator.validate(self.validated_field):
+                raise ValidationError("Invalid value for EntTestObject.validated_field")
+
         model = EntTestObjectModel(
             id=self.id,
             created_at=self.created_at,
@@ -477,6 +494,7 @@ class EntTestObjectMutatorCreationAction:
             some_pattern_id=self.some_pattern_id,
             status=self.status,
             status_code=self.status_code,
+            validated_field=self.validated_field,
             when_is_it_cool=self.when_is_it_cool,
         )
         session.add(model)
@@ -503,6 +521,7 @@ class EntTestObjectMutatorUpdateAction:
     some_pattern_id: UUID | None = None
     status: Status | None = None
     status_code: int | None = None
+    validated_field: str | None = None
     when_is_it_cool: datetime | None = None
 
     def __init__(self, vc: ExampleViewerContext, ent: EntTestObject) -> None:
@@ -522,10 +541,17 @@ class EntTestObjectMutatorUpdateAction:
         self.some_pattern_id = ent.some_pattern_id
         self.status = ent.status
         self.status_code = ent.status_code
+        self.validated_field = ent.validated_field
         self.when_is_it_cool = ent.when_is_it_cool
 
     async def gen_savex(self) -> EntTestObject:
         session = get_session()
+
+        validated_field_validators = _get_field("validated_field")._validators
+        for validator in validated_field_validators:
+            if not validator.validate(self.validated_field):
+                raise ValidationError("Invalid value for EntTestObject.validated_field")
+
         model = self.ent.model
         model.a_good_thing = self.a_good_thing
         model.firstname = self.firstname
@@ -541,6 +567,7 @@ class EntTestObjectMutatorUpdateAction:
         model.some_pattern_id = self.some_pattern_id
         model.status = self.status
         model.status_code = self.status_code
+        model.validated_field = self.validated_field
         model.when_is_it_cool = self.when_is_it_cool
         session.add(model)
         await session.flush()
@@ -585,6 +612,7 @@ class EntTestObjectExample:
         some_pattern_id: UUID | None = None,
         status: Status | None = None,
         status_code: int | None = None,
+        validated_field: str | None = None,
         when_is_it_cool: datetime | None = None,
     ) -> EntTestObject:
         # TODO make sure we only use this in test mode
@@ -603,7 +631,7 @@ class EntTestObjectExample:
             required_sub_object_id = required_sub_object_id_ent.id
 
         if isinstance(username, Sentinel):
-            field = cls._get_field("username")
+            field = _get_field("username")
             if not isinstance(field, FieldWithDynamicExample):
                 raise TypeError(
                     "Internal ent error: "
@@ -632,7 +660,7 @@ class EntTestObjectExample:
         status_code = 404 if isinstance(status_code, Sentinel) else status_code
 
         if isinstance(when_is_it_cool, Sentinel):
-            field = cls._get_field("when_is_it_cool")
+            field = _get_field("when_is_it_cool")
             if not isinstance(field, FieldWithDynamicExample):
                 raise TypeError(
                     "Internal ent error: "
@@ -660,19 +688,20 @@ class EntTestObjectExample:
             some_pattern_id=some_pattern_id,
             status=status,
             status_code=status_code,
+            validated_field=validated_field,
             when_is_it_cool=when_is_it_cool,
         ).gen_savex()
 
-    @classmethod
-    def _get_field(cls, field_name: str) -> Field:
-        schema = EntTestObjectSchema()
-        fields = schema.get_fields()
-        field = list(
-            filter(
-                lambda field: field.name == field_name,
-                fields,
-            )
-        )[0]
-        if not field:
-            raise ValueError(f"Unknown field: {field_name}")
-        return field
+
+def _get_field(field_name: str) -> Field:
+    schema = EntTestObjectSchema()
+    fields = schema.get_fields()
+    field = list(
+        filter(
+            lambda field: field.name == field_name,
+            fields,
+        )
+    )[0]
+    if not field:
+        raise ValueError(f"Unknown field: {field_name}")
+    return field
