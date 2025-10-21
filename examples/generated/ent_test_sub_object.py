@@ -10,15 +10,15 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import String
-from typing import Any, TypeVar, Generic
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import select, Select, func, Result
-from ent_test_sub_object_schema import EntTestSubObjectSchema
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql.expression import ColumnElement
-from entpy import Field
 from .ent_model import EntModel
+from entpy import Field
+from sqlalchemy import select, Select, func, Result
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import String
+from ent_test_sub_object_schema import EntTestSubObjectSchema
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any, TypeVar, Generic
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class EntTestSubObjectModel(EntModel):
@@ -126,6 +126,10 @@ class EntTestSubObjectQuery(ABC, Generic[T]):
 
     def limit(self, limit: int) -> Self:
         self.query = self.query.limit(limit)
+        return self
+
+    def offset(self, offset: int) -> Self:
+        self.query = self.query.offset(offset)
         return self
 
 

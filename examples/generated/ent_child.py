@@ -10,19 +10,19 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import String
-from typing import Any, TypeVar, Generic
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import select, Select, func, Result
-from ent_child_schema import EntChildSchema
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_parent import EntParent
-from .ent_parent import EntParentExample
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql.expression import ColumnElement
-from entpy import Field
 from .ent_model import EntModel
+from .ent_parent import EntParentExample
+from entpy import Field
+from sqlalchemy import select, Select, func, Result
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy.sql.expression import ColumnElement
+from .ent_parent import EntParent
+from typing import Any, TypeVar, Generic
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from ent_child_schema import EntChildSchema
 
 
 class EntChildModel(EntModel):
@@ -138,6 +138,10 @@ class EntChildQuery(ABC, Generic[T]):
 
     def limit(self, limit: int) -> Self:
         self.query = self.query.limit(limit)
+        return self
+
+    def offset(self, offset: int) -> Self:
+        self.query = self.query.offset(offset)
         return self
 
 

@@ -59,6 +59,10 @@ class {i}{base_name}Query(ABC, Generic[T]):
         self.query = self.query.limit(limit)
         return self
 
+    def offset(self, offset: int) -> Self:
+        self.query = self.query.offset(offset)
+        return self
+
 
 class {i}{base_name}ListQuery({i}{base_name}Query[{generic}]):
     vc: {vc_name}

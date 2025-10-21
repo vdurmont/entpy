@@ -9,16 +9,16 @@ from entpy import Ent
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
 from typing import Self
-from sqlalchemy import String
-from typing import Any, TypeVar, Generic
-from sqlalchemy import select, Select, func, Result
-from evc import ExampleViewerContext
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql.expression import ColumnElement
-from entpy import EntNotFoundError, ExecutionError
-from database import get_session
 from .ent_model import EntModel
+from entpy import EntNotFoundError, ExecutionError
+from sqlalchemy import select, Select, func, Result
+from database import get_session
+from sqlalchemy import String
 from typing import cast
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any, TypeVar, Generic
+from sqlalchemy.orm import Mapped, mapped_column
+from evc import ExampleViewerContext
 
 
 class EntTestThingModel(EntModel):
@@ -100,6 +100,10 @@ class IEntTestThingQuery(ABC, Generic[T]):
 
     def limit(self, limit: int) -> Self:
         self.query = self.query.limit(limit)
+        return self
+
+    def offset(self, offset: int) -> Self:
+        self.query = self.query.offset(offset)
         return self
 
 
