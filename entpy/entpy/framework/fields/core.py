@@ -9,18 +9,19 @@ from .validator import FieldValidator
 T = TypeVar("T")
 
 
-class Field(ABC):
+class Field(ABC, Generic[T]):
     name: str
     original_name: str
     nullable: bool = True
     is_unique: bool = False
     is_immutable: bool = False
     description: str | None = None
-    _validators: list[FieldValidator[T]] = []
+    _validators: list[FieldValidator[T]]
 
     def __init__(self, name: str, actual_name: str | None = None):
         self.original_name = name
         self.name = actual_name if actual_name else name
+        self._validators = []
 
     @abstractmethod
     def get_python_type(self) -> str:
@@ -43,7 +44,7 @@ class Field(ABC):
         return self
 
     def validators(self, validators: list[FieldValidator[T]]) -> Self:
-        self._validators = validators
+        self._validators = self._validators + validators
         return self
 
 

@@ -163,7 +163,7 @@ def _generate_extends(descriptor: Descriptor) -> GeneratedContent:
         [p.__class__.__name__.replace("Pattern", "") + "Model" for p in patterns]
     )
 
-    def get_import(pattern: Pattern):
+    def get_import(pattern: Pattern) -> str:
         base_name = pattern.__class__.__name__.replace("Pattern", "")
         return f"from .{to_snake_case(base_name)} import {base_name}Model"
 

@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from typing import Self
+
 from entpy.framework.fields.core import (
     Field,
+    FieldValidator,
     FieldWithDefault,
     FieldWithDynamicExample,
     FieldWithExample,
@@ -18,6 +21,10 @@ class StringField(
     def get_python_type(self) -> str:
         return "str"
 
+    def not_empty(self) -> Self:
+        self._validators.append(NotEmptyStringValidator())
+        return self
+
     def get_example_as_string(self) -> str | None:
         return f'"{self._example}"' if self._example else None
 
@@ -25,3 +32,8 @@ class StringField(
         if self._default_value:
             return f'"{self._default_value}"'
         return None
+
+
+class NotEmptyStringValidator(FieldValidator[str | None]):
+    def validate(self, value: str | None) -> bool:
+        return value is not None and value.strip() != ""

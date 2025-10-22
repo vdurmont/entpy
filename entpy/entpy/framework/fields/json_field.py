@@ -15,7 +15,7 @@ class JsonField(
     FieldWithExample[Any],
     FieldWithDynamicExample[Any],
 ):
-    def __init__(self, name, expected_python_type: str):
+    def __init__(self, name: str, expected_python_type: str) -> None:
         super().__init__(name)
         self.expected_python_type = expected_python_type
 

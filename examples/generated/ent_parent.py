@@ -10,19 +10,19 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_model import EntModel
-from entpy import Field
-from sqlalchemy import select, Select, func, Result
-from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_grand_parent import EntGrandParentExample
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 from .ent_grand_parent import EntGrandParent
 from sqlalchemy import ForeignKey
-from sqlalchemy import String
-from .ent_grand_parent import EntGrandParentExample
-from sqlalchemy.sql.expression import ColumnElement
-from ent_parent_schema import EntParentSchema
-from typing import Any, TypeVar, Generic
-from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sentinels import NOTHING, Sentinel  # type: ignore
+from typing import Any, TypeVar, Generic
+from entpy import Field
+from .ent_model import EntModel
+from ent_parent_schema import EntParentSchema
+from sqlalchemy import select, Select, func, Result
+from sqlalchemy.sql.expression import ColumnElement
 
 
 class EntParentModel(EntModel):
