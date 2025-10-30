@@ -80,9 +80,6 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             edge_base_name = field.edge_class.__name__.replace("Schema", "").replace(
                 "Pattern", ""
             )
-            edge_filename = to_snake_case(edge_base_name)
-            if edge_base_name != base_name:
-                edges_imports.append(f"from .{edge_filename} import {edge_base_name}")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += "mapped_column(DBUUID(as_uuid=True)"
             if not field.edge_class.__name__.endswith("Pattern"):

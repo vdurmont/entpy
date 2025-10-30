@@ -17,7 +17,6 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
 
     # Build up the list of variables that will be passed to the mutator
     arguments_assignments = ""
-    edges_imports = []
     for field in schema.get_all_fields():
         if isinstance(field, FieldWithExample):
             example = field.get_example_as_string()
@@ -54,12 +53,11 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
             if edge_base_name != base_name and field.edge_class.__name__ not in [
                 p.__class__.__name__ for p in schema.get_patterns()
             ]:
+                # We also import the example class locally to avoid circular imports
                 edge_filename = to_snake_case(edge_base_name)
-                edges_imports.append(
-                    f"from .{edge_filename} import {i}{edge_base_name}Example"
-                )
                 arguments_assignments += f"""
         if isinstance({field.name}, Sentinel) or {field.name} is None:
+            from .{edge_filename} import {i}{edge_base_name}Example
             {field.name}_ent = await {i}{edge_base_name}Example.gen_create(vc)
             {field.name} = {field.name}_ent.id
 """
@@ -76,8 +74,7 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
             "from entpy import Field, FieldWithDynamicExample",
             "from sentinels import NOTHING, Sentinel  # type: ignore",
             f"from {schema.__class__.__module__} import {schema.__class__.__name__}",
-        ]
-        + edges_imports,
+        ],
         code=f"""
 class {base_name}Example:
     @classmethod

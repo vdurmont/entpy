@@ -1,8 +1,8 @@
 from sqlalchemy import literal_column, select, union_all, Table, Selectable
 from sqlalchemy_utils import create_view
 from .ent_test_thing import EntTestThingModel
-from .ent_test_object import EntTestObjectModel
 from .ent_test_object2 import EntTestObject2Model
+from .ent_test_object import EntTestObjectModel
 
 
 view_query: Selectable = union_all(

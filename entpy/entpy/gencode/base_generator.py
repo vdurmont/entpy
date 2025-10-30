@@ -34,6 +34,7 @@ def generate(
 
     return GeneratedContent(
         imports=imports + accessors.imports,
+        type_checking_imports=accessors.type_checking_imports,
         code=f"""
 class {base_name}({extends}):{get_description(schema)}
     vc: {vc_name}
@@ -119,7 +120,7 @@ class {base_name}({extends}):{get_description(schema)}
 def _generate_accessors(schema: Schema) -> GeneratedContent:
     fields = schema.get_all_fields()
     accessors_code = ""
-    imports = []
+    type_checking_imports = []
     for field in fields:
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
         description = field.description
@@ -143,11 +144,19 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
                         "Pattern", ""
                     )
                 )
-                imports.append(f"from {module} import {field.get_edge_type()}")
+                # We import the edge type locally to avoid circular imports
+                type_checking_imports.append(
+                    f"from {module} import {field.get_edge_type()}"
+                )
+                load = (
+                    f"from {module} import {field.get_edge_type()}\n        "
+                    if field.edge_class != schema.__class__
+                    else ""
+                )
             if field.nullable:
                 accessors_code += f"""
-    async def gen_{field.original_name}(self) -> {field.get_edge_type()} | None:
-        if self.model.{field.name}:
+    async def gen_{field.original_name}(self) -> "{field.get_edge_type()}" | None:
+        {load}if self.model.{field.name}:
             return await {field.get_edge_type()}.gen(self.vc, self.model.{field.name})
         return None
 
@@ -155,10 +164,12 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
             else:
                 accessors_code += f"""
     async def gen_{field.original_name}(self) -> {field.get_edge_type()}:
-        return await {field.get_edge_type()}.genx(self.vc, self.model.{field.name})
+        {load}return await {field.get_edge_type()}.genx(self.vc, self.model.{field.name})
 
 """  # noqa: E501
-    return GeneratedContent(imports=imports, code=accessors_code)
+    return GeneratedContent(
+        type_checking_imports=type_checking_imports, code=accessors_code
+    )
 
 
 def _generate_unique_gens(schema: Schema, base_name: str, vc_name: str) -> str:

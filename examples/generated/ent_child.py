@@ -10,19 +10,21 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-from ent_child_schema import EntChildSchema
-from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_parent import EntParent
-from sentinels import NOTHING, Sentinel  # type: ignore
-from typing import Any, TypeVar, Generic
-from .ent_parent import EntParentExample
-from entpy import Field
-from .ent_model import EntModel
 from sqlalchemy import select, Select, func, Result
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import String
 from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import ForeignKey
+from typing import TYPE_CHECKING
+from typing import Any, TypeVar, Generic
+from .ent_model import EntModel
+from ent_child_schema import EntChildSchema
+from entpy import Field
+
+if TYPE_CHECKING:
+    from .ent_parent import EntParent
 
 
 class EntChildModel(EntModel):
@@ -63,6 +65,8 @@ class EntChild(Ent[ExampleViewerContext]):
         return self.model.parent_id
 
     async def gen_parent(self) -> EntParent:
+        from .ent_parent import EntParent
+
         return await EntParent.genx(self.vc, self.model.parent_id)
 
     async def _gen_evaluate_privacy(
@@ -311,6 +315,8 @@ class EntChildExample:
         name = "Benjamin" if isinstance(name, Sentinel) else name
 
         if isinstance(parent_id, Sentinel) or parent_id is None:
+            from .ent_parent import EntParentExample
+
             parent_id_ent = await EntParentExample.gen_create(vc)
             parent_id = parent_id_ent.id
 

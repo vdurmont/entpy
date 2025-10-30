@@ -10,19 +10,21 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_grand_parent import EntGrandParentExample
-from sqlalchemy import String
+from sqlalchemy import select, Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
-from .ent_grand_parent import EntGrandParent
-from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from sentinels import NOTHING, Sentinel  # type: ignore
-from typing import Any, TypeVar, Generic
-from entpy import Field
-from .ent_model import EntModel
 from ent_parent_schema import EntParentSchema
-from sqlalchemy import select, Select, func, Result
+from sqlalchemy import String
 from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import ForeignKey
+from typing import TYPE_CHECKING
+from typing import Any, TypeVar, Generic
+from .ent_model import EntModel
+from entpy import Field
+
+if TYPE_CHECKING:
+    from .ent_grand_parent import EntGrandParent
 
 
 class EntParentModel(EntModel):
@@ -59,6 +61,8 @@ class EntParent(Ent[ExampleViewerContext]):
         return self.model.grand_parent_id
 
     async def gen_grand_parent(self) -> EntGrandParent:
+        from .ent_grand_parent import EntGrandParent
+
         return await EntGrandParent.genx(self.vc, self.model.grand_parent_id)
 
     @property
@@ -313,6 +317,8 @@ class EntParentExample:
         # TODO make sure we only use this in test mode
 
         if isinstance(grand_parent_id, Sentinel) or grand_parent_id is None:
+            from .ent_grand_parent import EntGrandParentExample
+
             grand_parent_id_ent = await EntGrandParentExample.gen_create(vc)
             grand_parent_id = grand_parent_id_ent.id
         name = "Vincent" if isinstance(name, Sentinel) else name

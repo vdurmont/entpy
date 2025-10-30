@@ -10,29 +10,32 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import Integer
-from entpy import ValidationError
-from .ent_test_thing import IEntTestThing
-from sentinels import NOTHING, Sentinel  # type: ignore
-from ent_test_object_schema import Status
-from sqlalchemy.sql.expression import ColumnElement
-from .ent_test_thing import EntTestThingModel
-from sqlalchemy import JSON
-from sqlalchemy import Text
 from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey
-from typing import Any, TypeVar, Generic
-from entpy import Field, FieldWithDynamicExample
-from .ent_test_sub_object import EntTestSubObject
+from .ent_test_thing import EntTestThingModel
 from sqlalchemy import Enum as DBEnum
 from sqlalchemy import String
-from sqlalchemy import select
+from sqlalchemy import Integer
+from typing import TYPE_CHECKING
+from typing import Any, TypeVar, Generic
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy import JSON
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import DateTime
-from .ent_test_sub_object import EntTestSubObjectExample
+from entpy import ValidationError
+from sqlalchemy import select
+from ent_test_object_schema import Status
+from sqlalchemy import ForeignKey
 from .ent_model import EntModel
+from sqlalchemy import Text
 from sqlalchemy import Select, func, Result
+from .ent_test_thing import IEntTestThing
+from sqlalchemy import DateTime
+from sqlalchemy.orm import Mapped, mapped_column
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy.sql.expression import ColumnElement
+
+if TYPE_CHECKING:
+    from .ent_test_sub_object import EntTestSubObject
+    from .ent_test_thing import IEntTestThing
 
 
 class EntTestObjectModel(EntTestThingModel):
@@ -111,6 +114,8 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         return self.model.required_sub_object_id
 
     async def gen_required_sub_object(self) -> EntTestSubObject:
+        from .ent_test_sub_object import EntTestSubObject
+
         return await EntTestSubObject.genx(self.vc, self.model.required_sub_object_id)
 
     @property
@@ -136,7 +141,9 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     def optional_sub_object_id(self) -> UUID | None:
         return self.model.optional_sub_object_id
 
-    async def gen_optional_sub_object(self) -> EntTestSubObject | None:
+    async def gen_optional_sub_object(self) -> "EntTestSubObject" | None:
+        from .ent_test_sub_object import EntTestSubObject
+
         if self.model.optional_sub_object_id:
             return await EntTestSubObject.gen(
                 self.vc, self.model.optional_sub_object_id
@@ -147,7 +154,9 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     def optional_sub_object_no_ex_id(self) -> UUID | None:
         return self.model.optional_sub_object_no_ex_id
 
-    async def gen_optional_sub_object_no_ex(self) -> EntTestSubObject | None:
+    async def gen_optional_sub_object_no_ex(self) -> "EntTestSubObject" | None:
+        from .ent_test_sub_object import EntTestSubObject
+
         if self.model.optional_sub_object_no_ex_id:
             return await EntTestSubObject.gen(
                 self.vc, self.model.optional_sub_object_no_ex_id
@@ -162,7 +171,8 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     def self_id(self) -> UUID | None:
         return self.model.self_id
 
-    async def gen_self(self) -> EntTestObject | None:
+    async def gen_self(self) -> "EntTestObject" | None:
+
         if self.model.self_id:
             return await EntTestObject.gen(self.vc, self.model.self_id)
         return None
@@ -175,7 +185,9 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     def some_pattern_id(self) -> UUID | None:
         return self.model.some_pattern_id
 
-    async def gen_some_pattern(self) -> IEntTestThing | None:
+    async def gen_some_pattern(self) -> "IEntTestThing" | None:
+        from .ent_test_thing import IEntTestThing
+
         if self.model.some_pattern_id:
             return await IEntTestThing.gen(self.vc, self.model.some_pattern_id)
         return None
@@ -632,6 +644,8 @@ class EntTestObjectExample:
             isinstance(required_sub_object_id, Sentinel)
             or required_sub_object_id is None
         ):
+            from .ent_test_sub_object import EntTestSubObjectExample
+
             required_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
             required_sub_object_id = required_sub_object_id_ent.id
 
@@ -656,6 +670,8 @@ class EntTestObjectExample:
             isinstance(optional_sub_object_id, Sentinel)
             or optional_sub_object_id is None
         ):
+            from .ent_test_sub_object import EntTestSubObjectExample
+
             optional_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
             optional_sub_object_id = optional_sub_object_id_ent.id
         some_json = ["hello", "world"] if isinstance(some_json, Sentinel) else some_json
