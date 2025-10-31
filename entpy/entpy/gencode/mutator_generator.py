@@ -192,6 +192,7 @@ class {base_name}MutatorUpdateAction:
 {model_assignments}
         session.add(model)
         await session.flush()
+        await session.refresh(model)
         # TODO privacy checks
         return await {base_name}._genx_from_model(self.vc, model)
 """,

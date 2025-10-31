@@ -10,17 +10,17 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import select, Select, func, Result
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sentinels import Sentinel  # type: ignore
 from sqlalchemy.sql.expression import ColumnElement
-from ent_test_object4_schema import EntTestObject4Schema
-from sqlalchemy import ForeignKey
 from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from typing import Any, TypeVar, Generic
+from sqlalchemy import select, Select, func, Result
+from sentinels import Sentinel  # type: ignore
 from .ent_model import EntModel
 from entpy import Field
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from ent_test_object4_schema import EntTestObject4Schema
 
 if TYPE_CHECKING:
     from .ent_test_object3 import EntTestObject3
@@ -273,6 +273,7 @@ class EntTestObject4MutatorUpdateAction:
         model.other_id = self.other_id
         session.add(model)
         await session.flush()
+        await session.refresh(model)
         # TODO privacy checks
         return await EntTestObject4._genx_from_model(self.vc, model)
 

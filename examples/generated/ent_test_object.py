@@ -10,28 +10,28 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from ent_test_object_schema import EntTestObjectSchema
-from .ent_test_thing import EntTestThingModel
 from sqlalchemy import Enum as DBEnum
-from sqlalchemy import String
-from sqlalchemy import Integer
 from typing import TYPE_CHECKING
-from typing import Any, TypeVar, Generic
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import JSON
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from entpy import ValidationError
-from sqlalchemy import select
-from ent_test_object_schema import Status
-from sqlalchemy import ForeignKey
-from .ent_model import EntModel
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy import Integer
 from sqlalchemy import Text
-from sqlalchemy import Select, func, Result
+from .ent_model import EntModel
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import select
+from typing import Any, TypeVar, Generic
 from .ent_test_thing import IEntTestThing
 from sqlalchemy import DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+from sqlalchemy import JSON
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import ForeignKey
+from .ent_test_thing import EntTestThingModel
+from entpy import ValidationError
+from sqlalchemy import Select, func, Result
 from sentinels import NOTHING, Sentinel  # type: ignore
+from ent_test_object_schema import Status
 from sqlalchemy.sql.expression import ColumnElement
+from entpy import Field, FieldWithDynamicExample
 
 if TYPE_CHECKING:
     from .ent_test_sub_object import EntTestSubObject
@@ -588,6 +588,7 @@ class EntTestObjectMutatorUpdateAction:
         model.when_is_it_cool = self.when_is_it_cool
         session.add(model)
         await session.flush()
+        await session.refresh(model)
         # TODO privacy checks
         return await EntTestObject._genx_from_model(self.vc, model)
 

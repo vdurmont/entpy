@@ -10,15 +10,15 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import select, Select, func, Result
-from ent_test_object2_schema import EntTestObject2Schema
-from .ent_test_thing import IEntTestThing
-from .ent_test_thing import EntTestThingModel
+from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy.orm import Mapped, mapped_column
+from .ent_test_thing import EntTestThingModel
+from typing import Any, TypeVar, Generic
+from sqlalchemy import select, Select, func, Result
+from .ent_test_thing import IEntTestThing
 from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy import String
-from sqlalchemy.sql.expression import ColumnElement
-from typing import Any, TypeVar, Generic
+from ent_test_object2_schema import EntTestObject2Schema
 from .ent_model import EntModel
 from entpy import Field
 
@@ -277,6 +277,7 @@ class EntTestObject2MutatorUpdateAction:
         model.some_field = self.some_field
         session.add(model)
         await session.flush()
+        await session.refresh(model)
         # TODO privacy checks
         return await EntTestObject2._genx_from_model(self.vc, model)
 

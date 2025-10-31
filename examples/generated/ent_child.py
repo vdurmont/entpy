@@ -10,18 +10,18 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import select, Select, func, Result
+from sqlalchemy.sql.expression import ColumnElement
+from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from typing import Any, TypeVar, Generic
+from sqlalchemy import select, Select, func, Result
 from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy import String
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import ForeignKey
-from typing import TYPE_CHECKING
-from typing import Any, TypeVar, Generic
-from .ent_model import EntModel
 from ent_child_schema import EntChildSchema
+from .ent_model import EntModel
 from entpy import Field
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 if TYPE_CHECKING:
     from .ent_parent import EntParent
@@ -281,6 +281,7 @@ class EntChildMutatorUpdateAction:
         model.parent_id = self.parent_id
         session.add(model)
         await session.flush()
+        await session.refresh(model)
         # TODO privacy checks
         return await EntChild._genx_from_model(self.vc, model)
 
