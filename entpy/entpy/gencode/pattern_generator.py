@@ -24,9 +24,9 @@ def generate(
         properties += f"""
     @property
     @abstractmethod
-    def {field.name}(self) -> {field.get_python_type()}:
+    def {field.name}(self) -> {field.get_python_type()}{" | None" if field.nullable else ""}:
         pass
-"""
+"""  # noqa: E501
 
     # We are trying to load the various subclasses of ents
     loaders_gen = _get_loaders(

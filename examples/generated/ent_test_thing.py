@@ -9,18 +9,18 @@ from entpy import Ent
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
 from typing import Self
+from typing import Any, TypeVar, Generic
+from sqlalchemy import Enum as DBEnum
+from ent_test_thing_pattern import ThingStatus
+from sqlalchemy import select, Select, func, Result
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 from typing import cast
 from entpy import EntNotFoundError, ExecutionError
-from typing import Any, TypeVar, Generic
-from database import get_session
 from .ent_model import EntModel
-from sqlalchemy import String
-from ent_test_thing_pattern import ThingStatus
-from sqlalchemy.sql.expression import ColumnElement
+from database import get_session
 from evc import ExampleViewerContext
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Enum as DBEnum
-from sqlalchemy import select, Select, func, Result
+from sqlalchemy.sql.expression import ColumnElement
 
 
 class EntTestThingModel(EntModel):
@@ -40,7 +40,7 @@ class IEntTestThing(Ent):
 
     @property
     @abstractmethod
-    def thing_status(self) -> ThingStatus:
+    def thing_status(self) -> ThingStatus | None:
         pass
 
     @classmethod

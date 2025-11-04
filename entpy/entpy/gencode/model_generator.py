@@ -24,7 +24,6 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
     fields = descriptor.get_sorted_fields()
 
     fields_code = ""
-    edges_imports = []
     types_imports = []
     for field in fields:
         common_column_attributes = ", nullable=" + (
@@ -109,7 +108,6 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             "from sqlalchemy.dialects.postgresql import UUID as DBUUID",
         ]
         + types_imports
-        + edges_imports
         + indexes.imports
         + extends.imports,
         code=f"""
