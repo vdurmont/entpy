@@ -10,18 +10,18 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from entpy import Field
+from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_model import EntModel
+from typing import Any, TypeVar, Generic
 from sqlalchemy import select, Select, func, Result
+from typing import TYPE_CHECKING
+from entpy import Field
+from sqlalchemy import ForeignKey
+from sqlalchemy.sql.expression import ColumnElement
 from ent_parent_schema import EntParentSchema
 from sqlalchemy import String
-from typing import Any, TypeVar, Generic
-from sqlalchemy.sql.expression import ColumnElement
-from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from typing import TYPE_CHECKING
-from sqlalchemy import ForeignKey
-from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy.orm import Mapped, mapped_column
 
 if TYPE_CHECKING:
     from .ent_grand_parent import EntGrandParent

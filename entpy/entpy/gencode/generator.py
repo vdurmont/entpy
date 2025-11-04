@@ -176,4 +176,6 @@ def get_children_schema_classes(pattern_class: type[Pattern]) -> list[type[Schem
         for pattern in patterns:
             if isinstance(pattern, pattern_class):
                 result.append(schema_class)
+    # Sort by class name for deterministic ordering
+    result.sort(key=lambda schema: schema.__name__)
     return result

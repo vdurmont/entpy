@@ -10,29 +10,29 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import Integer
-from typing import Any, TypeVar, Generic
-from sqlalchemy import DateTime
-from .ent_test_thing import EntTestThingModel
-from ent_test_thing_pattern import ThingStatus
-from sqlalchemy import Enum as DBEnum
-from ent_test_object_schema import Status
 from sentinels import NOTHING, Sentinel  # type: ignore
+from typing import Any, TypeVar, Generic
+from ent_test_object_schema import EntTestObjectSchema
 from sqlalchemy import select
+from .ent_test_thing import IEntTestThing
+from .ent_test_thing import EntTestThingModel
 from sqlalchemy import Text
+from sqlalchemy import Select, func, Result
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
 from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import Enum as DBEnum
+from entpy import ValidationError
 from sqlalchemy import JSON
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from entpy import ValidationError
-from sqlalchemy import ForeignKey
-from .ent_test_thing import IEntTestThing
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import Select, func, Result
-from sqlalchemy import String
 from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime
 from typing import TYPE_CHECKING
-from ent_test_object_schema import EntTestObjectSchema
+from ent_test_thing_pattern import ThingStatus
+from ent_test_object_schema import Status
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 
 if TYPE_CHECKING:
     from .ent_test_sub_object import EntTestSubObject
