@@ -1,5 +1,16 @@
+from entpy import (
+    DatetimeField,
+    EdgeField,
+    EnumField,
+    IntField,
+    JsonField,
+    StringField,
+    TextField,
+)
+from entpy.framework.fields.core import FieldWithDefault
 from entpy.framework.pattern import Pattern
 from entpy.framework.schema import Schema
+from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import to_snake_case
 
 
@@ -31,6 +42,9 @@ def generate(
     ),
 """
 
+    columns = _generate_columns(pattern=pattern)
+    imports += columns.imports
+
     imports_code = "\n".join(set(imports))
 
     # Generate column accessors for the view
@@ -42,8 +56,17 @@ def generate(
         column_accessors += f"\n    {field.name} = __table__.c.{field.name}"
 
     return f"""
-from sqlalchemy import literal_column, select, union_all, Table, Selectable
-from sqlalchemy_utils import create_view
+from sqlalchemy import (
+    DDL,
+    Column,
+    MetaData,
+    Table,
+    event,
+    literal_column,
+    select,
+    union_all,
+    Selectable,
+)
 from .{to_snake_case(base_name)} import {base_name}Model
 {imports_code}
 
@@ -53,12 +76,109 @@ view_query: Selectable = union_all(
 )
 
 
+# Compile the view query to SQL
+view_sql = str(view_query.compile(compile_kwargs={{"literal_binds": True}})).replace(
+    "\\n", " "
+)
+
+# Create the view DDL with IF NOT EXISTS for idempotency
+create_view_ddl = DDL(f"CREATE VIEW IF NOT EXISTS {to_snake_case(base_name)}_view AS {{view_sql}}")
+
+# Create the drop view DDL with IF EXISTS for idempotency
+drop_view_ddl = DDL("DROP VIEW IF EXISTS {to_snake_case(base_name)}_view")
+
+
+# Create a separate metadata for the view table so it's not
+# processed by create_all/drop_all
+# This prevents SQLAlchemy from trying to CREATE TABLE for the view
+_view_metadata = MetaData()
+
+_view_table = Table(
+    "{to_snake_case(base_name)}_view",
+    _view_metadata,
+{columns.code}
+    info={{"is_view": True}},
+)
+
+
 class {base_name}View():
-    __table__: Table = create_view(
-        name="{to_snake_case(base_name)}_view",
-        selectable=view_query,
-        metadata={base_name}Model.metadata,
-        cascade_on_drop=None,
-    )
+    __table__ = _view_table
 {column_accessors}
-"""
+
+
+# Register DDL events to create/drop the view on the main metadata
+event.listen(
+    {base_name}Model.metadata,
+    "after_create",
+    create_view_ddl.execute_if(dialect="sqlite"),
+)
+event.listen(
+    {base_name}Model.metadata,
+    "after_create",
+    create_view_ddl.execute_if(dialect="postgresql"),
+)
+
+event.listen(
+    {base_name}Model.metadata,
+    "before_drop",
+    drop_view_ddl.execute_if(dialect="sqlite"),
+)
+event.listen(
+    {base_name}Model.metadata,
+    "before_drop",
+    drop_view_ddl.execute_if(dialect="postgresql"),
+)
+"""  # noqa: E501
+
+
+def _generate_columns(pattern: Pattern) -> GeneratedContent:
+    imports = [
+        "from sqlalchemy.dialects.postgresql import UUID as DBUUID",
+        "from sqlalchemy import DateTime, String",
+    ]
+    code = ""
+    for field in pattern.get_all_fields():
+        common_column_attributes = ", nullable=" + (
+            "True" if field.nullable else "False"
+        )
+        common_column_attributes += ", unique=True" if field.is_unique else ""
+        if isinstance(field, FieldWithDefault):
+            default = field.generate_default()
+            if default:
+                common_column_attributes += f", server_default={default}"
+        if isinstance(field, DatetimeField):
+            imports.append("from sqlalchemy import DateTime")
+            column_type = "DateTime(timezone=True)"
+        elif isinstance(field, EdgeField):
+            column_type = "DBUUID(as_uuid=True)"
+        elif isinstance(field, EnumField):
+            module = field.enum_class.__module__
+            type_name = field.enum_class.__name__
+            imports.append("from sqlalchemy import Enum as DBEnum")
+            imports.append(f"from {module} import {type_name}")
+            column_type = f"DBEnum({type_name}, native_enum=True)"
+        elif isinstance(field, IntField):
+            imports.append("from sqlalchemy import Integer")
+            column_type = "Integer()"
+        elif isinstance(field, JsonField):
+            imports.append("from sqlalchemy import JSON")
+            column_type = "JSON()"
+        elif isinstance(field, StringField):
+            imports.append("from sqlalchemy import String")
+            column_type = f"String({field.length})"
+        elif isinstance(field, TextField):
+            imports.append("from sqlalchemy import Text")
+            column_type = "Text()"
+        else:
+            raise Exception(f"Unsupported field type: {type(field)}")
+
+        code += f"""        Column("{field.name}", {column_type}{common_column_attributes}),"""  # noqa: E501
+    return GeneratedContent(
+        imports=imports,
+        code=f"""
+        Column("id", DBUUID(as_uuid=True), primary_key=True),
+        Column("created_at", DateTime(timezone=True)),
+        Column("updated_at", DateTime(timezone=True)),
+        Column("ent_type", String(50)),
+{code}""",
+    )
