@@ -10,18 +10,18 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import String
 from entpy import Field
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_test_thing import EntTestThingModel
-from typing import Any, TypeVar, Generic
-from sqlalchemy.orm import Mapped, mapped_column
-from .ent_test_thing import IEntTestThing
-from .ent_model import EntModel
 from sqlalchemy import select, Select, func, Result
-from ent_test_thing_pattern import ThingStatus
+from sqlalchemy import String
+from .ent_test_thing import IEntTestThing
+from typing import Any, TypeVar, Generic
 from sqlalchemy.sql.expression import ColumnElement
+from .ent_test_thing import EntTestThingModel
+from .ent_model import EntModel
+from sqlalchemy.orm import Mapped, mapped_column
+from ent_test_thing_pattern import ThingStatus
 from ent_test_object2_schema import EntTestObject2Schema
+from sentinels import NOTHING, Sentinel  # type: ignore
 
 
 class EntTestObject2Model(EntTestThingModel):

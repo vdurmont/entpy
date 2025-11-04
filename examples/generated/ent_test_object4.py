@@ -11,16 +11,16 @@ from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
 from entpy import Field
-from sentinels import Sentinel  # type: ignore
-from typing import Any, TypeVar, Generic
-from sqlalchemy.orm import Mapped, mapped_column
-from .ent_model import EntModel
 from sqlalchemy import select, Select, func, Result
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from typing import Any, TypeVar, Generic
 from sqlalchemy.sql.expression import ColumnElement
-from ent_test_object4_schema import EntTestObject4Schema
-from sqlalchemy import ForeignKey
+from .ent_model import EntModel
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey
+from ent_test_object4_schema import EntTestObject4Schema
+from sentinels import Sentinel  # type: ignore
 
 if TYPE_CHECKING:
     from .ent_test_object3 import EntTestObject3
