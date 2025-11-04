@@ -10,17 +10,17 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from typing import Any, TypeVar, Generic
-from entpy import Field
-from typing import TYPE_CHECKING
-from ent_test_object4_schema import EntTestObject4Schema
-from sqlalchemy import select, Select, func, Result
-from sentinels import Sentinel  # type: ignore
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from .ent_model import EntModel
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import select, Select, func, Result
+from ent_test_object4_schema import EntTestObject4Schema
 from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import ForeignKey
+from sentinels import Sentinel  # type: ignore
+from typing import TYPE_CHECKING
+from entpy import Field
+from typing import Any, TypeVar, Generic
 
 if TYPE_CHECKING:
     from .ent_test_object3 import EntTestObject3

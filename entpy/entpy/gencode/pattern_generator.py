@@ -29,12 +29,7 @@ def generate(
 """  # noqa: E501
 
     # We are trying to load the various subclasses of ents
-    loaders_gen = _get_loaders(
-        required=False, children_schema_classes=children_schema_classes
-    )
-    loaders_genx = _get_loaders(
-        required=True, children_schema_classes=children_schema_classes
-    )
+    loaders_gen = _get_loaders(children_schema_classes=children_schema_classes)
 
     query_content = generate_query(
         descriptor=pattern,
@@ -95,7 +90,7 @@ class I{base_name}(Ent):{get_description(pattern)}
     @classmethod
     async def genx(cls, vc: {vc_name}, ent_id: UUID) -> I{base_name}:
         # TODO refactor this to read the bytes from the UUID
-        {loaders_genx}
+        {loaders_gen}
         raise ValueError(f"No {base_name} found for ID {{ent_id}}")
 
     @classmethod
@@ -122,14 +117,14 @@ class I{base_name}Example:
 """  # noqa: E501
 
 
-def _get_loaders(required: bool, children_schema_classes: list[type[Schema]]) -> str:
+def _get_loaders(children_schema_classes: list[type[Schema]]) -> str:
     loaders = ""
     for schema_class in children_schema_classes:
         schema_base_name = schema_class.__name__.replace("Schema", "")
         lower_schema = to_snake_case(schema_base_name)
         loaders += f"""
         from .{lower_schema} import {schema_base_name}
-        {lower_schema} = await {schema_base_name}.gen{"x" if required else ""}(vc, ent_id)
+        {lower_schema} = await {schema_base_name}.gen(vc, ent_id)
         if {lower_schema}:
             return {lower_schema}
 """
