@@ -1,6 +1,7 @@
 import re
 
 from entpy import EdgeField, Schema
+from entpy.framework.fields.enum_field import EnumField
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
 from entpy.gencode.introspection_generator import generate as generate_introspection
@@ -68,6 +69,7 @@ def generate(
         + query_content.imports
         + mutator_content.imports
         + example_content.imports
+        + _get_patterns_imports(schema)
     )
     if type_checking_imports:
         imports.append("from typing import TYPE_CHECKING")
@@ -162,3 +164,19 @@ def _validate_field_name_format(schema: Schema) -> None:
             f"Field names in {schema.__class__.__name__} must only contain lowercase letters, "
             f"numbers, and underscores: {', '.join(invalid_fields)}"
         )
+
+
+def _get_patterns_imports(schema: Schema) -> list[str]:
+    # If a pattern has EnumFields, we need to import the Enum type
+    patterns = schema.get_patterns()
+    imports = []
+
+    for pattern in patterns:
+        for field in pattern.get_all_fields():
+            if isinstance(field, EnumField):
+                enum_type = field.enum_class
+                module = enum_type.__module__
+                import_statement = f"from {module} import {enum_type.__name__}"
+                imports.append(import_statement)
+
+    return imports

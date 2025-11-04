@@ -10,27 +10,37 @@ from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
 from typing import Self
 from typing import cast
+from entpy import EntNotFoundError, ExecutionError
+from typing import Any, TypeVar, Generic
+from database import get_session
+from .ent_model import EntModel
+from sqlalchemy import String
+from ent_test_thing_pattern import ThingStatus
 from sqlalchemy.sql.expression import ColumnElement
 from evc import ExampleViewerContext
 from sqlalchemy.orm import Mapped, mapped_column
-from typing import Any, TypeVar, Generic
+from sqlalchemy import Enum as DBEnum
 from sqlalchemy import select, Select, func, Result
-from sqlalchemy import String
-from .ent_model import EntModel
-from entpy import EntNotFoundError, ExecutionError
-from database import get_session
 
 
 class EntTestThingModel(EntModel):
     __abstract__ = True
 
     a_good_thing: Mapped[str] = mapped_column(String(100), nullable=False)
+    thing_status: Mapped[ThingStatus | None] = mapped_column(
+        DBEnum(ThingStatus, native_enum=True), nullable=True
+    )
 
 
 class IEntTestThing(Ent):
     @property
     @abstractmethod
     def a_good_thing(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def thing_status(self) -> ThingStatus:
         pass
 
     @classmethod
@@ -176,6 +186,7 @@ class IEntTestThingExample:
         vc: ExampleViewerContext,
         created_at: datetime | None = None,
         a_good_thing: str | Sentinel = NOTHING,
+        thing_status: ThingStatus | None = None,
     ) -> IEntTestThing:
         # TODO make sure we only use this in test mode
 
@@ -183,5 +194,8 @@ class IEntTestThingExample:
         from .ent_test_object import EntTestObjectExample
 
         return await EntTestObjectExample.gen_create(
-            vc=vc, created_at=created_at, a_good_thing=a_good_thing
+            vc=vc,
+            created_at=created_at,
+            a_good_thing=a_good_thing,
+            thing_status=thing_status,
         )

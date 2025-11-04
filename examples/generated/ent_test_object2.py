@@ -10,17 +10,18 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy.orm import Mapped, mapped_column
-from .ent_test_thing import EntTestThingModel
-from typing import Any, TypeVar, Generic
-from sqlalchemy import select, Select, func, Result
 from .ent_test_thing import IEntTestThing
-from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import String
-from ent_test_object2_schema import EntTestObject2Schema
-from .ent_model import EntModel
 from entpy import Field
+from ent_test_object2_schema import EntTestObject2Schema
+from typing import Any, TypeVar, Generic
+from sqlalchemy import String
+from .ent_model import EntModel
+from sqlalchemy.sql.expression import ColumnElement
+from ent_test_thing_pattern import ThingStatus
+from sqlalchemy.orm import Mapped, mapped_column
+from sentinels import NOTHING, Sentinel  # type: ignore
+from .ent_test_thing import EntTestThingModel
+from sqlalchemy import select, Select, func, Result
 
 
 class EntTestObject2Model(EntTestThingModel):
@@ -56,6 +57,10 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     @property
     def some_field(self) -> str | None:
         return self.model.some_field
+
+    @property
+    def thing_status(self) -> ThingStatus | None:
+        return self.model.thing_status
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
@@ -197,6 +202,7 @@ class EntTestObject2Mutator:
         vc: ExampleViewerContext,
         a_good_thing: str,
         some_field: str | None = None,
+        thing_status: ThingStatus | None = None,
         id: UUID | None = None,
         created_at: datetime | None = None,
     ) -> EntTestObject2MutatorCreationAction:
@@ -206,6 +212,7 @@ class EntTestObject2Mutator:
             created_at=created_at,
             a_good_thing=a_good_thing,
             some_field=some_field,
+            thing_status=thing_status,
         )
 
     @classmethod
@@ -226,6 +233,7 @@ class EntTestObject2MutatorCreationAction:
     id: UUID
     a_good_thing: str
     some_field: str | None = None
+    thing_status: ThingStatus | None = None
 
     def __init__(
         self,
@@ -234,12 +242,14 @@ class EntTestObject2MutatorCreationAction:
         created_at: datetime | None,
         a_good_thing: str,
         some_field: str | None,
+        thing_status: ThingStatus | None,
     ) -> None:
         self.vc = vc
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
         self.id = id if id else generate_uuid(EntTestObject2, self.created_at)
         self.a_good_thing = a_good_thing
         self.some_field = some_field
+        self.thing_status = thing_status
 
     async def gen_savex(self) -> EntTestObject2:
         session = get_session()
@@ -249,6 +259,7 @@ class EntTestObject2MutatorCreationAction:
             created_at=self.created_at,
             a_good_thing=self.a_good_thing,
             some_field=self.some_field,
+            thing_status=self.thing_status,
         )
         session.add(model)
         await session.flush()
@@ -262,12 +273,14 @@ class EntTestObject2MutatorUpdateAction:
     id: UUID
     a_good_thing: str
     some_field: str | None = None
+    thing_status: ThingStatus | None = None
 
     def __init__(self, vc: ExampleViewerContext, ent: EntTestObject2) -> None:
         self.vc = vc
         self.ent = ent
         self.a_good_thing = ent.a_good_thing
         self.some_field = ent.some_field
+        self.thing_status = ent.thing_status
 
     async def gen_savex(self) -> EntTestObject2:
         session = get_session()
@@ -275,6 +288,7 @@ class EntTestObject2MutatorUpdateAction:
         model = self.ent.model
         model.a_good_thing = self.a_good_thing
         model.some_field = self.some_field
+        model.thing_status = self.thing_status
         session.add(model)
         await session.flush()
         await session.refresh(model)
@@ -306,6 +320,7 @@ class EntTestObject2Example:
         created_at: datetime | None = None,
         a_good_thing: str | Sentinel = NOTHING,
         some_field: str | None = None,
+        thing_status: ThingStatus | None = None,
     ) -> EntTestObject2:
         # TODO make sure we only use this in test mode
 
@@ -318,6 +333,7 @@ class EntTestObject2Example:
             created_at=created_at,
             a_good_thing=a_good_thing,
             some_field=some_field,
+            thing_status=thing_status,
         ).gen_savex()
 
 

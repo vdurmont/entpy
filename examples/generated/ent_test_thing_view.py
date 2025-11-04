@@ -11,6 +11,7 @@ view_query: Selectable = union_all(
         EntTestObjectModel.created_at,
         EntTestObjectModel.updated_at,
         EntTestObjectModel.a_good_thing,
+        EntTestObjectModel.thing_status,
         literal_column("'EntTestObjectModel'").label("ent_type"),
     ),
     select(
@@ -18,6 +19,7 @@ view_query: Selectable = union_all(
         EntTestObject2Model.created_at,
         EntTestObject2Model.updated_at,
         EntTestObject2Model.a_good_thing,
+        EntTestObject2Model.thing_status,
         literal_column("'EntTestObject2Model'").label("ent_type"),
     ),
 )
@@ -36,3 +38,4 @@ class EntTestThingView:
     updated_at = __table__.c.updated_at
     ent_type = __table__.c.ent_type
     a_good_thing = __table__.c.a_good_thing
+    thing_status = __table__.c.thing_status

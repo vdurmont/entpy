@@ -10,28 +10,28 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import Enum as DBEnum
-from typing import TYPE_CHECKING
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import Integer
-from sqlalchemy import Text
-from .ent_model import EntModel
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import select
-from typing import Any, TypeVar, Generic
 from .ent_test_thing import IEntTestThing
-from sqlalchemy import DateTime
-from sqlalchemy import String
-from sqlalchemy import JSON
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import ForeignKey
-from .ent_test_thing import EntTestThingModel
-from entpy import ValidationError
-from sqlalchemy import Select, func, Result
-from sentinels import NOTHING, Sentinel  # type: ignore
-from ent_test_object_schema import Status
+from sqlalchemy import Text
 from sqlalchemy.sql.expression import ColumnElement
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import select, Select, func, Result
+from entpy import ValidationError
+from sqlalchemy import JSON
+from sqlalchemy import DateTime
+from .ent_model import EntModel
+from ent_test_object_schema import Status
+from sqlalchemy.orm import Mapped, mapped_column
+from ent_test_object_schema import EntTestObjectSchema
+from typing import TYPE_CHECKING
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from typing import Any, TypeVar, Generic
+from sqlalchemy import ForeignKey
+from sqlalchemy import Enum as DBEnum
 from entpy import Field, FieldWithDynamicExample
+from sqlalchemy import Integer
+from sqlalchemy import String
+from ent_test_thing_pattern import ThingStatus
+from .ent_test_thing import EntTestThingModel
 
 if TYPE_CHECKING:
     from .ent_test_sub_object import EntTestSubObject
@@ -199,6 +199,10 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     @property
     def status_code(self) -> int | None:
         return self.model.status_code
+
+    @property
+    def thing_status(self) -> ThingStatus | None:
+        return self.model.thing_status
 
     @property
     def validated_field(self) -> str | None:
@@ -379,6 +383,7 @@ class EntTestObjectMutator:
         some_pattern_id: UUID | None = None,
         status: Status | None = None,
         status_code: int | None = None,
+        thing_status: ThingStatus | None = None,
         validated_field: str | None = None,
         when_is_it_cool: datetime | None = None,
         id: UUID | None = None,
@@ -403,6 +408,7 @@ class EntTestObjectMutator:
             some_pattern_id=some_pattern_id,
             status=status,
             status_code=status_code,
+            thing_status=thing_status,
             validated_field=validated_field,
             when_is_it_cool=when_is_it_cool,
         )
@@ -438,6 +444,7 @@ class EntTestObjectMutatorCreationAction:
     some_pattern_id: UUID | None = None
     status: Status | None = None
     status_code: int | None = None
+    thing_status: ThingStatus | None = None
     validated_field: str | None = None
     when_is_it_cool: datetime | None = None
 
@@ -461,6 +468,7 @@ class EntTestObjectMutatorCreationAction:
         some_pattern_id: UUID | None,
         status: Status | None,
         status_code: int | None,
+        thing_status: ThingStatus | None,
         validated_field: str | None,
         when_is_it_cool: datetime | None,
     ) -> None:
@@ -482,6 +490,7 @@ class EntTestObjectMutatorCreationAction:
         self.some_pattern_id = some_pattern_id
         self.status = status
         self.status_code = status_code
+        self.thing_status = thing_status
         self.validated_field = validated_field
         self.when_is_it_cool = when_is_it_cool
 
@@ -511,6 +520,7 @@ class EntTestObjectMutatorCreationAction:
             some_pattern_id=self.some_pattern_id,
             status=self.status,
             status_code=self.status_code,
+            thing_status=self.thing_status,
             validated_field=self.validated_field,
             when_is_it_cool=self.when_is_it_cool,
         )
@@ -538,6 +548,7 @@ class EntTestObjectMutatorUpdateAction:
     some_pattern_id: UUID | None = None
     status: Status | None = None
     status_code: int | None = None
+    thing_status: ThingStatus | None = None
     validated_field: str | None = None
     when_is_it_cool: datetime | None = None
 
@@ -558,6 +569,7 @@ class EntTestObjectMutatorUpdateAction:
         self.some_pattern_id = ent.some_pattern_id
         self.status = ent.status
         self.status_code = ent.status_code
+        self.thing_status = ent.thing_status
         self.validated_field = ent.validated_field
         self.when_is_it_cool = ent.when_is_it_cool
 
@@ -584,6 +596,7 @@ class EntTestObjectMutatorUpdateAction:
         model.some_pattern_id = self.some_pattern_id
         model.status = self.status
         model.status_code = self.status_code
+        model.thing_status = self.thing_status
         model.validated_field = self.validated_field
         model.when_is_it_cool = self.when_is_it_cool
         session.add(model)
@@ -630,6 +643,7 @@ class EntTestObjectExample:
         some_pattern_id: UUID | None = None,
         status: Status | None = None,
         status_code: int | None = None,
+        thing_status: ThingStatus | None = None,
         validated_field: str | None = None,
         when_is_it_cool: datetime | None = None,
     ) -> EntTestObject:
@@ -710,6 +724,7 @@ class EntTestObjectExample:
             some_pattern_id=some_pattern_id,
             status=status,
             status_code=status_code,
+            thing_status=thing_status,
             validated_field=validated_field,
             when_is_it_cool=when_is_it_cool,
         ).gen_savex()
