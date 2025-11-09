@@ -5,22 +5,22 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from uuid import UUID
-from entpy import Ent
+from entpy import Ent, ValidationError
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
 from typing import Self
-from .ent_model import EntModel
-from typing import Any, TypeVar, Generic
-from sqlalchemy import select, Select, func, Result
-from ent_test_thing_pattern import ThingStatus
-from typing import cast
-from sqlalchemy.sql.expression import ColumnElement
-from entpy import EntNotFoundError, ExecutionError
 from evc import ExampleViewerContext
-from sqlalchemy import String
-from sqlalchemy import Enum as DBEnum
-from database import get_session
+from ent_test_thing_pattern import ThingStatus
+from sqlalchemy import select, Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
+from database import get_session
+from entpy import EntNotFoundError, ExecutionError
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any, TypeVar, Generic
+from typing import cast
+from .ent_model import EntModel
+from sqlalchemy import Enum as DBEnum
+from sqlalchemy import String
 
 
 class EntTestThingModel(EntModel):
@@ -44,38 +44,54 @@ class IEntTestThing(Ent):
         pass
 
     @classmethod
-    async def gen(cls, vc: ExampleViewerContext, ent_id: UUID) -> IEntTestThing | None:
+    async def gen(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str
+    ) -> IEntTestThing | None:
+        # Convert str to UUID if needed
+        if isinstance(ent_id, str):
+            try:
+                ent_id = UUID(ent_id)
+            except ValueError as e:
+                raise ValidationError(f"Invalid ID format for {ent_id}") from e
+
         # TODO refactor this to read the bytes from the UUID
-
-        from .ent_test_object import EntTestObject
-
-        ent_test_object = await EntTestObject.gen(vc, ent_id)
-        if ent_test_object:
-            return ent_test_object
 
         from .ent_test_object2 import EntTestObject2
 
         ent_test_object2 = await EntTestObject2.gen(vc, ent_id)
         if ent_test_object2:
             return ent_test_object2
+
+        from .ent_test_object import EntTestObject
+
+        ent_test_object = await EntTestObject.gen(vc, ent_id)
+        if ent_test_object:
+            return ent_test_object
 
         return None
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> IEntTestThing:
+    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> IEntTestThing:
+        # Convert str to UUID if needed
+        if isinstance(ent_id, str):
+            try:
+                ent_id = UUID(ent_id)
+            except ValueError as e:
+                raise ValidationError(f"Invalid ID format for {ent_id}") from e
+
         # TODO refactor this to read the bytes from the UUID
-
-        from .ent_test_object import EntTestObject
-
-        ent_test_object = await EntTestObject.gen(vc, ent_id)
-        if ent_test_object:
-            return ent_test_object
 
         from .ent_test_object2 import EntTestObject2
 
         ent_test_object2 = await EntTestObject2.gen(vc, ent_id)
         if ent_test_object2:
             return ent_test_object2
+
+        from .ent_test_object import EntTestObject
+
+        ent_test_object = await EntTestObject.gen(vc, ent_id)
+        if ent_test_object:
+            return ent_test_object
 
         raise ValueError(f"No EntTestThing found for ID {ent_id}")
 
@@ -191,9 +207,9 @@ class IEntTestThingExample:
         # TODO make sure we only use this in test mode
 
         # EntPy selected a random implementation of the pattern to use for examples
-        from .ent_test_object import EntTestObjectExample
+        from .ent_test_object2 import EntTestObject2Example
 
-        return await EntTestObjectExample.gen_create(
+        return await EntTestObject2Example.gen_create(
             vc=vc,
             created_at=created_at,
             a_good_thing=a_good_thing,

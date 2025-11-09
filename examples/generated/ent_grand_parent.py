@@ -3,22 +3,30 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision
+from entpy import (
+    Ent,
+    generate_uuid,
+    EntNotFoundError,
+    ExecutionError,
+    Action,
+    Decision,
+    ValidationError,
+)
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sentinels import NOTHING, Sentinel  # type: ignore
-from .ent_model import EntModel
-from typing import Any, TypeVar, Generic
 from sqlalchemy import select, Select, func, Result
-from entpy import Field
-from ent_grand_parent_schema import EntGrandParentSchema
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import String
+from sentinels import NOTHING, Sentinel  # type: ignore
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any, TypeVar, Generic
+from ent_grand_parent_schema import EntGrandParentSchema
+from entpy import Field
+from .ent_model import EntModel
+from sqlalchemy import String
 
 
 class EntGrandParentModel(EntModel):
@@ -64,14 +72,23 @@ class EntGrandParent(Ent[ExampleViewerContext]):
         return Decision.DENY
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntGrandParent:
+    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntGrandParent:
         ent = await cls.gen(vc, ent_id)
         if not ent:
             raise EntNotFoundError(f"No EntGrandParent found for ID {ent_id}")
         return ent
 
     @classmethod
-    async def gen(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntGrandParent | None:
+    async def gen(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str
+    ) -> EntGrandParent | None:
+        # Convert str to UUID if needed
+        if isinstance(ent_id, str):
+            try:
+                ent_id = UUID(ent_id)
+            except ValueError as e:
+                raise ValidationError(f"Invalid ID format for {ent_id}") from e
+
         session = get_session()
         model = await session.get(EntGrandParentModel, ent_id)
         return await cls._gen_from_model(vc, model)

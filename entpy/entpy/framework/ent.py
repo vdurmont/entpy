@@ -26,10 +26,10 @@ class Ent(ABC, Generic[VC]):
 
     @classmethod
     @abstractmethod
-    async def gen(cls, vc: VC, ent_id: UUID) -> Self | None:
+    async def gen(cls, vc: VC, ent_id: UUID | str) -> Self | None:
         pass
 
     @classmethod
     @abstractmethod
-    async def genx(cls, vc: VC, ent_id: UUID) -> Self:
+    async def genx(cls, vc: VC, ent_id: UUID | str) -> Self:
         pass

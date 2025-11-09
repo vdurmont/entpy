@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from entpy import EntNotFoundError
+from entpy import EntNotFoundError, ValidationError
 from ent_test_object_schema import Status
 from generated.ent_test_object import (
     EntTestObject,
@@ -121,3 +121,39 @@ async def test_string_field_with_default(vc: ExampleViewerContext) -> None:
 async def test_enum_field_with_default(vc: ExampleViewerContext) -> None:
     ent = await EntTestObjectExample.gen_create(vc)
     assert ent.sadness == Status.SAD
+
+
+async def test_gen_with_string_id(vc: ExampleViewerContext) -> None:
+    """Test that gen accepts a string UUID and converts it correctly."""
+    ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
+
+    # Convert UUID to string and use it to fetch the entity
+    result = await EntTestObject.gen(vc, str(ent.id))
+
+    assert result is not None, "gen should accept string UUID"
+    assert result.id == ent.id
+    assert result.firstname == "Vincent"
+
+
+async def test_genx_with_string_id(vc: ExampleViewerContext) -> None:
+    """Test that genx accepts a string UUID and converts it correctly."""
+    ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
+
+    # Convert UUID to string and use it to fetch the entity
+    result = await EntTestObject.genx(vc, str(ent.id))
+
+    assert result is not None, "genx should accept string UUID"
+    assert result.id == ent.id
+    assert result.firstname == "Vincent"
+
+
+async def test_gen_with_invalid_string_id(vc: ExampleViewerContext) -> None:
+    """Test that gen raises ValidationError for invalid UUID strings."""
+    with pytest.raises(ValidationError, match="Invalid ID format"):
+        await EntTestObject.gen(vc, "not-a-valid-uuid")
+
+
+async def test_genx_with_invalid_string_id(vc: ExampleViewerContext) -> None:
+    """Test that genx raises ValidationError for invalid UUID strings."""
+    with pytest.raises(ValidationError, match="Invalid ID format"):
+        await EntTestObject.genx(vc, "not-a-valid-uuid")

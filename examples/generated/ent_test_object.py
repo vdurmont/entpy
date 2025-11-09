@@ -3,36 +3,42 @@
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision
+from entpy import (
+    Ent,
+    generate_uuid,
+    EntNotFoundError,
+    ExecutionError,
+    Action,
+    Decision,
+    ValidationError,
+)
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sentinels import NOTHING, Sentinel  # type: ignore
-from typing import Any, TypeVar, Generic
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import select
-from .ent_test_thing import IEntTestThing
-from .ent_test_thing import EntTestThingModel
-from sqlalchemy import Text
-from sqlalchemy import Select, func, Result
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy import Enum as DBEnum
-from entpy import ValidationError
-from sqlalchemy import JSON
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from .ent_model import EntModel
-from sqlalchemy import DateTime
-from typing import TYPE_CHECKING
-from ent_test_thing_pattern import ThingStatus
-from ent_test_object_schema import Status
-from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Integer
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy import Enum as DBEnum
+from typing import TYPE_CHECKING
+from .ent_test_thing import IEntTestThing
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from sqlalchemy import String
+from .ent_test_thing import EntTestThingModel
+from sqlalchemy import select, Select, func, Result
+from sentinels import NOTHING, Sentinel  # type: ignore
+from sqlalchemy import ForeignKey
+from sqlalchemy import JSON
+from sqlalchemy import DateTime
+from ent_test_object_schema import Status
+from ent_test_thing_pattern import ThingStatus
+from sqlalchemy.sql.expression import ColumnElement
+from typing import Any, TypeVar, Generic
+from .ent_model import EntModel
+from sqlalchemy import Text
 
 if TYPE_CHECKING:
     from .ent_test_sub_object import EntTestSubObject
@@ -226,14 +232,23 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         return Decision.DENY
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject:
+    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntTestObject:
         ent = await cls.gen(vc, ent_id)
         if not ent:
             raise EntNotFoundError(f"No EntTestObject found for ID {ent_id}")
         return ent
 
     @classmethod
-    async def gen(cls, vc: ExampleViewerContext, ent_id: UUID) -> EntTestObject | None:
+    async def gen(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str
+    ) -> EntTestObject | None:
+        # Convert str to UUID if needed
+        if isinstance(ent_id, str):
+            try:
+                ent_id = UUID(ent_id)
+            except ValueError as e:
+                raise ValidationError(f"Invalid ID format for {ent_id}") from e
+
         session = get_session()
         model = await session.get(EntTestObjectModel, ent_id)
         return await cls._gen_from_model(vc, model)

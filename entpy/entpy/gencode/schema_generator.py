@@ -86,7 +86,7 @@ def generate(
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision
+from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision, ValidationError
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self

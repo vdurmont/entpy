@@ -70,7 +70,7 @@ def generate(
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from uuid import UUID
-from entpy import Ent
+from entpy import Ent, ValidationError
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore
 from typing import Self
@@ -82,13 +82,27 @@ class I{base_name}(Ent):{get_description(pattern)}
     {properties}
 
     @classmethod
-    async def gen(cls, vc: {vc_name}, ent_id: UUID) -> I{base_name} | None:
+    async def gen(cls, vc: {vc_name}, ent_id: UUID | str) -> I{base_name} | None:
+        # Convert str to UUID if needed
+        if isinstance(ent_id, str):
+            try:
+                ent_id = UUID(ent_id)
+            except ValueError as e:
+                raise ValidationError(f"Invalid ID format for {{ent_id}}") from e
+
         # TODO refactor this to read the bytes from the UUID
         {loaders_gen}
         return None
 
     @classmethod
-    async def genx(cls, vc: {vc_name}, ent_id: UUID) -> I{base_name}:
+    async def genx(cls, vc: {vc_name}, ent_id: UUID | str) -> I{base_name}:
+        # Convert str to UUID if needed
+        if isinstance(ent_id, str):
+            try:
+                ent_id = UUID(ent_id)
+            except ValueError as e:
+                raise ValidationError(f"Invalid ID format for {{ent_id}}") from e
+
         # TODO refactor this to read the bytes from the UUID
         {loaders_gen}
         raise ValueError(f"No {base_name} found for ID {{ent_id}}")

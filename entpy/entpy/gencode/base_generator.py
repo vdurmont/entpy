@@ -70,7 +70,7 @@ class {base_name}({extends}):{get_description(schema)}
 
     @classmethod
     async def genx(
-        cls, vc: {vc_name}, ent_id: UUID
+        cls, vc: {vc_name}, ent_id: UUID | str
     ) -> {base_name}:
         ent = await cls.gen(vc, ent_id)
         if not ent:
@@ -79,8 +79,15 @@ class {base_name}({extends}):{get_description(schema)}
 
     @classmethod
     async def gen(
-        cls, vc: {vc_name}, ent_id: UUID
+        cls, vc: {vc_name}, ent_id: UUID | str
     ) -> {base_name} | None:
+        # Convert str to UUID if needed
+        if isinstance(ent_id, str):
+            try:
+                ent_id = UUID(ent_id)
+            except ValueError as e:
+                raise ValidationError(f"Invalid ID format for {{ent_id}}") from e
+
         session = {session_getter_fn_name}()
         model = await session.get({base_name}Model, ent_id)
         return await cls._gen_from_model(vc, model)

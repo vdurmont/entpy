@@ -10,24 +10,15 @@ from sqlalchemy import (
     Selectable,
 )
 from .ent_test_thing import EntTestThingModel
-from .ent_test_object import EntTestObjectModel
 from ent_test_thing_pattern import ThingStatus
-from sqlalchemy import String
+from sqlalchemy import DateTime, String
+from .ent_test_object import EntTestObjectModel
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from sqlalchemy import Enum as DBEnum
 from .ent_test_object2 import EntTestObject2Model
-from sqlalchemy import DateTime
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
 
 
 view_query: Selectable = union_all(
-    select(
-        EntTestObjectModel.id,
-        EntTestObjectModel.created_at,
-        EntTestObjectModel.updated_at,
-        EntTestObjectModel.a_good_thing,
-        EntTestObjectModel.thing_status,
-        literal_column("'EntTestObjectModel'").label("ent_type"),
-    ),
     select(
         EntTestObject2Model.id,
         EntTestObject2Model.created_at,
@@ -35,6 +26,14 @@ view_query: Selectable = union_all(
         EntTestObject2Model.a_good_thing,
         EntTestObject2Model.thing_status,
         literal_column("'EntTestObject2Model'").label("ent_type"),
+    ),
+    select(
+        EntTestObjectModel.id,
+        EntTestObjectModel.created_at,
+        EntTestObjectModel.updated_at,
+        EntTestObjectModel.a_good_thing,
+        EntTestObjectModel.thing_status,
+        literal_column("'EntTestObjectModel'").label("ent_type"),
     ),
 )
 
