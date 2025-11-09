@@ -18,17 +18,18 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy import select, Select, func, Result
-from sentinels import Sentinel  # type: ignore
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-from typing import TYPE_CHECKING
-from ent_test_object3_schema import EntTestObject3Schema
 from sqlalchemy.sql.expression import ColumnElement
-from typing import Any, TypeVar, Generic
+from sentinels import Sentinel  # type: ignore
+from typing import TYPE_CHECKING
+from sqlalchemy.orm import Mapped, mapped_column
+from entpy import ExpandedEdge, EdgeField
 from entpy import Field
-from .ent_model import EntModel
+from sqlalchemy import select, Select, func, Result
 from sqlalchemy.dialects.postgresql import UUID as DBUUID
+from ent_test_object3_schema import EntTestObject3Schema
+from typing import Any, TypeVar, Generic
+from sqlalchemy import ForeignKey
+from .ent_model import EntModel
 
 if TYPE_CHECKING:
     from .ent_test_object4 import EntTestObject4
@@ -133,6 +134,63 @@ class EntTestObject3(Ent[ExampleViewerContext]):
     @classmethod
     def query_count(cls, vc: ExampleViewerContext) -> EntTestObject3CountQuery:
         return EntTestObject3CountQuery()
+
+    json_groups: dict[str, list[str | ExpandedEdge]] = {}
+
+    async def to_json(
+        self,
+        fields: list[str | ExpandedEdge] | None = None,
+        group: str | None = None,
+    ) -> dict[str, Any]:
+        if fields and group:
+            raise ExecutionError(
+                "Cannot use both `fields` and `group` in the `to_json` function."
+                + " Pick one."
+            )
+        base_fields = {
+            "id": str(self.id),
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "other_id": str(self.other_id) if self.other_id else None,
+        }
+        if not fields and not group:
+            return base_fields
+
+        if group:
+            fields = (
+                self.json_groups[group]
+                if group in self.json_groups
+                else ["id", "created_at", "updated_at"]
+            )
+
+        if not fields:
+            fields = ["id", "created_at", "updated_at"]
+
+        result: dict[str, Any] = {}
+        for field in fields:
+            if isinstance(field, str):
+                if field in ["id", "created_at", "updated_at"]:
+                    field_name = field
+                else:
+                    f = _get_field(field)
+                    field_name = f"{field}_id" if isinstance(f, EdgeField) else field
+                result[field_name] = base_fields[field_name]
+            else:
+                edge = await self._gen_edge(field.edge_name)
+                edge_json = (
+                    await edge.to_json(fields=field.fields, group=field.group)
+                    if edge
+                    else None
+                )
+                result[field.edge_name] = edge_json
+
+        return result
+
+    async def _gen_edge(self, field_name: str) -> Ent | None:
+        if field_name == "other":
+            return await self.gen_other()
+
+        raise ExecutionError(f"Trying to fetch unknown edge: {field_name}")
 
 
 T = TypeVar("T")
@@ -337,7 +395,7 @@ def _get_field(field_name: str) -> Field:
     fields = schema.get_fields()
     field = list(
         filter(
-            lambda field: field.name == field_name,
+            lambda field: field.name == field_name or field.original_name == field_name,
             fields,
         )
     )[0]

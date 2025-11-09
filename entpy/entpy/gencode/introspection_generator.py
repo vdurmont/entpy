@@ -4,7 +4,7 @@ def generate(base_name: str) -> str:
         fields = schema.get_fields()
         field = list(
             filter(
-                lambda field: field.name == field_name,
+                lambda field: field.name == field_name or field.original_name == field_name,
                 fields,
             )
         )[0]
