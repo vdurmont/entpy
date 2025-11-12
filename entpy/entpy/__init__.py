@@ -1,14 +1,21 @@
 from .framework.action import Action  # noqa: F401
 from .framework.composite_index import CompositeIndex  # noqa: F401
 from .framework.decision import Decision  # noqa: F401
-from .framework.ent import Ent  # noqa: F401
+from .framework.ent import (  # noqa: F401
+    Ent,
+    ExpandedEdge,
+)
 from .framework.errors import (  # noqa: F401
     EntNotFoundError,
     ExecutionError,
     PrivacyError,
     ValidationError,
 )
-from .framework.fields.core import Field, FieldWithDynamicExample  # noqa: F401
+from .framework.fields.core import (  # noqa: F401
+    ExpandedGroup,
+    Field,
+    FieldWithDynamicExample,
+)
 from .framework.fields.datetime_field import DatetimeField  # noqa: F401
 from .framework.fields.edge_field import EdgeField  # noqa: F401
 from .framework.fields.enum_field import EnumField  # noqa: F401

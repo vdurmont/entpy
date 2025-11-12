@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from entpy.framework.errors import ExecutionError
 from entpy.framework.fields.core import Field
 
 if TYPE_CHECKING:
@@ -32,6 +33,14 @@ class Descriptor(ABC):
 
     def get_description(self) -> str:
         return ""
+
+    def _get_field(self, field_name: str) -> Field:
+        for field in self.get_fields():
+            if field.name == field_name or field.original_name == field_name:
+                return field
+        raise ExecutionError(
+            f"Cannot find field {field_name} in {self.__class__.__name__}"
+        )
 
 
 def _sort_fields(fields: list[Field]) -> list[Field]:

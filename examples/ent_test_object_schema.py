@@ -15,6 +15,7 @@ from entpy import (
     Pattern,
     Schema,
     StringField,
+    ExpandedGroup,
     TextField,
     EnumField,
     DatetimeField,
@@ -40,14 +41,19 @@ class EntTestObjectSchema(Schema):
             .not_null()
             .unique()
             .documentation("This is the username that you will use on the platform.")
-            .dynamic_example(lambda: str(uuid.uuid4())),
+            .dynamic_example(lambda: str(uuid.uuid4()))
+            .json(groups=["small"]),
             StringField("firstname", 100).not_null().example("Vincent"),
             StringField("lastname", 100).default("Doe"),
             StringField("city", 100).example("Los Angeles"),
             EdgeField("self", EntTestObjectSchema),
             EdgeField("some_pattern", EntTestThingPattern),
-            EdgeField("required_sub_object", EntTestSubObjectSchema).not_null(),
-            EdgeField("optional_sub_object", EntTestSubObjectSchema),
+            EdgeField("required_sub_object", EntTestSubObjectSchema)
+            .not_null()
+            .json(groups=[ExpandedGroup(group_name="small", group="small")]),
+            EdgeField("optional_sub_object", EntTestSubObjectSchema).json(
+                groups=["small", "big"]
+            ),
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),
             TextField("context").example("This is some good context.").immutable(),
             EnumField("status", Status).example(Status.HAPPY),
