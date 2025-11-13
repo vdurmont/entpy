@@ -2,11 +2,21 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Generic, Self, TypeVar
 
+from ..ent import ExpandedEdge
 from .validator import FieldValidator
 
 T = TypeVar("T")
+
+
+@dataclass
+class ExpandedGroup:
+    group_name: str
+    fields: list[str | ExpandedEdge] | None = None
+    group: str | None = None
+    groups: list[str] | None = None
 
 
 class Field(ABC, Generic[T]):
@@ -17,11 +27,13 @@ class Field(ABC, Generic[T]):
     is_immutable: bool = False
     description: str | None = None
     _validators: list[FieldValidator[T]]
+    json_groups: dict[str, str | ExpandedEdge]
 
     def __init__(self, name: str, actual_name: str | None = None):
         self.original_name = name
         self.name = actual_name if actual_name else name
         self._validators = []
+        self.json_groups = {}
 
     @abstractmethod
     def get_python_type(self) -> str:
@@ -45,6 +57,33 @@ class Field(ABC, Generic[T]):
 
     def validators(self, validators: list[FieldValidator[T]]) -> Self:
         self._validators = self._validators + validators
+        return self
+
+    def json(
+        self,
+        group: str | ExpandedGroup | None = None,
+        groups: list[str | ExpandedGroup] | None = None,
+    ) -> Self:
+        if group and groups:
+            raise RuntimeError(
+                "Cannot use both `group` and `groups` in the `.json()` function "
+                + f"of the field {self.name}. Pick one."
+            )
+        if group:
+            groups = [group]
+        if not groups:
+            return self
+
+        for g in groups:
+            if isinstance(g, str):
+                self.json_groups[g] = g
+            else:
+                self.json_groups[g.group_name] = ExpandedEdge(
+                    edge_name=self.original_name,
+                    fields=g.fields,
+                    group=g.group,
+                    groups=g.groups,
+                )
         return self
 
 

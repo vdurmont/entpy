@@ -18,27 +18,29 @@ from typing import Self
 from abc import ABC
 from evc import ExampleViewerContext
 from database import get_session
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer
-from ent_test_object_schema import EntTestObjectSchema
-from sqlalchemy import Enum as DBEnum
-from typing import TYPE_CHECKING
-from .ent_test_thing import IEntTestThing
-from entpy import Field, FieldWithDynamicExample
-from sqlalchemy.dialects.postgresql import UUID as DBUUID
-from sqlalchemy import String
-from .ent_test_thing import EntTestThingModel
-from sqlalchemy import select, Select, func, Result
 from sentinels import NOTHING, Sentinel  # type: ignore
-from sqlalchemy import ForeignKey
-from sqlalchemy import JSON
-from sqlalchemy import DateTime
-from ent_test_object_schema import Status
-from ent_test_thing_pattern import ThingStatus
-from sqlalchemy.sql.expression import ColumnElement
-from typing import Any, TypeVar, Generic
-from .ent_model import EntModel
+from typing import TYPE_CHECKING
+from sqlalchemy.dialects.postgresql import UUID as DBUUID
 from sqlalchemy import Text
+from typing import Any
+from sqlalchemy import JSON
+from sqlalchemy import ForeignKey
+from ent_test_object_schema import Status
+from .ent_model import EntModel
+from sqlalchemy import String
+from sqlalchemy import Enum as DBEnum
+from entpy import ExpandedEdge, EdgeField
+from sqlalchemy import select, Select, func, Result
+from ent_test_thing_pattern import ThingStatus
+from typing import TypeVar, Generic
+from ent_test_object_schema import EntTestObjectSchema
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime
+from entpy import Field, FieldWithDynamicExample
+from sqlalchemy import Integer
+from .ent_test_thing import EntTestThingModel
+from .ent_test_thing import IEntTestThing
+from sqlalchemy.sql.expression import ColumnElement
 
 if TYPE_CHECKING:
     from .ent_test_sub_object import EntTestSubObject
@@ -299,6 +301,115 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     @classmethod
     def query_count(cls, vc: ExampleViewerContext) -> EntTestObjectCountQuery:
         return EntTestObjectCountQuery()
+
+    json_groups: dict[str, list[str | ExpandedEdge]] = {
+        "small": [
+            "id",
+            "created_at",
+            "updated_at",
+            ExpandedEdge(
+                edge_name="required_sub_object",
+                fields=None,
+                group="small",
+                groups=None,
+            ),
+            "username",
+            "optional_sub_object",
+        ],
+        "big": ["id", "created_at", "updated_at", "optional_sub_object"],
+    }
+
+    async def to_json(
+        self,
+        fields: list[str | ExpandedEdge] | None = None,
+        group: str | None = None,
+    ) -> dict[str, Any]:
+        if fields and group:
+            raise ExecutionError(
+                "Cannot use both `fields` and `group` in the `to_json` function."
+                + " Pick one."
+            )
+        base_fields = {
+            "id": str(self.id),
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "a_good_thing": self.a_good_thing,
+            "firstname": self.firstname,
+            "required_sub_object_id": str(self.required_sub_object_id)
+            if self.required_sub_object_id
+            else None,
+            "username": self.username,
+            "city": self.city,
+            "context": self.context,
+            "lastname": self.lastname,
+            "optional_sub_object_id": str(self.optional_sub_object_id)
+            if self.optional_sub_object_id
+            else None,
+            "optional_sub_object_no_ex_id": str(self.optional_sub_object_no_ex_id)
+            if self.optional_sub_object_no_ex_id
+            else None,
+            "sadness": self.sadness.name if self.sadness else None,
+            "self_id": str(self.self_id) if self.self_id else None,
+            "some_json": self.some_json,
+            "some_pattern_id": str(self.some_pattern_id)
+            if self.some_pattern_id
+            else None,
+            "status": self.status.name if self.status else None,
+            "status_code": self.status_code,
+            "thing_status": self.thing_status.name if self.thing_status else None,
+            "validated_field": self.validated_field,
+            "when_is_it_cool": self.when_is_it_cool,
+        }
+        if not fields and not group:
+            return base_fields
+
+        if group:
+            fields = (
+                self.json_groups[group]
+                if group in self.json_groups
+                else ["id", "created_at", "updated_at"]
+            )
+
+        if not fields:
+            fields = ["id", "created_at", "updated_at"]
+
+        result: dict[str, Any] = {}
+        for field in fields:
+            if isinstance(field, str):
+                if field in ["id", "created_at", "updated_at"]:
+                    field_name = field
+                else:
+                    f = _get_field(field)
+                    field_name = f"{field}_id" if isinstance(f, EdgeField) else field
+                result[field_name] = base_fields[field_name]
+            else:
+                edge = await self._gen_edge(field.edge_name)
+                edge_json = (
+                    await edge.to_json(fields=field.fields, group=field.group)
+                    if edge
+                    else None
+                )
+                result[field.edge_name] = edge_json
+
+        return result
+
+    async def _gen_edge(self, field_name: str) -> Ent | None:
+        if field_name == "required_sub_object":
+            return await self.gen_required_sub_object()
+
+        if field_name == "optional_sub_object":
+            return await self.gen_optional_sub_object()
+
+        if field_name == "optional_sub_object_no_ex":
+            return await self.gen_optional_sub_object_no_ex()
+
+        if field_name == "self":
+            return await self.gen_self()
+
+        if field_name == "some_pattern":
+            return await self.gen_some_pattern()
+
+        raise ExecutionError(f"Trying to fetch unknown edge: {field_name}")
 
 
 T = TypeVar("T")
@@ -751,7 +862,7 @@ def _get_field(field_name: str) -> Field:
     fields = schema.get_fields()
     field = list(
         filter(
-            lambda field: field.name == field_name,
+            lambda field: field.name == field_name or field.original_name == field_name,
             fields,
         )
     )[0]

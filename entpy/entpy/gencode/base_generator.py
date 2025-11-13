@@ -1,6 +1,6 @@
-from entpy import EdgeField, Schema
+from entpy import EdgeField, EnumField, ExpandedEdge, Schema
 from entpy.gencode.generated_content import GeneratedContent
-from entpy.gencode.utils import get_description, to_snake_case
+from entpy.gencode.utils import get_description, get_field, to_snake_case
 
 
 def generate(
@@ -32,8 +32,10 @@ def generate(
         module_name = "." + to_snake_case(pattern_base_name)
         imports.append(f"from {module_name} import {class_name}")
 
+    to_json = _generate_to_json(schema=schema, base_name=base_name)
+
     return GeneratedContent(
-        imports=imports + accessors.imports,
+        imports=imports + accessors.imports + to_json.imports,
         type_checking_imports=accessors.type_checking_imports,
         code=f"""
 class {base_name}({extends}):{get_description(schema)}
@@ -120,6 +122,8 @@ class {base_name}({extends}):{get_description(schema)}
     @classmethod
     def query_count(cls, vc: {vc_name}) -> {base_name}CountQuery:
         return {base_name}CountQuery()
+
+{to_json.code}
 """,
     )
 
@@ -202,3 +206,130 @@ def _generate_unique_gens(schema: Schema, base_name: str, vc_name: str) -> str:
         return result
 """  # noqa: E501
     return unique_gens
+
+
+def _generate_to_json(schema: Schema, base_name: str) -> GeneratedContent:
+    base_fields = ""
+    for field in schema.get_all_fields():
+        if isinstance(field, EnumField):
+            base_fields += f"""
+            "{field.name}": self.{field.name}.name if self.{field.name} else None,"""
+        elif isinstance(field, EdgeField):
+            base_fields += f"""
+            "{field.name}": str(self.{field.name}) if self.{field.name} else None,"""
+        else:
+            base_fields += f"""
+            "{field.name}": self.{field.name},"""
+
+    edges_fields = ""
+    for field in schema.get_all_fields():
+        if isinstance(field, EdgeField):
+            edges_fields += f"""
+        if field_name == "{field.original_name}":
+            return await self.gen_{field.original_name}()
+"""
+
+    groups: dict[str, list[str]] = {}
+    for field in schema.get_all_fields():
+        for g in field.json_groups:
+            g_name = g if isinstance(g, str) else g.group_name
+            if g_name in groups:
+                groups[g_name].append(field.name)
+            else:
+                groups[g_name] = [field.name]
+    groups_code = ""
+    for group_name, group_value in groups.items():
+        group_items = ['"id"', '"created_at"', '"updated_at"']
+        for item in group_value:
+            field = get_field(schema, item)
+            if isinstance(field.json_groups[group_name], str):
+                group_items.append(f'"{field.original_name}"')
+            else:
+                group_items.append(_render_expanded_edge(field.json_groups[group_name]))
+        groups_code += f'        "{group_name}": [{", ".join(group_items)}],'
+
+    return GeneratedContent(
+        imports=["from entpy import ExpandedEdge, EdgeField", "from typing import Any"],
+        code=f"""
+    json_groups: dict[str, list[str | ExpandedEdge]] = {{
+{groups_code}
+    }}
+
+    async def to_json(
+        self,
+        fields: list[str | ExpandedEdge] | None = None,
+        group: str | None = None,
+    ) -> dict[str, Any]:
+        if fields and group:
+            raise ExecutionError(
+                "Cannot use both `fields` and `group` in the `to_json` function."
+                + " Pick one."
+            )
+        base_fields = {{
+            "id": str(self.id),
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+{base_fields}
+        }}
+        if not fields and not group:
+            return base_fields
+
+        if group:
+            fields = self.json_groups[group] if group in self.json_groups else ["id", "created_at", "updated_at"]
+
+        if not fields:
+            fields = ["id", "created_at", "updated_at"]
+
+        result: dict[str, Any] = {{}}
+        for field in fields:
+            if isinstance(field, str):
+                if field in ["id", "created_at", "updated_at"]:
+                    field_name = field
+                else:
+                    f = _get_field(field)
+                    field_name = (
+                        f"{{field}}_id" if isinstance(f, EdgeField) else field
+                    )
+                result[field_name] = base_fields[field_name]
+            else:
+                edge = await self._gen_edge(field.edge_name)
+                edge_json = (
+                    await edge.to_json(fields=field.fields, group=field.group)
+                    if edge
+                    else None
+                )
+                result[field.edge_name] = edge_json
+
+        return result
+
+    async def _gen_edge(self, field_name: str) -> Ent | None:
+{edges_fields}
+        raise ExecutionError(f"Trying to fetch unknown edge: {{field_name}}")
+""",  # noqa: E501
+    )
+
+
+def _render_expanded_edge(edge: ExpandedEdge) -> str:
+    # Convert the groups to a string
+    groups = "[" if edge.groups else "None"
+    for g in edge.groups or []:
+        groups += f'"{g}", '
+    if edge.groups:
+        groups += "]"
+
+    # Convert the fields to a string
+    fields = "[" if edge.fields else "None"
+    for f in edge.fields or []:
+        if isinstance(f, str):
+            fields += f'"{f}", '
+        else:
+            fields += _render_expanded_edge(f) + ", "
+    if edge.fields:
+        fields += "]"
+
+    return f"""ExpandedEdge(
+    edge_name="{edge.edge_name}",
+    fields={fields},
+    group={f"\"{edge.group}\"" if edge.group else "None"},
+    groups={groups},
+)"""
