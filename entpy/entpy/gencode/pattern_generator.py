@@ -1,9 +1,9 @@
 from entpy import Pattern, Schema
 from entpy.framework.fields.edge_field import EdgeField
+from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
 from entpy.gencode.utils import get_description, to_snake_case
-from entpy.gencode.generated_content import GeneratedContent
 
 
 def generate(

@@ -1,7 +1,7 @@
 from entpy import (
+    BoolField,
     DatetimeField,
     EdgeField,
-    BoolField,
     EnumField,
     IntField,
     JsonField,
@@ -135,7 +135,7 @@ event.listen(
 
 def _generate_columns(pattern: Pattern) -> GeneratedContent:
     imports = [
-        "from sqlalchemy.dialects.postgresql import UUID as DBUUID",
+        "from sqlalchemy import Uuid",
         "from sqlalchemy import DateTime, String",
     ]
     code = ""
@@ -154,7 +154,7 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
         elif isinstance(field, BoolField):
             column_type = "Boolean()"
         elif isinstance(field, EdgeField):
-            column_type = "DBUUID(as_uuid=True)"
+            column_type = "Uuid()"
         elif isinstance(field, EnumField):
             module = field.enum_class.__module__
             type_name = field.enum_class.__name__
@@ -180,7 +180,7 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
     return GeneratedContent(
         imports=imports,
         code=f"""
-        Column("id", DBUUID(as_uuid=True), primary_key=True),
+        Column("id", Uuid(), primary_key=True),
         Column("created_at", DateTime(timezone=True)),
         Column("updated_at", DateTime(timezone=True)),
         Column("ent_type", String(50)),

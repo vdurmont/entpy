@@ -4,8 +4,8 @@ from importlib import import_module
 from pathlib import Path
 
 from entpy import Pattern, Schema
-from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.ent_query_template import generate as generate_ent_query
+from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
 from entpy.gencode.view_generator import generate as generate_view

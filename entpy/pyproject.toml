@@ -13,7 +13,7 @@ dependencies = [
     "types-sqlalchemy-utils>=1.1.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "ruff==0.6.8",
     "mypy>=1.18.2",

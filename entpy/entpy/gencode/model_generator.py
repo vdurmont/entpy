@@ -1,12 +1,12 @@
 import re
 
 from entpy import (
+    BoolField,
     CompositeIndex,
     DatetimeField,
     EdgeField,
-    BoolField,
-    IntField,
     EnumField,
+    IntField,
     JsonField,
     Pattern,
     Schema,
@@ -87,7 +87,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
                 "Pattern", ""
             )
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += "mapped_column(DBUUID(as_uuid=True)"
+            fields_code += "mapped_column(Uuid()"
             if not field.edge_class.__name__.endswith("Pattern"):
                 # Cannot do FKs for Patterns
                 fields_code += f', ForeignKey("{_get_table_name(edge_base_name)}.id")'
@@ -112,7 +112,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
     return GeneratedContent(
         imports=[
             "from sqlalchemy.orm import Mapped, mapped_column",
-            "from sqlalchemy.dialects.postgresql import UUID as DBUUID",
+            "from sqlalchemy import Uuid",
         ]
         + types_imports
         + indexes.imports
