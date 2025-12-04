@@ -136,7 +136,7 @@ event.listen(
 def _generate_columns(pattern: Pattern) -> GeneratedContent:
     imports = [
         "from entpy.types import DateTime",
-        "from sqlalchemy import String, Uuid",
+        "from sqlalchemy import String, UUID as DBUUID",
     ]
     code = ""
     for field in pattern.get_all_fields():
@@ -153,7 +153,7 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
         elif isinstance(field, BoolField):
             column_type = "Boolean()"
         elif isinstance(field, EdgeField):
-            column_type = "Uuid()"
+            column_type = "DBUUID()"
         elif isinstance(field, EnumField):
             module = field.enum_class.__module__
             type_name = field.enum_class.__name__
@@ -179,7 +179,7 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
     return GeneratedContent(
         imports=imports,
         code=f"""
-        Column("id", Uuid(), primary_key=True),
+        Column("id", DBUUID(), primary_key=True),
         Column("created_at", DateTime()),
         Column("updated_at", DateTime()),
         Column("ent_type", String(50)),

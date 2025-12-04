@@ -7,7 +7,7 @@ from datetime import datetime
 from uuid import UUID as PYUUID
 
 from entpy.types import DateTime
-from sqlalchemy import Uuid
+from sqlalchemy import UUID
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -21,7 +21,7 @@ class EntModel(Base):
     @declared_attr
     def id(self) -> Mapped[PYUUID]:
         return mapped_column(
-            Uuid(), primary_key=True, index=True, nullable=False
+            UUID(), primary_key=True, index=True, nullable=False
         )
 
     @declared_attr

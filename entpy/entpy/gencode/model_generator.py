@@ -85,7 +85,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
                 "Pattern", ""
             )
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += "mapped_column(Uuid()"
+            fields_code += "mapped_column(DBUUID()"
             if not field.edge_class.__name__.endswith("Pattern"):
                 # Cannot do FKs for Patterns
                 fields_code += f', ForeignKey("{_get_table_name(edge_base_name)}.id")'
@@ -110,7 +110,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
     return GeneratedContent(
         imports=[
             "from sqlalchemy.orm import Mapped, mapped_column",
-            "from sqlalchemy import Uuid",
+            "from sqlalchemy import UUID as DBUUID",
         ]
         + types_imports
         + indexes.imports
