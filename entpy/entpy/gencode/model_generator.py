@@ -48,11 +48,9 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(Boolean(){common_column_attributes})\n"
         elif isinstance(field, DatetimeField):
-            types_imports.append("from sqlalchemy import DateTime")
+            types_imports.append("from entpy.types import DateTime")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += (
-                f"mapped_column(DateTime(timezone=True){common_column_attributes})\n"
-            )
+            fields_code += f"mapped_column(DateTime(){common_column_attributes})\n"
         elif isinstance(field, EnumField):
             module = field.enum_class.__module__
             type_name = field.enum_class.__name__

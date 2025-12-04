@@ -6,7 +6,8 @@ def generate(base_import: str) -> str:
 from datetime import datetime
 from uuid import UUID as PYUUID
 
-from sqlalchemy import DateTime, Uuid
+from entpy.types import DateTime
+from sqlalchemy import Uuid
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -26,13 +27,13 @@ class EntModel(Base):
     @declared_attr
     def created_at(self) -> Mapped[datetime]:
         return mapped_column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
+            DateTime(), server_default=func.now(), nullable=False
         )
 
     @declared_attr
     def updated_at(self) -> Mapped[datetime]:
         return mapped_column(
-            DateTime(timezone=True),
+            DateTime(),
             onupdate=func.now(),
             server_default=func.now(),
             nullable=False,

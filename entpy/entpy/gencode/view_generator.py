@@ -135,8 +135,8 @@ event.listen(
 
 def _generate_columns(pattern: Pattern) -> GeneratedContent:
     imports = [
-        "from sqlalchemy import Uuid",
-        "from sqlalchemy import DateTime, String",
+        "from entpy.types import DateTime",
+        "from sqlalchemy import String, Uuid",
     ]
     code = ""
     for field in pattern.get_all_fields():
@@ -149,8 +149,7 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
             if default:
                 common_column_attributes += f", server_default={default}"
         if isinstance(field, DatetimeField):
-            imports.append("from sqlalchemy import DateTime")
-            column_type = "DateTime(timezone=True)"
+            column_type = "DateTime()"
         elif isinstance(field, BoolField):
             column_type = "Boolean()"
         elif isinstance(field, EdgeField):
@@ -181,8 +180,8 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
         imports=imports,
         code=f"""
         Column("id", Uuid(), primary_key=True),
-        Column("created_at", DateTime(timezone=True)),
-        Column("updated_at", DateTime(timezone=True)),
+        Column("created_at", DateTime()),
+        Column("updated_at", DateTime()),
         Column("ent_type", String(50)),
 {code}""",
     )
