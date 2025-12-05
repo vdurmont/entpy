@@ -88,7 +88,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += "mapped_column(DBUUID()"
             if not field.edge_class.__name__.endswith("Pattern"):
                 # Cannot do FKs for Patterns
-                fields_code += f', ForeignKey("{_get_table_name(edge_base_name)}.id")'
+                fields_code += f', ForeignKey("{_get_table_name(edge_base_name)}.id", deferrable=True, initially="DEFERRED")'
             fields_code += f"{common_column_attributes})\n"
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
