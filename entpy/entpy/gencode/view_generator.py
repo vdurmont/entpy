@@ -18,6 +18,7 @@ from entpy.gencode.utils import to_snake_case
 def generate(
     pattern_class: type[Pattern],
     children_schema_classes: list[type[Schema]],
+    base_import: str,
 ) -> str:
     pattern = pattern_class()
     base_name = pattern_class.__name__.replace("Pattern", "")
@@ -35,11 +36,11 @@ def generate(
         for field in pattern.get_all_fields():
             fields_code += f"{schema_base_name}Model.{field.name},"
         selects += f"""    select(
+        literal_column("'{schema_base_name}Model'").label("ent_type"),
         {schema_base_name}Model.id,
         {schema_base_name}Model.created_at,
         {schema_base_name}Model.updated_at,
         {fields_code}
-        literal_column("'{schema_base_name}Model'").label("ent_type"),
     ),
 """
 
@@ -68,68 +69,22 @@ from sqlalchemy import (
     union_all,
     Selectable,
 )
-from .{to_snake_case(base_name)} import {base_name}Model
+from entpy.framework.view import create_view
 {imports_code}
+
+{base_import}
 
 
 view_query: Selectable = union_all(
 {selects}
 )
 
-
-# Compile the view query to SQL
-view_sql = str(view_query.compile(compile_kwargs={{"literal_binds": True}})).replace(
-    "\\n", " "
-)
-
-# Create the view DDL with IF NOT EXISTS for idempotency
-create_view_ddl_sqlite = DDL(f"CREATE VIEW IF NOT EXISTS {to_snake_case(base_name)}_view AS {{view_sql}}")
-create_view_ddl_postgresql = DDL(f"CREATE OR REPLACE VIEW {to_snake_case(base_name)}_view AS {{view_sql}}")
-
-# Create the drop view DDL with IF EXISTS for idempotency
-drop_view_ddl = DDL("DROP VIEW IF EXISTS {to_snake_case(base_name)}_view")
-
-
-# Create a separate metadata for the view table so it's not
-# processed by create_all/drop_all
-# This prevents SQLAlchemy from trying to CREATE TABLE for the view
-_view_metadata = MetaData()
-
-_view_table = Table(
-    "{to_snake_case(base_name)}_view",
-    _view_metadata,
-{columns.code}
-    info={{"is_view": True}},
-)
-
-
-class {base_name}View():
-    __table__ = _view_table
-{column_accessors}
-
-
-# Register DDL events to create/drop the view on the main metadata
-event.listen(
-    {base_name}Model.metadata,
-    "after_create",
-    create_view_ddl_sqlite.execute_if(dialect="sqlite"),
-)
-event.listen(
-    {base_name}Model.metadata,
-    "after_create",
-    create_view_ddl_postgresql.execute_if(dialect="postgresql"),
-)
-
-event.listen(
-    {base_name}Model.metadata,
-    "before_drop",
-    drop_view_ddl.execute_if(dialect="sqlite"),
-)
-event.listen(
-    {base_name}Model.metadata,
-    "before_drop",
-    drop_view_ddl.execute_if(dialect="postgresql"),
-)
+class {base_name}View(Base):
+    __table__: Table = create_view(
+        "{to_snake_case(base_name)}_view",
+        view_query,
+        metadata=Base.metadata,
+    )
 """  # noqa: E501
 
 

@@ -77,7 +77,9 @@ def run(
                 vc_name=vc_name,
             )
             view_code = generate_view(
-                pattern_class=descriptor_class, children_schema_classes=children
+                pattern_class=descriptor_class,
+                children_schema_classes=children,
+                base_import=base_import,
             )
             _write_file(
                 descriptor_output_path.with_stem(f"{descriptor_output_path.stem}_view"),

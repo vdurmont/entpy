@@ -50,3 +50,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["entpy"]
+
+[tool.uv.sources]
+sqlalchemy-utils = { git = "https://github.com/mgorven/sqlalchemy-utils", branch = "view-replace-sqlite" }
