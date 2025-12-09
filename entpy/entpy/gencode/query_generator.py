@@ -22,7 +22,7 @@ def generate(
         imports.append("from typing import cast")
 
     # For patterns, we need to import and use the view
-    query_target = f"{base_name}View.__table__" if is_pattern else f"{base_name}Model"
+    query_target = f"{base_name}View.id" if is_pattern else f"{base_name}Model"
     view_import = (
         f"from .{to_snake_case(base_name)}_view import {base_name}View"
         if is_pattern
