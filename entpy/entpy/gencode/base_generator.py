@@ -175,7 +175,9 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
 
 """  # noqa: E501
     return GeneratedContent(
-        imports=imports, type_checking_imports=type_checking_imports, code=accessors_code
+        imports=imports,
+        type_checking_imports=type_checking_imports,
+        code=accessors_code,
     )
 
 

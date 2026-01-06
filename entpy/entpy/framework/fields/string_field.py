@@ -14,9 +14,10 @@ from entpy.framework.fields.core import (
 class StringField(
     Field, FieldWithExample[str], FieldWithDynamicExample[str], FieldWithDefault[str]
 ):
-    def __init__(self, name: str, length: int):
+    def __init__(self, name: str, length: int, case_sensitive: bool = True):
         super().__init__(name=name)
         self.length = length
+        self.case_sensitive = case_sensitive
 
     def get_python_type(self) -> str:
         return "str"
