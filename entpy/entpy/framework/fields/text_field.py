@@ -11,6 +11,10 @@ from entpy.framework.fields.string_field import NotEmptyStringValidator
 
 
 class TextField(Field, FieldWithExample[str], FieldWithDynamicExample[str]):
+    def __init__(self, name: str, case_sensitive: bool = True):
+        super().__init__(name=name)
+        self.case_sensitive = case_sensitive
+
     def get_python_type(self) -> str:
         return "str"
 

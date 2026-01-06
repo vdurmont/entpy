@@ -45,15 +45,15 @@ class EntQuery[ENT, ENTMODEL](ABC):
     @abstractmethod
     async def gen(self) -> list[ENT]:
         pass
-        
+
     @abstractmethod
     async def gen_first(self) -> ENT | None:
         pass
-    
+
     @abstractmethod
     async def genx_first(self) -> ENT:
         pass
-    
+
     @abstractmethod
     async def gen_count_NO_PRIVACY(self) -> int:
         pass
