@@ -27,6 +27,7 @@ from ent_test_object_schema import Status
 from ent_test_thing_pattern import ThingStatus
 from entpy import Field, FieldWithDynamicExample
 from entpy.types import DateTime
+from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Boolean
 from sqlalchemy import Enum as DBEnum
@@ -283,6 +284,8 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
         rules = EntTestObjectSchema().get_privacy_rules(action)
+        rules.insert(0, AllowIfTestViewerContext())
+
         for rule in rules:
             decision = await rule.gen_evaluate(vc, self)
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
@@ -858,7 +861,7 @@ class EntTestObjectExample:
         )
 
         correlation_id = (
-            UUID("55b094b5-ab61-4a4e-8551-0cf1791b2f03")
+            UUID("299288bc-d569-43b2-88be-14601bb1fc66")
             if isinstance(correlation_id, Sentinel)
             else correlation_id
         )

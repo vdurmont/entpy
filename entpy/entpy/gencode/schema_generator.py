@@ -15,6 +15,7 @@ def generate(
     schema_class: type[Schema],
     session_getter: ImportedObject,
     vc: ImportedObject,
+    prepended_rules: list[ImportedObject],
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.replace("Schema", "")
@@ -34,6 +35,7 @@ def generate(
         base_name=base_name,
         session_getter=session_getter,
         vc=vc,
+        prepended_rules=prepended_rules,
     )
     query_content = generate_query(
         descriptor=schema,

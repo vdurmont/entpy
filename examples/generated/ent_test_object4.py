@@ -20,6 +20,7 @@ from .ent_model import EntModel
 from .ent_query import EntQuery
 from ent_test_object4_schema import EntTestObject4Schema
 from entpy import Field
+from rules import AllowIfTestViewerContext
 from sentinels import Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import UUID as DBUUID
@@ -77,6 +78,8 @@ class EntTestObject4(Ent[ExampleViewerContext]):
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
         rules = EntTestObject4Schema().get_privacy_rules(action)
+        rules.insert(0, AllowIfTestViewerContext())
+
         for rule in rules:
             decision = await rule.gen_evaluate(vc, self)
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.

@@ -20,6 +20,7 @@ from .ent_model import EntModel
 from .ent_query import EntQuery
 from ent_test_object5_schema import EntTestObject5Schema
 from entpy import Field
+from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Boolean
 from sqlalchemy import String
@@ -69,6 +70,8 @@ class EntTestObject5(Ent[ExampleViewerContext]):
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
         rules = EntTestObject5Schema().get_privacy_rules(action)
+        rules.insert(0, AllowIfTestViewerContext())
+
         for rule in rules:
             decision = await rule.gen_evaluate(vc, self)
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.

@@ -4,7 +4,11 @@ from entpy.gencode.utils import ImportedObject, get_description, to_snake_case
 
 
 def generate(
-    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
+    schema: Schema,
+    base_name: str,
+    session_getter: ImportedObject,
+    vc: ImportedObject,
+    prepended_rules: list[ImportedObject],
 ) -> GeneratedContent:
     extends = ",".join(
         [
@@ -19,6 +23,11 @@ def generate(
     unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
 
     imports = []
+
+    preprended_rules_str = ""
+    for rule in prepended_rules:
+        imports.append(str(rule))
+        preprended_rules_str += f"        rules.insert(0, {rule.name}())\n"
 
     if unique_gens:
         # only add this import if we have unique gens :)
@@ -58,6 +67,7 @@ class {base_name}({extends}):{get_description(schema)}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action) -> Decision:
         rules = {base_name}Schema().get_privacy_rules(action)
+{preprended_rules_str}
         for rule in rules:
             decision = await rule.gen_evaluate(vc, self)
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.

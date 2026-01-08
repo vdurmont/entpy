@@ -18,6 +18,7 @@ def run(
     base_model_import: str,
     session_getter: ImportedObject,
     vc: ImportedObject,
+    prepended_rules: list[ImportedObject] | None = None,
 ) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()
@@ -58,6 +59,7 @@ def run(
                 schema_class=descriptor_class,
                 session_getter=session_getter,
                 vc=vc,
+                prepended_rules=prepended_rules or [],
             )
         elif issubclass(descriptor_class, Pattern):
             children = get_children_schema_classes(
