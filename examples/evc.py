@@ -7,3 +7,7 @@ class ExampleViewerContext(ViewerContext):
 
 class ExampleTestViewerContext(ExampleViewerContext):
     pass
+
+
+class ExampleOmniscientViewerContext(ExampleViewerContext):
+    pass

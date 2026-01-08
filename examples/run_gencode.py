@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from entpy.gencode.generator import ImportedObject, run
+from entpy import Action
+from entpy.gencode.generator import ImportedObject, PrivacyRuleImport, run
 
 if __name__ == "__main__":
     run(
@@ -10,6 +11,15 @@ if __name__ == "__main__":
         session_getter=ImportedObject(module="database", name="get_session"),
         vc=ImportedObject(module="evc", name="ExampleViewerContext"),
         prepended_rules=[
-            ImportedObject(module="rules", name="AllowIfTestViewerContext")
+            PrivacyRuleImport(
+                rule=ImportedObject(module="rules", name="AllowIfTestViewerContext"),
+                actions=[Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE],
+            ),
+            PrivacyRuleImport(
+                rule=ImportedObject(
+                    module="rules", name="AllowIfOmniscientViewerContext"
+                ),
+                actions=[Action.READ],
+            ),
         ],
     )

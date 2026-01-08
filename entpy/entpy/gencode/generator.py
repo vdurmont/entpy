@@ -8,7 +8,7 @@ from entpy.gencode.ent_query_template import generate as generate_ent_query
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
-from entpy.gencode.utils import ImportedObject
+from entpy.gencode.utils import ImportedObject, PrivacyRuleImport
 from entpy.gencode.view_generator import generate as generate_view
 
 
@@ -18,7 +18,7 @@ def run(
     base_model_import: str,
     session_getter: ImportedObject,
     vc: ImportedObject,
-    prepended_rules: list[ImportedObject] | None = None,
+    prepended_rules: list[PrivacyRuleImport] | None = None,
 ) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()

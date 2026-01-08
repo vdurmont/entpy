@@ -1,6 +1,11 @@
 from entpy import EdgeField, Schema, TimeField
 from entpy.gencode.generated_content import GeneratedContent
-from entpy.gencode.utils import ImportedObject, get_description, to_snake_case
+from entpy.gencode.utils import (
+    ImportedObject,
+    PrivacyRuleImport,
+    get_description,
+    to_snake_case,
+)
 
 
 def generate(
@@ -8,7 +13,7 @@ def generate(
     base_name: str,
     session_getter: ImportedObject,
     vc: ImportedObject,
-    prepended_rules: list[ImportedObject],
+    prepended_rules: list[PrivacyRuleImport],
 ) -> GeneratedContent:
     extends = ",".join(
         [
@@ -26,8 +31,10 @@ def generate(
 
     preprended_rules_str = ""
     for rule in prepended_rules:
-        imports.append(str(rule))
-        preprended_rules_str += f"        rules.insert(0, {rule.name}())\n"
+        imports.append(str(rule.rule))
+        actions = ", ".join([str(a) for a in rule.actions])
+        preprended_rules_str += f"        if action in [{actions}]:\n"
+        preprended_rules_str += f"            rules.insert(0, {rule.rule.name}())\n"
 
     if unique_gens:
         # only add this import if we have unique gens :)

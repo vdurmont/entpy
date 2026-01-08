@@ -8,14 +8,14 @@ from entpy.gencode.introspection_generator import generate as generate_introspec
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.mutator_generator import generate as generate_mutator
 from entpy.gencode.query_generator import generate as generate_query
-from entpy.gencode.utils import ImportedObject
+from entpy.gencode.utils import ImportedObject, PrivacyRuleImport
 
 
 def generate(
     schema_class: type[Schema],
     session_getter: ImportedObject,
     vc: ImportedObject,
-    prepended_rules: list[ImportedObject],
+    prepended_rules: list[PrivacyRuleImport],
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.replace("Schema", "")

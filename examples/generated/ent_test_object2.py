@@ -24,6 +24,7 @@ from .ent_test_thing import IEntTestThingMutatorUpdateAction
 from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
 from entpy import Field
+from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
@@ -102,7 +103,10 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
         rules = EntTestObject2Schema().get_privacy_rules(action)
-        rules.insert(0, AllowIfTestViewerContext())
+        if action in [Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE]:
+            rules.insert(0, AllowIfTestViewerContext())
+        if action in [Action.READ]:
+            rules.insert(0, AllowIfOmniscientViewerContext())
 
         for rule in rules:
             decision = await rule.gen_evaluate(vc, self)

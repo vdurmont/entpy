@@ -20,6 +20,7 @@ from .ent_model import EntModel
 from .ent_query import EntQuery
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from entpy import Field
+from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
@@ -62,7 +63,10 @@ class EntTestSubObject(Ent[ExampleViewerContext]):
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
         rules = EntTestSubObjectSchema().get_privacy_rules(action)
-        rules.insert(0, AllowIfTestViewerContext())
+        if action in [Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE]:
+            rules.insert(0, AllowIfTestViewerContext())
+        if action in [Action.READ]:
+            rules.insert(0, AllowIfOmniscientViewerContext())
 
         for rule in rules:
             decision = await rule.gen_evaluate(vc, self)
