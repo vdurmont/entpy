@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 
 from entpy.framework.descriptor import Descriptor
 
@@ -12,3 +13,12 @@ def get_description(descriptor: Descriptor) -> str:
     if content:
         return f'\n    """\n    {content}\n    """'
     return ""
+
+
+@dataclass
+class ImportedObject:
+    module: str
+    name: str
+
+    def __str__(self) -> str:
+        return f"from {self.module} import {self.name}"

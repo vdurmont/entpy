@@ -858,7 +858,7 @@ class EntTestObjectExample:
         )
 
         correlation_id = (
-            UUID("b95915f7-7355-4973-8b13-75e530d3b534")
+            UUID("55b094b5-ab61-4a4e-8551-0cf1791b2f03")
             if isinstance(correlation_id, Sentinel)
             else correlation_id
         )

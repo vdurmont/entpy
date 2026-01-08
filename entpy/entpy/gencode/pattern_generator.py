@@ -3,17 +3,15 @@ from entpy.framework.fields.edge_field import EdgeField
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
-from entpy.gencode.utils import get_description, to_snake_case
+from entpy.gencode.utils import ImportedObject, get_description, to_snake_case
 
 
 def generate(
     pattern_class: type[Pattern],
     children_schema_classes: list[type[Schema]],
     ent_model_import: str,
-    session_getter_import: str,
-    session_getter_fn_name: str,
-    vc_import: str,
-    vc_name: str,
+    session_getter: ImportedObject,
+    vc: ImportedObject,
 ) -> str:
     pattern = pattern_class()
     base_name = pattern_class.__name__.replace("Pattern", "")
@@ -36,20 +34,20 @@ def generate(
     # We are trying to load the various subclasses of ents
     loaders_gen = _get_loaders(children_schema_classes=children_schema_classes)
 
-    gen_edges = _generate_edges(pattern=pattern, base_name=base_name, vc_name=vc_name)
+    gen_edges = _generate_edges(pattern=pattern)
 
     query_content = generate_query(
         descriptor=pattern,
         base_name=base_name,
-        session_getter_fn_name=session_getter_fn_name,
-        vc_name=vc_name,
+        session_getter=session_getter,
+        vc=vc,
     )
 
     mutator_content = _generate_mutator(
         pattern=pattern,
         base_name=base_name,
         children_schema_classes=children_schema_classes,
-        vc_name=vc_name,
+        vc=vc,
     )
 
     # Get the implementation to use for the example
@@ -74,7 +72,7 @@ def generate(
 
     # Make sure to import all the things!
     imports = (
-        [vc_import, ent_model_import, session_getter_import]
+        [str(vc), ent_model_import, str(session_getter)]
         + model.imports
         + query_content.imports
         + gen_edges.imports
@@ -116,7 +114,7 @@ class I{base_name}(Ent):{get_description(pattern)}
 {gen_edges.code}
 
     @classmethod
-    async def gen(cls, vc: {vc_name}, ent_id: UUID | str) -> I{base_name} | None:
+    async def gen(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name} | None:
         # Convert str to UUID if needed
         if isinstance(ent_id, str):
             try:
@@ -129,7 +127,7 @@ class I{base_name}(Ent):{get_description(pattern)}
         return None
 
     @classmethod
-    async def genx(cls, vc: {vc_name}, ent_id: UUID | str) -> I{base_name}:
+    async def genx(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name}:
         # Convert str to UUID if needed
         if isinstance(ent_id, str):
             try:
@@ -142,7 +140,7 @@ class I{base_name}(Ent):{get_description(pattern)}
         raise ValueError(f"No {base_name} found for ID {{ent_id}}")
 
     @classmethod
-    def query_{to_snake_case(base_name)}(cls, vc: {vc_name}) -> I{base_name}Query:
+    def query_{to_snake_case(base_name)}(cls, vc: {vc.name}) -> I{base_name}Query:
         return I{base_name}Query(vc=vc)
 
 {query_content.code}
@@ -152,7 +150,7 @@ class I{base_name}(Ent):{get_description(pattern)}
 class I{base_name}Example:
     @classmethod
     async def gen_create(
-        cls, vc: {vc_name}, created_at: datetime | None = None{example_arguments_definition}
+        cls, vc: {vc.name}, created_at: datetime | None = None{example_arguments_definition}
     ) -> I{base_name}:
         # TODO make sure we only use this in test mode
 
@@ -176,7 +174,7 @@ def _get_loaders(children_schema_classes: list[type[Schema]]) -> str:
     return loaders
 
 
-def _generate_edges(pattern: Pattern, base_name: str, vc_name: str) -> GeneratedContent:
+def _generate_edges(pattern: Pattern) -> GeneratedContent:
     code = ""
     type_checking_imports = []
     for field in pattern.get_all_fields():
@@ -208,20 +206,18 @@ def _generate_mutator(
     pattern: Pattern,
     base_name: str,
     children_schema_classes: list[type[Schema]],
-    vc_name: str,
+    vc: ImportedObject,
 ) -> GeneratedContent:
     # Generate the mutator class with update and delete methods
     mutator_methods = _generate_mutator_methods(
         base_name=base_name,
         children_schema_classes=children_schema_classes,
-        vc_name=vc_name,
+        vc=vc,
     )
 
     # Generate the abstract action classes
-    update_action = _generate_update_action(
-        base_name=base_name, vc_name=vc_name, pattern=pattern
-    )
-    delete_action = _generate_delete_action(base_name=base_name, vc_name=vc_name)
+    update_action = _generate_update_action(base_name=base_name, vc=vc, pattern=pattern)
+    delete_action = _generate_delete_action(base_name=base_name, vc=vc)
 
     code = f"""
 class I{base_name}Mutator:
@@ -236,7 +232,7 @@ class I{base_name}Mutator:
 
 
 def _generate_mutator_methods(
-    base_name: str, children_schema_classes: list[type[Schema]], vc_name: str
+    base_name: str, children_schema_classes: list[type[Schema]], vc: ImportedObject
 ) -> str:
     # Generate update method
     update_checks = ""
@@ -265,21 +261,23 @@ def _generate_mutator_methods(
     return f"""
     @classmethod
     def update(
-        cls, vc: {vc_name}, ent: I{base_name}
+        cls, vc: {vc.name}, ent: I{base_name}
     ) -> I{base_name}MutatorUpdateAction:
 {update_checks}
         raise ValueError(f"Unknown implementation for I{base_name}: {{type(ent)}}")
 
     @classmethod
     def delete(
-        cls, vc: {vc_name}, ent: I{base_name}
+        cls, vc: {vc.name}, ent: I{base_name}
     ) -> I{base_name}MutatorDeletionAction:
 {delete_checks}
         raise ValueError(f"Unknown implementation for I{base_name}: {{type(ent)}}")
 """
 
 
-def _generate_update_action(base_name: str, vc_name: str, pattern: Pattern) -> str:
+def _generate_update_action(
+    base_name: str, vc: ImportedObject, pattern: Pattern
+) -> str:
     # Get mutable fields from the pattern
     fields = pattern.get_all_fields()
     mutable_fields = list(filter(lambda f: not f.is_immutable, fields))
@@ -295,7 +293,7 @@ def _generate_update_action(base_name: str, vc_name: str, pattern: Pattern) -> s
 
     return f"""
 class I{base_name}MutatorUpdateAction(ABC):
-    vc: {vc_name}
+    vc: {vc.name}
     ent: I{base_name}
 {field_attributes}
 
@@ -305,10 +303,10 @@ class I{base_name}MutatorUpdateAction(ABC):
 """
 
 
-def _generate_delete_action(base_name: str, vc_name: str) -> str:
+def _generate_delete_action(base_name: str, vc: ImportedObject) -> str:
     return f"""
 class I{base_name}MutatorDeletionAction(ABC):
-    vc: {vc_name}
+    vc: {vc.name}
     ent: I{base_name}
 
     @abstractmethod

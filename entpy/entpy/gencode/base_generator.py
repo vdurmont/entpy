@@ -1,24 +1,22 @@
 from entpy import EdgeField, Schema, TimeField
 from entpy.gencode.generated_content import GeneratedContent
-from entpy.gencode.utils import get_description, to_snake_case
+from entpy.gencode.utils import ImportedObject, get_description, to_snake_case
 
 
 def generate(
-    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
+    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
 ) -> GeneratedContent:
     extends = ",".join(
         [
             f"I{pattern.__class__.__name__.replace("Pattern", "")}"
             for pattern in schema.get_patterns()
         ]
-        + [f"Ent[{vc_name}]"]
+        + [f"Ent[{vc.name}]"]
     )
 
     accessors = _generate_accessors(schema)
 
-    unique_gens = _generate_unique_gens(
-        schema=schema, base_name=base_name, vc_name=vc_name
-    )
+    unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
 
     imports = []
 
@@ -37,10 +35,10 @@ def generate(
         type_checking_imports=accessors.type_checking_imports,
         code=f"""
 class {base_name}({extends}):{get_description(schema)}
-    vc: {vc_name}
+    vc: {vc.name}
     model: {base_name}Model
 
-    def __init__(self, vc: {vc_name}, model: {base_name}Model) -> None:
+    def __init__(self, vc: {vc.name}, model: {base_name}Model) -> None:
         self.vc = vc
         self.model = model
 
@@ -58,7 +56,7 @@ class {base_name}({extends}):{get_description(schema)}
 
 {accessors.code}
 
-    async def _gen_evaluate_privacy(self, vc: {vc_name}, action: Action) -> Decision:
+    async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action) -> Decision:
         rules = {base_name}Schema().get_privacy_rules(action)
         for rule in rules:
             decision = await rule.gen_evaluate(vc, self)
@@ -70,7 +68,7 @@ class {base_name}({extends}):{get_description(schema)}
 
     @classmethod
     async def genx(
-        cls, vc: {vc_name}, ent_id: UUID | str
+        cls, vc: {vc.name}, ent_id: UUID | str
     ) -> {base_name}:
         ent = await cls.gen(vc, ent_id)
         if not ent:
@@ -79,7 +77,7 @@ class {base_name}({extends}):{get_description(schema)}
 
     @classmethod
     async def gen(
-        cls, vc: {vc_name}, ent_id: UUID | str
+        cls, vc: {vc.name}, ent_id: UUID | str
     ) -> {base_name} | None:
         # Convert str to UUID if needed
         if isinstance(ent_id, str):
@@ -88,7 +86,7 @@ class {base_name}({extends}):{get_description(schema)}
             except ValueError as e:
                 raise ValidationError(f"Invalid ID format for {{ent_id}}") from e
 
-        session = {session_getter_fn_name}()
+        session = {session_getter.name}()
         model = await session.get({base_name}Model, ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
@@ -96,7 +94,7 @@ class {base_name}({extends}):{get_description(schema)}
 
     @classmethod
     async def _gen_from_model(
-        cls, vc: {vc_name}, model: {base_name}Model | None
+        cls, vc: {vc.name}, model: {base_name}Model | None
     ) -> {base_name} | None:
         if not model:
             return None
@@ -106,7 +104,7 @@ class {base_name}({extends}):{get_description(schema)}
 
     @classmethod
     async def _genx_from_model(
-        cls, vc: {vc_name}, model: {base_name}Model
+        cls, vc: {vc.name}, model: {base_name}Model
     ) -> {base_name}:
         ent = await {base_name}._gen_from_model(vc=vc, model=model)
         if not ent:
@@ -114,7 +112,7 @@ class {base_name}({extends}):{get_description(schema)}
         return ent
 
     @classmethod
-    def query(cls, vc: {vc_name}) -> {base_name}Query:
+    def query(cls, vc: {vc.name}) -> {base_name}Query:
         return {base_name}Query(vc=vc)
 """,
     )
@@ -181,13 +179,13 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
     )
 
 
-def _generate_unique_gens(schema: Schema, base_name: str, vc_name: str) -> str:
+def _generate_unique_gens(schema: Schema, base_name: str, vc: ImportedObject) -> str:
     unique_gens = ""
     for field in schema.get_all_fields():
         if field.is_unique:
             unique_gens += f"""
     @classmethod
-    async def gen_from_{field.name}(cls, vc: {vc_name}, {field.name}: {field.get_python_type()}) -> {base_name} | None:
+    async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}) -> {base_name} | None:
         session = get_session()
         result = await session.execute(
             select({base_name}Model)
@@ -197,7 +195,7 @@ def _generate_unique_gens(schema: Schema, base_name: str, vc_name: str) -> str:
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
-    async def genx_from_{field.name}(cls, vc: {vc_name}, {field.name}: {field.get_python_type()}) -> {base_name}:
+    async def genx_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}) -> {base_name}:
         result = await cls.gen_from_{field.name}(vc, {field.name})
         if not result:
             raise EntNotFoundError(f"No EntTestObject found for {field.name} {{{field.name}}}")

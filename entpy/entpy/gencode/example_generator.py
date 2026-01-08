@@ -5,10 +5,10 @@ from entpy.framework.fields.core import (
     FieldWithExample,
 )
 from entpy.gencode.generated_content import GeneratedContent
-from entpy.gencode.utils import to_snake_case
+from entpy.gencode.utils import ImportedObject, to_snake_case
 
 
-def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
+def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedContent:
     # Build up the list of arguments the gen_create function takes
     arguments_definition = ""
     for field in schema.get_all_fields():
@@ -101,7 +101,7 @@ def generate(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
 class {base_name}Example:
     @classmethod
     async def gen_create(
-        cls, vc: {vc_name}, created_at: datetime | None = None{arguments_definition}
+        cls, vc: {vc.name}, created_at: datetime | None = None{arguments_definition}
     ) -> {base_name}:
         # TODO make sure we only use this in test mode
 

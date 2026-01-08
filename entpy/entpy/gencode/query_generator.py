@@ -1,11 +1,14 @@
 from entpy.framework.descriptor import Descriptor
 from entpy.framework.pattern import Pattern
 from entpy.gencode.generated_content import GeneratedContent
-from entpy.gencode.utils import to_snake_case
+from entpy.gencode.utils import ImportedObject, to_snake_case
 
 
 def generate(
-    descriptor: Descriptor, base_name: str, session_getter_fn_name: str, vc_name: str
+    descriptor: Descriptor,
+    base_name: str,
+    session_getter: ImportedObject,
+    vc: ImportedObject,
 ) -> GeneratedContent:
     is_pattern = isinstance(descriptor, Pattern)
     i = "I" if is_pattern else ""
@@ -45,15 +48,15 @@ def generate(
 T = TypeVar("T")
 
 class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
-    vc: {vc_name}
+    vc: {vc.name}
 
-    def __init__(self, vc: {vc_name}) -> None:
+    def __init__(self, vc: {vc.name}) -> None:
         self.vc = vc
         {view_import}
         self.query = select({query_target})
 
     async def gen(self) -> list[{i}{base_name}]:
-        session = {session_getter_fn_name}()
+        session = {session_getter.name}()
         result = await session.execute(self.query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
@@ -61,7 +64,7 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
 {gen_ents}
 
     async def gen_first(self) -> {i}{base_name} | None:
-        session = {session_getter_fn_name}()
+        session = {session_getter.name}()
         result = await session.execute(self.query.limit(1))
         return await self._gen_ent(result)
 
@@ -76,7 +79,7 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
         return ent
 
     async def gen_count_NO_PRIVACY(self) -> int:
-        session = {session_getter_fn_name}()
+        session = {session_getter.name}()
         count_query = self.query.with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
         result = await session.execute(count_query)
         count = result.scalar()
@@ -85,7 +88,7 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
         return count
 
 {order_by_methods}
-""",
+""",  # noqa: E501
     )
 
 

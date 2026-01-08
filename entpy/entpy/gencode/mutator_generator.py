@@ -1,30 +1,22 @@
 from entpy import Schema
 from entpy.framework.fields.core import Field, FieldWithDefault
 from entpy.gencode.generated_content import GeneratedContent
+from entpy.gencode.utils import ImportedObject
 from entpy.gencode.utils import to_snake_case as _to_snake_case
 
 
 def generate(
-    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
+    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
 ) -> GeneratedContent:
-    base = _generate_base(schema=schema, base_name=base_name, vc_name=vc_name)
+    base = _generate_base(schema=schema, base_name=base_name, vc=vc)
     creation = _generate_creation(
-        schema=schema,
-        base_name=base_name,
-        session_getter_fn_name=session_getter_fn_name,
-        vc_name=vc_name,
+        schema=schema, base_name=base_name, session_getter=session_getter, vc=vc
     )
     update = _generate_update(
-        schema=schema,
-        base_name=base_name,
-        session_getter_fn_name=session_getter_fn_name,
-        vc_name=vc_name,
+        schema=schema, base_name=base_name, session_getter=session_getter, vc=vc
     )
     deletion = _generate_deletion(
-        schema=schema,
-        base_name=base_name,
-        session_getter_fn_name=session_getter_fn_name,
-        vc_name=vc_name,
+        schema=schema, base_name=base_name, session_getter=session_getter, vc=vc
     )
     return GeneratedContent(
         imports=base.imports + creation.imports + update.imports + deletion.imports,
@@ -38,7 +30,9 @@ def generate(
     )
 
 
-def _generate_base(schema: Schema, base_name: str, vc_name: str) -> GeneratedContent:
+def _generate_base(
+    schema: Schema, base_name: str, vc: ImportedObject
+) -> GeneratedContent:
     # Build up the list of arguments the create function takes
     arguments_definition = ""
     for field in schema.get_all_fields():
@@ -63,7 +57,7 @@ def _generate_base(schema: Schema, base_name: str, vc_name: str) -> GeneratedCon
         else f"""
     @classmethod
     def update(
-        cls, vc: {vc_name}, ent: {base_name}
+        cls, vc: {vc.name}, ent: {base_name}
     ) -> {base_name}MutatorUpdateAction:
         return {base_name}MutatorUpdateAction(vc=vc, ent=ent)
 """
@@ -74,13 +68,13 @@ def _generate_base(schema: Schema, base_name: str, vc_name: str) -> GeneratedCon
 class {base_name}Mutator:
     @classmethod
     def create(
-        cls, vc: {vc_name}{arguments_definition}, id: UUID | None = None, created_at: datetime | None = None, updated_at: datetime | None = None
+        cls, vc: {vc.name}{arguments_definition}, id: UUID | None = None, created_at: datetime | None = None, updated_at: datetime | None = None
     ) -> {base_name}MutatorCreationAction:
         return {base_name}MutatorCreationAction(vc=vc, id=id, created_at=created_at, updated_at=updated_at{arguments_usage})
 {update_function}
     @classmethod
     def delete(
-        cls, vc: {vc_name}, ent: {base_name}
+        cls, vc: {vc.name}, ent: {base_name}
     ) -> {base_name}MutatorDeletionAction:
         return {base_name}MutatorDeletionAction(vc=vc, ent=ent)
 """,  # noqa: E501
@@ -88,7 +82,7 @@ class {base_name}Mutator:
 
 
 def _generate_creation(
-    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
+    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
 ) -> GeneratedContent:
     fields = schema.get_all_fields()
 
@@ -122,11 +116,11 @@ def _generate_creation(
         imports=validations.imports,
         code=f"""
 class {base_name}MutatorCreationAction:
-    vc: {vc_name}
+    vc: {vc.name}
     id: UUID
 {local_variables}
 
-    def __init__(self, vc: {vc_name}, id: UUID | None, created_at: datetime | None, updated_at: datetime | None{constructor_arguments}) -> None:
+    def __init__(self, vc: {vc.name}, id: UUID | None, created_at: datetime | None, updated_at: datetime | None{constructor_arguments}) -> None:
         self.vc = vc
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
         self.updated_at = updated_at if updated_at else self.created_at
@@ -134,7 +128,7 @@ class {base_name}MutatorCreationAction:
 {constructor_assignments}
 
     async def gen_savex(self) -> {base_name}:
-        session = {session_getter_fn_name}()
+        session = {session_getter.name}()
 {validations.code}
         model = {base_name}Model(
             id=self.id,
@@ -151,7 +145,7 @@ class {base_name}MutatorCreationAction:
 
 
 def _generate_update(
-    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
+    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
 ) -> GeneratedContent:
     if schema.is_immutable():
         return GeneratedContent("")
@@ -190,7 +184,8 @@ def _generate_update(
             pattern_base_name = pattern.__class__.__name__.replace("Pattern", "")
             pattern_base_classes.append(f"I{pattern_base_name}MutatorUpdateAction")
             pattern_imports.append(
-                f"from .{_to_snake_case(pattern_base_name)} import I{pattern_base_name}MutatorUpdateAction"
+                f"from .{_to_snake_case(pattern_base_name)} "
+                + f"import I{pattern_base_name}MutatorUpdateAction"
             )
         inheritance = f"({', '.join(pattern_base_classes)})"
         imports = validations.imports + pattern_imports
@@ -202,18 +197,18 @@ def _generate_update(
         imports=imports,
         code=f"""
 class {base_name}MutatorUpdateAction{inheritance}:
-    vc: {vc_name}
+    vc: {vc.name}
     ent: {base_name}
     id: UUID
 {local_variables}
 
-    def __init__(self, vc: {vc_name}, ent: {base_name}) -> None:
+    def __init__(self, vc: {vc.name}, ent: {base_name}) -> None:
         self.vc = vc
         self.ent = ent
 {local_variables_assignments}
 
     async def gen_savex(self) -> {base_name}:
-        session = {session_getter_fn_name}()
+        session = {session_getter.name}()
 {validations.code}
         model = self.ent.model
 {model_assignments}
@@ -228,7 +223,7 @@ class {base_name}MutatorUpdateAction{inheritance}:
 
 
 def _generate_deletion(
-    schema: Schema, base_name: str, session_getter_fn_name: str, vc_name: str
+    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
 ) -> GeneratedContent:
     # Check if the schema has patterns to determine inheritance
     patterns = schema.get_patterns()
@@ -240,7 +235,8 @@ def _generate_deletion(
             pattern_base_name = pattern.__class__.__name__.replace("Pattern", "")
             pattern_base_classes.append(f"I{pattern_base_name}MutatorDeletionAction")
             pattern_imports.append(
-                f"from .{_to_snake_case(pattern_base_name)} import I{pattern_base_name}MutatorDeletionAction"
+                f"from .{_to_snake_case(pattern_base_name)} "
+                + f"import I{pattern_base_name}MutatorDeletionAction"
             )
         inheritance = f"({', '.join(pattern_base_classes)})"
         imports = pattern_imports
@@ -252,15 +248,15 @@ def _generate_deletion(
         imports=imports,
         code=f"""
 class {base_name}MutatorDeletionAction{inheritance}:
-    vc: {vc_name}
+    vc: {vc.name}
     ent: {base_name}
 
-    def __init__(self, vc: {vc_name}, ent: {base_name}) -> None:
+    def __init__(self, vc: {vc.name}, ent: {base_name}) -> None:
         self.vc = vc
         self.ent = ent
 
     async def gen_save(self) -> None:
-        session = {session_getter_fn_name}()
+        session = {session_getter.name}()
         model = self.ent.model
         # TODO privacy checks
         await session.delete(model)

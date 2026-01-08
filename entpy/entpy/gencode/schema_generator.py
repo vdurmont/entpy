@@ -8,15 +8,13 @@ from entpy.gencode.introspection_generator import generate as generate_introspec
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.mutator_generator import generate as generate_mutator
 from entpy.gencode.query_generator import generate as generate_query
+from entpy.gencode.utils import ImportedObject
 
 
 def generate(
     schema_class: type[Schema],
-    ent_model_import: str,
-    session_getter_import: str,
-    session_getter_fn_name: str,
-    vc_import: str,
-    vc_name: str,
+    session_getter: ImportedObject,
+    vc: ImportedObject,
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.replace("Schema", "")
@@ -34,23 +32,25 @@ def generate(
     base_content = generate_base(
         schema=schema,
         base_name=base_name,
-        session_getter_fn_name=session_getter_fn_name,
-        vc_name=vc_name,
+        session_getter=session_getter,
+        vc=vc,
     )
     query_content = generate_query(
         descriptor=schema,
         base_name=base_name,
-        session_getter_fn_name=session_getter_fn_name,
-        vc_name=vc_name,
+        session_getter=session_getter,
+        vc=vc,
     )
     mutator_content = generate_mutator(
         schema=schema,
         base_name=base_name,
-        session_getter_fn_name=session_getter_fn_name,
-        vc_name=vc_name,
+        session_getter=session_getter,
+        vc=vc,
     )
     example_content = generate_example(
-        schema=schema, base_name=base_name, vc_name=vc_name
+        schema=schema,
+        base_name=base_name,
+        vc=vc,
     )
     introspection_code = generate_introspection(base_name=base_name)
 
@@ -63,7 +63,7 @@ def generate(
     )
 
     imports = (
-        [ent_model_import]
+        ["from .ent_model import EntModel"]
         + model_content.imports
         + base_content.imports
         + query_content.imports
@@ -91,8 +91,8 @@ from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from abc import ABC
-{vc_import}
-{session_getter_import}
+{vc}
+{session_getter}
 {imports_code}
 {type_checking_imports_code}
 
@@ -107,7 +107,7 @@ from abc import ABC
 {example_content.code}
 
 {introspection_code}
-"""
+"""  # noqa: E501
 
 
 def _validate_has_fields(schema: Schema) -> None:
@@ -116,7 +116,8 @@ def _validate_has_fields(schema: Schema) -> None:
     if not all_fields:
         raise ValueError(
             f"{schema.__class__.__name__} must have at least one field. "
-            f"Define fields in the schema itself or include patterns that provide fields."
+            + "Define fields in the schema itself or include patterns that "
+            + "provide fields."
         )
 
 
@@ -129,7 +130,8 @@ def _validate_unique_field_names(schema: Schema) -> None:
     if duplicates:
         unique_duplicates = sorted(set(duplicates))
         raise ValueError(
-            f"Duplicate field names found in {schema.__class__.__name__}: {', '.join(unique_duplicates)}"
+            f"Duplicate field names found in {schema.__class__.__name__}: "
+            + f"{', '.join(unique_duplicates)}"
         )
 
 
@@ -145,12 +147,14 @@ def _validate_edge_field_names(schema: Schema) -> None:
     if invalid_edge_fields:
         raise ValueError(
             f"EdgeField names in {schema.__class__.__name__} should not end with '_id' "
-            f"(this suffix is added automatically by EntPy): {', '.join(invalid_edge_fields)}"
+            f"(this suffix is added automatically by EntPy): "
+            + f"{', '.join(invalid_edge_fields)}"
         )
 
 
 def _validate_field_name_format(schema: Schema) -> None:
-    """Validate that field names only contain lowercase letters, numbers, and underscores."""
+    """Validate that field names only contain lowercase letters, numbers,
+    and underscores."""
     all_fields = schema.get_all_fields()
     pattern = re.compile(r"^[a-z0-9_]+$")
     invalid_fields = [
@@ -161,8 +165,9 @@ def _validate_field_name_format(schema: Schema) -> None:
 
     if invalid_fields:
         raise ValueError(
-            f"Field names in {schema.__class__.__name__} must only contain lowercase letters, "
-            f"numbers, and underscores: {', '.join(invalid_fields)}"
+            f"Field names in {schema.__class__.__name__} must only contain "
+            + "lowercase letters, numbers, and underscores: "
+            + f"{', '.join(invalid_fields)}"
         )
 
 

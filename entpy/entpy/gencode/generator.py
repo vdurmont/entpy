@@ -8,17 +8,16 @@ from entpy.gencode.ent_query_template import generate as generate_ent_query
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
+from entpy.gencode.utils import ImportedObject
 from entpy.gencode.view_generator import generate as generate_view
 
 
 def run(
     schemas_directory: str,
     output_directory: str,
-    base_import: str,
-    session_getter_import: str,
-    session_getter_fn_name: str,
-    vc_import: str,
-    vc_name: str,
+    base_model_import: str,
+    session_getter: ImportedObject,
+    vc: ImportedObject,
 ) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()
@@ -30,7 +29,7 @@ def run(
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Generate base model that all models will inherit from, and the ent_query
-    base_model = generate_base_model(base_import=base_import)
+    base_model = generate_base_model(base_import=base_model_import)
     _write_file(output_path / "ent_model.py", base_model)
     ent_query = generate_ent_query()
     _write_file(output_path / "ent_query.py", ent_query)
@@ -57,11 +56,8 @@ def run(
             models_list += f"\nfrom .{descriptor_output_path.stem} import {base_name}"
             code = generate_schema(
                 schema_class=descriptor_class,
-                ent_model_import="from .ent_model import EntModel",
-                session_getter_import=session_getter_import,
-                session_getter_fn_name=session_getter_fn_name,
-                vc_import=vc_import,
-                vc_name=vc_name,
+                session_getter=session_getter,
+                vc=vc,
             )
         elif issubclass(descriptor_class, Pattern):
             children = get_children_schema_classes(
@@ -71,15 +67,13 @@ def run(
                 pattern_class=descriptor_class,
                 children_schema_classes=children,
                 ent_model_import="from .ent_model import EntModel",
-                session_getter_import=session_getter_import,
-                session_getter_fn_name=session_getter_fn_name,
-                vc_import=vc_import,
-                vc_name=vc_name,
+                session_getter=session_getter,
+                vc=vc,
             )
             view_code = generate_view(
                 pattern_class=descriptor_class,
                 children_schema_classes=children,
-                base_import=base_import,
+                base_import=base_model_import,
             )
             _write_file(
                 descriptor_output_path.with_stem(f"{descriptor_output_path.stem}_view"),
@@ -98,10 +92,10 @@ def run(
 
     models_list_code = f"""
 from entpy import Ent
-{vc_import}
+{vc}
 {models_list}
 
-UUID_TO_ENT: dict[bytes, type[Ent[{vc_name}]]] = {{
+UUID_TO_ENT: dict[bytes, type[Ent[{vc.name}]]] = {{
 {models_list_mapping}
 }}
 """
