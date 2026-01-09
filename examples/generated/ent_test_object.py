@@ -835,7 +835,7 @@ class EntTestObjectExample:
         a_pattern_validated_field: str | Sentinel = NOTHING,
         city: str | Sentinel = NOTHING,
         context: str | Sentinel = NOTHING,
-        correlation_id: UUID | Sentinel = NOTHING,
+        correlation_id: UUID | None = None,
         end_time: time | Sentinel = NOTHING,
         is_it_true: bool | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
@@ -899,12 +899,6 @@ class EntTestObjectExample:
 
         context = (
             "This is some good context." if isinstance(context, Sentinel) else context
-        )
-
-        correlation_id = (
-            UUID("3ed8047d-300f-4b59-952d-4d962cced137")
-            if isinstance(correlation_id, Sentinel)
-            else correlation_id
         )
 
         if isinstance(end_time, Sentinel):

@@ -65,7 +65,7 @@ class EntTestObjectSchema(Schema):
             JsonField("some_json", "list[str]").example(["hello", "world"]),
             StringField("validated_field", 100).validators([CustomValidator()]),
             BoolField("is_it_true").example(False),
-            UuidField("correlation_id").example(uuid.uuid4()),
+            UuidField("correlation_id"),
             UuidField("trace_id").dynamic_example(lambda: uuid.uuid4()),
             TimeField("start_time").example(time(9, 30, 0)),
             TimeField("end_time").dynamic_example(lambda: time(17, 30, 0)),
