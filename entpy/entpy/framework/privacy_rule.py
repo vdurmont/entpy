@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from entpy.framework.decision import Decision
@@ -13,3 +14,8 @@ class PrivacyRule(ABC, Generic[VC, T]):
     @abstractmethod
     async def gen_evaluate(self, vc: VC, ent: T) -> Decision:
         pass
+
+
+@dataclass
+class EdgeDelegate:
+    edge_name: str

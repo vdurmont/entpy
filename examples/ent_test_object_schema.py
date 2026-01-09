@@ -8,6 +8,7 @@ from entpy import (
     AllowAll,
     BoolField,
     DatetimeField,
+    EdgeDelegate,
     EdgeField,
     EnumField,
     Field,
@@ -70,7 +71,7 @@ class EntTestObjectSchema(Schema):
             TimeField("end_time").dynamic_example(lambda: time(17, 30, 0)),
         ]
 
-    def get_privacy_rules(self, action: Action) -> list[PrivacyRule]:
+    def get_privacy_config(self, action: Action) -> list[PrivacyRule] | EdgeDelegate:
         return [AllowAll()]
 
 

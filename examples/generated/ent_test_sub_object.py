@@ -19,6 +19,7 @@ from database import get_session
 from .ent_model import EntModel
 from .ent_query import EntQuery
 from ent_test_sub_object_schema import EntTestSubObjectSchema
+from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -62,19 +63,33 @@ class EntTestSubObject(Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
-        rules = EntTestSubObjectSchema().get_privacy_rules(action)
-        if action in [Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE]:
-            rules.insert(0, AllowIfTestViewerContext())
-        if action in [Action.READ]:
-            rules.insert(0, AllowIfOmniscientViewerContext())
+        config = EntTestSubObjectSchema().get_privacy_config(action)
+        if isinstance(config, EdgeDelegate):
+            delegate = await self._gen_load_delegate(config.edge_name)
+            return await delegate._gen_evaluate_privacy(vc, action)
+        elif isinstance(config, list) and all(
+            isinstance(item, PrivacyRule) for item in config
+        ):
+            if action in [Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE]:
+                config.insert(0, AllowIfTestViewerContext())
+            if action in [Action.READ]:
+                config.insert(0, AllowIfOmniscientViewerContext())
 
-        for rule in rules:
-            decision = await rule.gen_evaluate(vc, self)
-            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
-            if decision != Decision.PASS:
-                return decision
-        # We default to denying
-        return Decision.DENY
+            for rule in config:
+                decision = await rule.gen_evaluate(vc, self)
+                # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+                if decision != Decision.PASS:
+                    return decision
+            # We default to denying
+            return Decision.DENY
+        raise ExecutionError(
+            "An invalid privacy configuration was found for EntTestSubObject: invalid config type"
+        )
+
+    async def _gen_load_delegate(self, edge_name: str) -> Ent:
+        raise ExecutionError(
+            "An invalid privacy configuration was found for EntTestSubObject: could not find delegate for {edge_name}"
+        )
 
     @classmethod
     async def genx(

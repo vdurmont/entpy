@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import Generic, Self, TypeVar
 from uuid import UUID
 
+from entpy.framework.action import Action
+from entpy.framework.decision import Decision
 from entpy.framework.viewer_context import ViewerContext
 
 VC = TypeVar("VC", bound=ViewerContext)
@@ -22,6 +24,10 @@ class Ent(ABC, Generic[VC]):
     @property
     @abstractmethod
     def updated_at(self) -> datetime:
+        pass
+
+    @abstractmethod
+    async def _gen_evaluate_privacy(self, vc: VC, action: Action) -> Decision:
         pass
 
     @classmethod

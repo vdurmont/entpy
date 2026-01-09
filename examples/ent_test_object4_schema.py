@@ -1,6 +1,7 @@
 from entpy import (
     Action,
     AllowAll,
+    EdgeDelegate,
     PrivacyRule,
     EdgeField,
     Field,
@@ -16,5 +17,5 @@ class EntTestObject4Schema(Schema):
             EdgeField("other", EntTestObject3Schema),
         ]
 
-    def get_privacy_rules(self, action: Action) -> list[PrivacyRule]:
+    def get_privacy_config(self, action: Action) -> list[PrivacyRule] | EdgeDelegate:
         return [AllowAll()]

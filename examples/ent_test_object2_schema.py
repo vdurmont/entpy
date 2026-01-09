@@ -2,6 +2,7 @@ from ent_test_thing_pattern import EntTestThingPattern
 from entpy import (
     Action,
     AllowAll,
+    EdgeDelegate,
     PrivacyRule,
     Field,
     Pattern,
@@ -17,5 +18,5 @@ class EntTestObject2Schema(Schema):
     def get_fields(self) -> list[Field]:
         return [StringField("some_field", 100)]
 
-    def get_privacy_rules(self, action: Action) -> list[PrivacyRule]:
+    def get_privacy_config(self, action: Action) -> list[PrivacyRule] | EdgeDelegate:
         return [AllowAll()]

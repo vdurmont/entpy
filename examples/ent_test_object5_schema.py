@@ -1,4 +1,4 @@
-from entpy import Action, AllowAll, BoolField, Field, PrivacyRule, Schema, StringField
+from entpy import Action, AllowAll, BoolField, EdgeDelegate, Field, PrivacyRule, Schema, StringField
 
 
 class EntTestObject5Schema(Schema):
@@ -8,5 +8,5 @@ class EntTestObject5Schema(Schema):
             BoolField("is_it_true").not_null().default(True),
         ]
 
-    def get_privacy_rules(self, action: Action) -> list[PrivacyRule]:
+    def get_privacy_config(self, action: Action) -> list[PrivacyRule] | EdgeDelegate:
         return [AllowAll()]

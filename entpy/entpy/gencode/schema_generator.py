@@ -1,6 +1,6 @@
 import re
 
-from entpy import EdgeField, Schema
+from entpy import Action, EdgeDelegate, EdgeField, PrivacyRule, Schema
 from entpy.framework.fields.enum_field import EnumField
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
@@ -28,6 +28,7 @@ def generate(
     _validate_edge_field_names(schema)
     # Validate that field names only contain lowercase letters, numbers, and underscores
     _validate_field_name_format(schema)
+    _validate_privacy_config(schema)
 
     model_content = generate_model(descriptor=schema, base_name=base_name)
     base_content = generate_base(
@@ -170,6 +171,39 @@ def _validate_field_name_format(schema: Schema) -> None:
             f"Field names in {schema.__class__.__name__} must only contain "
             + "lowercase letters, numbers, and underscores: "
             + f"{', '.join(invalid_fields)}"
+        )
+
+
+def _validate_privacy_config(schema: Schema) -> None:
+    for action in list(Action):
+        config = schema.get_privacy_config(action)
+        if isinstance(config, EdgeDelegate):
+            # We're looking for an edge that matches
+            # TODO: someday... detect delegation cycles? For now, you're on your own if you do something dumb.
+            for field in schema.get_all_fields():
+                if (
+                    isinstance(field, EdgeField)
+                    and field.original_name == config.edge_name
+                ):
+                    if field.nullable:
+                        raise ValueError(
+                            f"Edge {config.edge_name} cannot be used to delegate the privacy of {type(schema).__name__} because it is nullable."
+                        )
+                    return
+            raise ValueError(
+                f"Unable to find edge {config.edge_name} to delegate the privacy of {type(schema).__name__}"
+            )
+        elif isinstance(config, list) and all(
+            isinstance(item, PrivacyRule) for item in config
+        ):
+            # We're looking for at least one privacy rule
+            if len(config) == 0:
+                raise ValueError(
+                    f"You need to provide at least one PrivacyRule for {type(schema).__name__}"
+                )
+            return
+        raise ValueError(
+            f"Unsupported type of privacy config for {type(schema).__name__} for {action}"
         )
 
 

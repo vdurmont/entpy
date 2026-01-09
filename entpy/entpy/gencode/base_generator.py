@@ -27,14 +27,16 @@ def generate(
 
     unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
 
-    imports = []
+    imports = ["from entpy import EdgeDelegate, PrivacyRule, Ent"]
 
     preprended_rules_str = ""
     for rule in prepended_rules:
         imports.append(str(rule.rule))
         actions = ", ".join([str(a) for a in rule.actions])
-        preprended_rules_str += f"        if action in [{actions}]:\n"
-        preprended_rules_str += f"            rules.insert(0, {rule.rule.name}())\n"
+        preprended_rules_str += f"            if action in [{actions}]:\n"
+        preprended_rules_str += (
+            f"                config.insert(0, {rule.rule.name}())\n"
+        )
 
     if unique_gens:
         # only add this import if we have unique gens :)
@@ -45,6 +47,14 @@ def generate(
         class_name = f"I{pattern_base_name}"
         module_name = "." + to_snake_case(pattern_base_name)
         imports.append(f"from {module_name} import {class_name}")
+
+    delegate_loaders = ""
+    for field in schema.get_all_fields():
+        if isinstance(field, EdgeField) and not field.nullable:
+            delegate_loaders += f"""
+        if edge_name == "{field.original_name}":
+            return await self.gen_{field.original_name}()
+"""
 
     return GeneratedContent(
         imports=imports + accessors.imports,
@@ -73,15 +83,23 @@ class {base_name}({extends}):{get_description(schema)}
 {accessors.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action) -> Decision:
-        rules = {base_name}Schema().get_privacy_rules(action)
+        config = {base_name}Schema().get_privacy_config(action)
+        if isinstance(config, EdgeDelegate):
+            delegate = await self._gen_load_delegate(config.edge_name)
+            return await delegate._gen_evaluate_privacy(vc, action)
+        elif isinstance(config, list) and all(isinstance(item, PrivacyRule) for item in config):
 {preprended_rules_str}
-        for rule in rules:
-            decision = await rule.gen_evaluate(vc, self)
-            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
-            if decision != Decision.PASS:
-                return decision
-        # We default to denying
-        return Decision.DENY
+            for rule in config:
+                decision = await rule.gen_evaluate(vc, self)
+                # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+                if decision != Decision.PASS:
+                    return decision
+            # We default to denying
+            return Decision.DENY
+        raise ExecutionError("An invalid privacy configuration was found for {base_name}: invalid config type")
+
+    async def _gen_load_delegate(self, edge_name: str) -> Ent:{delegate_loaders}
+        raise ExecutionError("An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
 
     @classmethod
     async def genx(
