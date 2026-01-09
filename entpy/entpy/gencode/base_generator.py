@@ -105,7 +105,7 @@ class {base_name}({extends}):{get_description(schema)}
         raise ExecutionError("An invalid privacy configuration was found for {base_name}: invalid config type")
 
     async def _gen_load_delegate(self, vc: {vc.name}, edge_name: str) -> Ent:{delegate_loaders}
-        raise ExecutionError("An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
+        raise ExecutionError(f"An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str) -> {base_name}:

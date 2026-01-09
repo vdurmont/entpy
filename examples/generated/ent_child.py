@@ -116,7 +116,7 @@ class EntChild(Ent[ExampleViewerContext]):
             return await EntParent._genx_no_privacy_DO_NOT_USE(vc, self.parent_id)
 
         raise ExecutionError(
-            "An invalid privacy configuration was found for EntChild: could not find delegate for {edge_name}"
+            f"An invalid privacy configuration was found for EntChild: could not find delegate for {edge_name}"
         )
 
     @classmethod

@@ -98,7 +98,7 @@ class EntTestObject5(Ent[ExampleViewerContext]):
 
     async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
         raise ExecutionError(
-            "An invalid privacy configuration was found for EntTestObject5: could not find delegate for {edge_name}"
+            f"An invalid privacy configuration was found for EntTestObject5: could not find delegate for {edge_name}"
         )
 
     @classmethod

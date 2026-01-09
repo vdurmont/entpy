@@ -137,7 +137,7 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
             return await EntTestObject5._genx_no_privacy_DO_NOT_USE(vc, self.obj5_id)
 
         raise ExecutionError(
-            "An invalid privacy configuration was found for EntTestObject2: could not find delegate for {edge_name}"
+            f"An invalid privacy configuration was found for EntTestObject2: could not find delegate for {edge_name}"
         )
 
     @classmethod

@@ -120,7 +120,7 @@ class EntDelegatingChild(Ent[ExampleViewerContext]):
             )
 
         raise ExecutionError(
-            "An invalid privacy configuration was found for EntDelegatingChild: could not find delegate for {edge_name}"
+            f"An invalid privacy configuration was found for EntDelegatingChild: could not find delegate for {edge_name}"
         )
 
     @classmethod

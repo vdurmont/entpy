@@ -327,7 +327,7 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
             )
 
         raise ExecutionError(
-            "An invalid privacy configuration was found for EntTestObject: could not find delegate for {edge_name}"
+            f"An invalid privacy configuration was found for EntTestObject: could not find delegate for {edge_name}"
         )
 
     @classmethod
@@ -902,7 +902,7 @@ class EntTestObjectExample:
         )
 
         correlation_id = (
-            UUID("bb8492e6-79dd-4d2a-930c-b143a21e5f2c")
+            UUID("3ed8047d-300f-4b59-952d-4d962cced137")
             if isinstance(correlation_id, Sentinel)
             else correlation_id
         )
