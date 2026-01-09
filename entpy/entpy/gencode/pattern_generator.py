@@ -33,6 +33,9 @@ def generate(
 
     # We are trying to load the various subclasses of ents
     loaders_gen = _get_loaders(children_schema_classes=children_schema_classes)
+    loaders_gen_no_privacy = _get_loaders(
+        children_schema_classes=children_schema_classes, no_privacy=True
+    )
 
     gen_edges = _generate_edges(pattern=pattern)
 
@@ -100,7 +103,7 @@ def generate(
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from uuid import UUID
-from entpy import Ent, ValidationError
+from entpy import Ent, ValidationError, validate_ent_id
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 from typing import Self
@@ -114,30 +117,25 @@ class I{base_name}(Ent):{get_description(pattern)}
 {gen_edges.code}
 
     @classmethod
-    async def gen(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name} | None:
-        # Convert str to UUID if needed
-        if isinstance(ent_id, str):
-            try:
-                ent_id = UUID(ent_id)
-            except ValueError as e:
-                raise ValidationError(f"Invalid ID format for {{ent_id}}") from e
+    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name}:
+        real_ent_id = validate_ent_id(ent_id)
+        # TODO refactor this to read the bytes from the UUID
+        {loaders_gen_no_privacy}
+        raise ValueError(f"No {base_name} found for ID {{real_ent_id}}")
 
+    @classmethod
+    async def gen(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name} | None:
+        real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
         {loaders_gen}
         return None
 
     @classmethod
     async def genx(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name}:
-        # Convert str to UUID if needed
-        if isinstance(ent_id, str):
-            try:
-                ent_id = UUID(ent_id)
-            except ValueError as e:
-                raise ValidationError(f"Invalid ID format for {{ent_id}}") from e
-
+        real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
         {loaders_gen}
-        raise ValueError(f"No {base_name} found for ID {{ent_id}}")
+        raise ValueError(f"No {base_name} found for ID {{real_ent_id}}")
 
     @classmethod
     def query_{to_snake_case(base_name)}(cls, vc: {vc.name}) -> I{base_name}Query:
@@ -160,14 +158,17 @@ class I{base_name}Example:
 """  # noqa: E501
 
 
-def _get_loaders(children_schema_classes: list[type[Schema]]) -> str:
+def _get_loaders(
+    children_schema_classes: list[type[Schema]], no_privacy: bool = False
+) -> str:
     loaders = ""
     for schema_class in children_schema_classes:
         schema_base_name = schema_class.__name__.replace("Schema", "")
         lower_schema = to_snake_case(schema_base_name)
+        gen = "_genx_no_privacy_DO_NOT_USE" if no_privacy else "gen"
         loaders += f"""
         from .{lower_schema} import {schema_base_name}
-        {lower_schema} = await {schema_base_name}.gen(vc, ent_id)
+        {lower_schema} = await {schema_base_name}.{gen}(vc, real_ent_id)
         if {lower_schema}:
             return {lower_schema}
 """

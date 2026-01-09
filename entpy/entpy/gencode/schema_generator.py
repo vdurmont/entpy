@@ -89,7 +89,7 @@ def generate(
 ####################
 
 from __future__ import annotations
-from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision, ValidationError
+from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision, ValidationError, validate_ent_id
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self

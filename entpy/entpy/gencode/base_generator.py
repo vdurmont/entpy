@@ -27,7 +27,7 @@ def generate(
 
     unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
 
-    imports = ["from entpy import EdgeDelegate, PrivacyRule, Ent"]
+    imports = ["from entpy import EdgeDelegate, PrivacyRule, Ent, BypassViewerContext"]
 
     preprended_rules_str = ""
     for rule in prepended_rules:
@@ -49,30 +49,16 @@ def generate(
         imports.append(f"from {module_name} import {class_name}")
 
     delegate_loaders = ""
-    delegate_imports = set()
     for field in schema.get_all_fields():
         if isinstance(field, EdgeField) and not field.nullable:
-            edge_type = field.get_edge_type()
-            if field.edge_class != schema.__class__:
-                module = "." + to_snake_case(
-                    field.edge_class.__name__.replace("Schema", "").replace("Pattern", "")
-                )
-                delegate_imports.add(f"from {module} import {edge_type}, {edge_type}Model")
-            else:
-                delegate_imports.add(f"from .ent_model import {edge_type}Model")
-
+            other_ent = field.get_edge_type()
+            other_module = to_snake_case(other_ent)
             delegate_loaders += f"""
         if edge_name == "{field.original_name}":
-            # Load delegate without privacy checks for privacy evaluation
-            session = {session_getter.name}()
-            model = await session.get({edge_type}Model, self.model.{field.name})
-            if not model:
-                raise ExecutionError("Delegate entity not found for {edge_type} with ID {{self.model.{field.name}}}")
-            return {edge_type}(vc=self.vc, model=model)
+            from .{other_module} import {other_ent}
+            # return await {other_ent}.genx(BypassViewerContext(), self.{field.name})
+            return await {other_ent}._genx_no_privacy_DO_NOT_USE(vc, self.{field.name})
 """
-
-    # Add delegate imports to the main imports list
-    imports.extend(list(delegate_imports))
 
     return GeneratedContent(
         imports=imports + accessors.imports,
@@ -101,9 +87,11 @@ class {base_name}({extends}):{get_description(schema)}
 {accessors.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action) -> Decision:
+        if isinstance(vc, BypassViewerContext):
+            return Decision.ALLOW
         config = {base_name}Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
-            delegate = await self._gen_load_delegate(config.edge_name)
+            delegate = await self._gen_load_delegate(vc, config.edge_name)
             return await delegate._gen_evaluate_privacy(vc, action)
         elif isinstance(config, list) and all(isinstance(item, PrivacyRule) for item in config):
 {preprended_rules_str}
@@ -116,8 +104,17 @@ class {base_name}({extends}):{get_description(schema)}
             return Decision.DENY
         raise ExecutionError("An invalid privacy configuration was found for {base_name}: invalid config type")
 
-    async def _gen_load_delegate(self, edge_name: str) -> Ent:{delegate_loaders}
+    async def _gen_load_delegate(self, vc: {vc.name}, edge_name: str) -> Ent:{delegate_loaders}
         raise ExecutionError("An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
+
+    @classmethod
+    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str) -> {base_name}:
+        real_ent_id = validate_ent_id(ent_id)
+        session = {session_getter.name}()
+        model = await session.get({base_name}Model, real_ent_id)
+        if model is None:
+            raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
+        return {base_name}(vc=vc, model=model)
 
     @classmethod
     async def genx(
@@ -132,15 +129,9 @@ class {base_name}({extends}):{get_description(schema)}
     async def gen(
         cls, vc: {vc.name}, ent_id: UUID | str
     ) -> {base_name} | None:
-        # Convert str to UUID if needed
-        if isinstance(ent_id, str):
-            try:
-                ent_id = UUID(ent_id)
-            except ValueError as e:
-                raise ValidationError(f"Invalid ID format for {{ent_id}}") from e
-
+        real_ent_id = validate_ent_id(ent_id)
         session = {session_getter.name}()
-        model = await session.get({base_name}Model, ent_id)
+        model = await session.get({base_name}Model, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     {unique_gens}

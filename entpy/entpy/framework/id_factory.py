@@ -6,6 +6,7 @@ from time import time
 from uuid import UUID
 
 from entpy.framework.ent import Ent
+from entpy.framework.errors import ValidationError
 
 
 def generate_uuid(
@@ -26,3 +27,13 @@ def generate_uuid(
         + b"\x00\x00"
         + token_bytes(6)
     )
+
+
+def validate_ent_id(ent_id: UUID | str) -> UUID:
+    # Convert str to UUID if needed
+    if isinstance(ent_id, str):
+        try:
+            return UUID(ent_id)
+        except ValueError as e:
+            raise ValidationError(f"Invalid ID format for {ent_id}") from e
+    return ent_id

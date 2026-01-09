@@ -10,17 +10,16 @@ from entpy import (
     ExecutionError,
     Action,
     Decision,
-    ValidationError,
+    validate_ent_id,
 )
 from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
-from .ent_parent import EntParent, EntParentModel
 from .ent_query import EntQuery
 from ent_child_schema import EntChildSchema
-from entpy import EdgeDelegate, PrivacyRule
+from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -84,9 +83,11 @@ class EntChild(Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
+        if isinstance(vc, BypassViewerContext):
+            return Decision.ALLOW
         config = EntChildSchema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
-            delegate = await self._gen_load_delegate(config.edge_name)
+            delegate = await self._gen_load_delegate(vc, config.edge_name)
             return await delegate._gen_evaluate_privacy(vc, action)
         elif isinstance(config, list) and all(
             isinstance(item, PrivacyRule) for item in config
@@ -107,20 +108,27 @@ class EntChild(Ent[ExampleViewerContext]):
             "An invalid privacy configuration was found for EntChild: invalid config type"
         )
 
-    async def _gen_load_delegate(self, edge_name: str) -> Ent:
+    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
         if edge_name == "parent":
-            # Load delegate without privacy checks for privacy evaluation
-            session = get_session()
-            model = await session.get(EntParentModel, self.model.parent_id)
-            if not model:
-                raise ExecutionError(
-                    "Delegate entity not found for EntParent with ID {self.model.parent_id}"
-                )
-            return EntParent(vc=self.vc, model=model)
+            from .ent_parent import EntParent
+
+            # return await EntParent.genx(BypassViewerContext(), self.parent_id)
+            return await EntParent._genx_no_privacy_DO_NOT_USE(vc, self.parent_id)
 
         raise ExecutionError(
             "An invalid privacy configuration was found for EntChild: could not find delegate for {edge_name}"
         )
+
+    @classmethod
+    async def _genx_no_privacy_DO_NOT_USE(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str
+    ) -> EntChild:
+        real_ent_id = validate_ent_id(ent_id)
+        session = get_session()
+        model = await session.get(EntChildModel, real_ent_id)
+        if model is None:
+            raise EntNotFoundError(f"No EntChild found for ID {ent_id}")
+        return EntChild(vc=vc, model=model)
 
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntChild:
@@ -131,15 +139,9 @@ class EntChild(Ent[ExampleViewerContext]):
 
     @classmethod
     async def gen(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntChild | None:
-        # Convert str to UUID if needed
-        if isinstance(ent_id, str):
-            try:
-                ent_id = UUID(ent_id)
-            except ValueError as e:
-                raise ValidationError(f"Invalid ID format for {ent_id}") from e
-
+        real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntChildModel, ent_id)
+        model = await session.get(EntChildModel, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

@@ -10,7 +10,7 @@ from entpy import (
     ExecutionError,
     Action,
     Decision,
-    ValidationError,
+    validate_ent_id,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -19,7 +19,7 @@ from database import get_session
 from .ent_model import EntModel
 from .ent_query import EntQuery
 from ent_test_object3_schema import EntTestObject3Schema
-from entpy import EdgeDelegate, PrivacyRule
+from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -79,9 +79,11 @@ class EntTestObject3(Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
+        if isinstance(vc, BypassViewerContext):
+            return Decision.ALLOW
         config = EntTestObject3Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
-            delegate = await self._gen_load_delegate(config.edge_name)
+            delegate = await self._gen_load_delegate(vc, config.edge_name)
             return await delegate._gen_evaluate_privacy(vc, action)
         elif isinstance(config, list) and all(
             isinstance(item, PrivacyRule) for item in config
@@ -102,10 +104,21 @@ class EntTestObject3(Ent[ExampleViewerContext]):
             "An invalid privacy configuration was found for EntTestObject3: invalid config type"
         )
 
-    async def _gen_load_delegate(self, edge_name: str) -> Ent:
+    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
         raise ExecutionError(
             "An invalid privacy configuration was found for EntTestObject3: could not find delegate for {edge_name}"
         )
+
+    @classmethod
+    async def _genx_no_privacy_DO_NOT_USE(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str
+    ) -> EntTestObject3:
+        real_ent_id = validate_ent_id(ent_id)
+        session = get_session()
+        model = await session.get(EntTestObject3Model, real_ent_id)
+        if model is None:
+            raise EntNotFoundError(f"No EntTestObject3 found for ID {ent_id}")
+        return EntTestObject3(vc=vc, model=model)
 
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntTestObject3:
@@ -118,15 +131,9 @@ class EntTestObject3(Ent[ExampleViewerContext]):
     async def gen(
         cls, vc: ExampleViewerContext, ent_id: UUID | str
     ) -> EntTestObject3 | None:
-        # Convert str to UUID if needed
-        if isinstance(ent_id, str):
-            try:
-                ent_id = UUID(ent_id)
-            except ValueError as e:
-                raise ValidationError(f"Invalid ID format for {ent_id}") from e
-
+        real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntTestObject3Model, ent_id)
+        model = await session.get(EntTestObject3Model, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

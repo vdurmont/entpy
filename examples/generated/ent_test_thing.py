@@ -5,7 +5,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from uuid import UUID
-from entpy import Ent, ValidationError
+from entpy import Ent, validate_ent_id
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 from .ent_model import EntModel
@@ -86,27 +86,46 @@ class IEntTestThing(Ent):
         pass
 
     @classmethod
-    async def gen(
+    async def _genx_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str
-    ) -> IEntTestThing | None:
-        # Convert str to UUID if needed
-        if isinstance(ent_id, str):
-            try:
-                ent_id = UUID(ent_id)
-            except ValueError as e:
-                raise ValidationError(f"Invalid ID format for {ent_id}") from e
-
+    ) -> IEntTestThing:
+        real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
 
         from .ent_test_object2 import EntTestObject2
 
-        ent_test_object2 = await EntTestObject2.gen(vc, ent_id)
+        ent_test_object2 = await EntTestObject2._genx_no_privacy_DO_NOT_USE(
+            vc, real_ent_id
+        )
         if ent_test_object2:
             return ent_test_object2
 
         from .ent_test_object import EntTestObject
 
-        ent_test_object = await EntTestObject.gen(vc, ent_id)
+        ent_test_object = await EntTestObject._genx_no_privacy_DO_NOT_USE(
+            vc, real_ent_id
+        )
+        if ent_test_object:
+            return ent_test_object
+
+        raise ValueError(f"No EntTestThing found for ID {real_ent_id}")
+
+    @classmethod
+    async def gen(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str
+    ) -> IEntTestThing | None:
+        real_ent_id = validate_ent_id(ent_id)
+        # TODO refactor this to read the bytes from the UUID
+
+        from .ent_test_object2 import EntTestObject2
+
+        ent_test_object2 = await EntTestObject2.gen(vc, real_ent_id)
+        if ent_test_object2:
+            return ent_test_object2
+
+        from .ent_test_object import EntTestObject
+
+        ent_test_object = await EntTestObject.gen(vc, real_ent_id)
         if ent_test_object:
             return ent_test_object
 
@@ -114,28 +133,22 @@ class IEntTestThing(Ent):
 
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> IEntTestThing:
-        # Convert str to UUID if needed
-        if isinstance(ent_id, str):
-            try:
-                ent_id = UUID(ent_id)
-            except ValueError as e:
-                raise ValidationError(f"Invalid ID format for {ent_id}") from e
-
+        real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
 
         from .ent_test_object2 import EntTestObject2
 
-        ent_test_object2 = await EntTestObject2.gen(vc, ent_id)
+        ent_test_object2 = await EntTestObject2.gen(vc, real_ent_id)
         if ent_test_object2:
             return ent_test_object2
 
         from .ent_test_object import EntTestObject
 
-        ent_test_object = await EntTestObject.gen(vc, ent_id)
+        ent_test_object = await EntTestObject.gen(vc, real_ent_id)
         if ent_test_object:
             return ent_test_object
 
-        raise ValueError(f"No EntTestThing found for ID {ent_id}")
+        raise ValueError(f"No EntTestThing found for ID {real_ent_id}")
 
     @classmethod
     def query_ent_test_thing(cls, vc: ExampleViewerContext) -> IEntTestThingQuery:

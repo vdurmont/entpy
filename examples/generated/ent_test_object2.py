@@ -11,20 +11,20 @@ from entpy import (
     Action,
     Decision,
     ValidationError,
+    validate_ent_id,
 )
 from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_query import EntQuery
-from .ent_test_object5 import EntTestObject5, EntTestObject5Model
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
 from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
-from entpy import EdgeDelegate, PrivacyRule
+from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -104,9 +104,11 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
+        if isinstance(vc, BypassViewerContext):
+            return Decision.ALLOW
         config = EntTestObject2Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
-            delegate = await self._gen_load_delegate(config.edge_name)
+            delegate = await self._gen_load_delegate(vc, config.edge_name)
             return await delegate._gen_evaluate_privacy(vc, action)
         elif isinstance(config, list) and all(
             isinstance(item, PrivacyRule) for item in config
@@ -127,20 +129,27 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
             "An invalid privacy configuration was found for EntTestObject2: invalid config type"
         )
 
-    async def _gen_load_delegate(self, edge_name: str) -> Ent:
+    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
         if edge_name == "obj5":
-            # Load delegate without privacy checks for privacy evaluation
-            session = get_session()
-            model = await session.get(EntTestObject5Model, self.model.obj5_id)
-            if not model:
-                raise ExecutionError(
-                    "Delegate entity not found for EntTestObject5 with ID {self.model.obj5_id}"
-                )
-            return EntTestObject5(vc=self.vc, model=model)
+            from .ent_test_object5 import EntTestObject5
+
+            # return await EntTestObject5.genx(BypassViewerContext(), self.obj5_id)
+            return await EntTestObject5._genx_no_privacy_DO_NOT_USE(vc, self.obj5_id)
 
         raise ExecutionError(
             "An invalid privacy configuration was found for EntTestObject2: could not find delegate for {edge_name}"
         )
+
+    @classmethod
+    async def _genx_no_privacy_DO_NOT_USE(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str
+    ) -> EntTestObject2:
+        real_ent_id = validate_ent_id(ent_id)
+        session = get_session()
+        model = await session.get(EntTestObject2Model, real_ent_id)
+        if model is None:
+            raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
+        return EntTestObject2(vc=vc, model=model)
 
     @classmethod
     async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntTestObject2:
@@ -153,15 +162,9 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     async def gen(
         cls, vc: ExampleViewerContext, ent_id: UUID | str
     ) -> EntTestObject2 | None:
-        # Convert str to UUID if needed
-        if isinstance(ent_id, str):
-            try:
-                ent_id = UUID(ent_id)
-            except ValueError as e:
-                raise ValidationError(f"Invalid ID format for {ent_id}") from e
-
+        real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntTestObject2Model, ent_id)
+        model = await session.get(EntTestObject2Model, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
