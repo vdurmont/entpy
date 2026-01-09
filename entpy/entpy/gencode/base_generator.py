@@ -52,7 +52,7 @@ def generate(
     for field in schema.get_all_fields():
         if isinstance(field, EdgeField) and not field.nullable:
             other_ent = field.get_edge_type()
-            other_module = to_snake_case(other_ent)
+            other_module = to_snake_case(other_ent).replace("i_", "")
             delegate_loaders += f"""
         if edge_name == "{field.original_name}":
             from .{other_module} import {other_ent}
