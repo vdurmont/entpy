@@ -49,12 +49,30 @@ def generate(
         imports.append(f"from {module_name} import {class_name}")
 
     delegate_loaders = ""
+    delegate_imports = set()
     for field in schema.get_all_fields():
         if isinstance(field, EdgeField) and not field.nullable:
+            edge_type = field.get_edge_type()
+            if field.edge_class != schema.__class__:
+                module = "." + to_snake_case(
+                    field.edge_class.__name__.replace("Schema", "").replace("Pattern", "")
+                )
+                delegate_imports.add(f"from {module} import {edge_type}, {edge_type}Model")
+            else:
+                delegate_imports.add(f"from .ent_model import {edge_type}Model")
+
             delegate_loaders += f"""
         if edge_name == "{field.original_name}":
-            return await self.gen_{field.original_name}()
+            # Load delegate without privacy checks for privacy evaluation
+            session = {session_getter.name}()
+            model = await session.get({edge_type}Model, self.model.{field.name})
+            if not model:
+                raise ExecutionError("Delegate entity not found for {edge_type} with ID {{self.model.{field.name}}}")
+            return {edge_type}(vc=self.vc, model=model)
 """
+
+    # Add delegate imports to the main imports list
+    imports.extend(list(delegate_imports))
 
     return GeneratedContent(
         imports=imports + accessors.imports,

@@ -17,6 +17,8 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_query import EntQuery
+from .ent_test_object5 import EntTestObject5, EntTestObject5Model
+from .ent_test_sub_object import EntTestSubObject, EntTestSubObjectModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
@@ -310,10 +312,26 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
 
     async def _gen_load_delegate(self, edge_name: str) -> Ent:
         if edge_name == "obj5":
-            return await self.gen_obj5()
+            # Load delegate without privacy checks for privacy evaluation
+            session = get_session()
+            model = await session.get(EntTestObject5Model, self.model.obj5_id)
+            if not model:
+                raise ExecutionError(
+                    "Delegate entity not found for EntTestObject5 with ID {self.model.obj5_id}"
+                )
+            return EntTestObject5(vc=self.vc, model=model)
 
         if edge_name == "required_sub_object":
-            return await self.gen_required_sub_object()
+            # Load delegate without privacy checks for privacy evaluation
+            session = get_session()
+            model = await session.get(
+                EntTestSubObjectModel, self.model.required_sub_object_id
+            )
+            if not model:
+                raise ExecutionError(
+                    "Delegate entity not found for EntTestSubObject with ID {self.model.required_sub_object_id}"
+                )
+            return EntTestSubObject(vc=self.vc, model=model)
 
         raise ExecutionError(
             "An invalid privacy configuration was found for EntTestObject: could not find delegate for {edge_name}"
@@ -886,7 +904,7 @@ class EntTestObjectExample:
         )
 
         correlation_id = (
-            UUID("32a9ac2e-cc17-4dbc-a9f7-707863d72a11")
+            UUID("605447b3-ad56-4dc7-bfae-96c63679cb58")
             if isinstance(correlation_id, Sentinel)
             else correlation_id
         )

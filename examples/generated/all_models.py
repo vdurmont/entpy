@@ -3,10 +3,16 @@ from evc import ExampleViewerContext
 
 from .ent_child import EntChildModel  # noqa: F401
 from .ent_child import EntChild
+from .ent_delegating_child import EntDelegatingChildModel  # noqa: F401
+from .ent_delegating_child import EntDelegatingChild
+from .ent_delegating_grandchild import EntDelegatingGrandchildModel  # noqa: F401
+from .ent_delegating_grandchild import EntDelegatingGrandchild
 from .ent_grand_parent import EntGrandParentModel  # noqa: F401
 from .ent_grand_parent import EntGrandParent
 from .ent_parent import EntParentModel  # noqa: F401
 from .ent_parent import EntParent
+from .ent_privacy_parent import EntPrivacyParentModel  # noqa: F401
+from .ent_privacy_parent import EntPrivacyParent
 from .ent_test_object2 import EntTestObject2Model  # noqa: F401
 from .ent_test_object2 import EntTestObject2
 from .ent_test_object3 import EntTestObject3Model  # noqa: F401
@@ -23,8 +29,11 @@ from .ent_test_thing_view import EntTestThingView  # noqa: F401
 
 UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext]]] = {
     b"\x43\x48": EntChild,
+    b"\x49\xc2": EntDelegatingChild,
+    b"\x2a\x0c": EntDelegatingGrandchild,
     b"\x3b\xdf": EntGrandParent,
     b"\x20\x33": EntParent,
+    b"\xfe\x82": EntPrivacyParent,
     b"\x7c\x9a": EntTestObject2,
     b"\x38\xe7": EntTestObject3,
     b"\x5c\x4c": EntTestObject4,

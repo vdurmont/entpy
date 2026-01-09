@@ -16,43 +16,31 @@ from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_grand_parent import EntGrandParent, EntGrandParentModel
 from .ent_model import EntModel
 from .ent_query import EntQuery
-from ent_parent_schema import EntParentSchema
+from ent_privacy_parent_schema import EntPrivacyParentSchema
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
-from sqlalchemy import ForeignKey
 from sqlalchemy import String
-from sqlalchemy import UUID as DBUUID
 from sqlalchemy import select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .ent_grand_parent import EntGrandParent
 
 
-class EntParentModel(EntModel):
-    __tablename__ = "parent"
+class EntPrivacyParentModel(EntModel):
+    __tablename__ = "privacy_parent"
 
-    grand_parent_id: Mapped[UUID] = mapped_column(
-        DBUUID(),
-        ForeignKey("grand_parent.id", deferrable=True, initially="DEFERRED"),
-        nullable=False,
-    )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
-class EntParent(Ent[ExampleViewerContext]):
+class EntPrivacyParent(Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
-    model: EntParentModel
+    model: EntPrivacyParentModel
 
-    def __init__(self, vc: ExampleViewerContext, model: EntParentModel) -> None:
+    def __init__(self, vc: ExampleViewerContext, model: EntPrivacyParentModel) -> None:
         self.vc = vc
         self.model = model
 
@@ -69,22 +57,13 @@ class EntParent(Ent[ExampleViewerContext]):
         return self.model.updated_at
 
     @property
-    def grand_parent_id(self) -> UUID:
-        return self.model.grand_parent_id
-
-    async def gen_grand_parent(self) -> EntGrandParent:
-        from .ent_grand_parent import EntGrandParent
-
-        return await EntGrandParent.genx(self.vc, self.model.grand_parent_id)
-
-    @property
     def name(self) -> str:
         return self.model.name
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
-        config = EntParentSchema().get_privacy_config(action)
+        config = EntPrivacyParentSchema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
             delegate = await self._gen_load_delegate(config.edge_name)
             return await delegate._gen_evaluate_privacy(vc, action)
@@ -104,35 +83,27 @@ class EntParent(Ent[ExampleViewerContext]):
             # We default to denying
             return Decision.DENY
         raise ExecutionError(
-            "An invalid privacy configuration was found for EntParent: invalid config type"
+            "An invalid privacy configuration was found for EntPrivacyParent: invalid config type"
         )
 
     async def _gen_load_delegate(self, edge_name: str) -> Ent:
-        if edge_name == "grand_parent":
-            # Load delegate without privacy checks for privacy evaluation
-            session = get_session()
-            model = await session.get(EntGrandParentModel, self.model.grand_parent_id)
-            if not model:
-                raise ExecutionError(
-                    "Delegate entity not found for EntGrandParent with ID {self.model.grand_parent_id}"
-                )
-            return EntGrandParent(vc=self.vc, model=model)
-
         raise ExecutionError(
-            "An invalid privacy configuration was found for EntParent: could not find delegate for {edge_name}"
+            "An invalid privacy configuration was found for EntPrivacyParent: could not find delegate for {edge_name}"
         )
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntParent:
+    async def genx(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str
+    ) -> EntPrivacyParent:
         ent = await cls.gen(vc, ent_id)
         if not ent:
-            raise EntNotFoundError(f"No EntParent found for ID {ent_id}")
+            raise EntNotFoundError(f"No EntPrivacyParent found for ID {ent_id}")
         return ent
 
     @classmethod
     async def gen(
         cls, vc: ExampleViewerContext, ent_id: UUID | str
-    ) -> EntParent | None:
+    ) -> EntPrivacyParent | None:
         # Convert str to UUID if needed
         if isinstance(ent_id, str):
             try:
@@ -141,69 +112,71 @@ class EntParent(Ent[ExampleViewerContext]):
                 raise ValidationError(f"Invalid ID format for {ent_id}") from e
 
         session = get_session()
-        model = await session.get(EntParentModel, ent_id)
+        model = await session.get(EntPrivacyParentModel, ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
     async def _gen_from_model(
-        cls, vc: ExampleViewerContext, model: EntParentModel | None
-    ) -> EntParent | None:
+        cls, vc: ExampleViewerContext, model: EntPrivacyParentModel | None
+    ) -> EntPrivacyParent | None:
         if not model:
             return None
-        ent = EntParent(vc=vc, model=model)
+        ent = EntPrivacyParent(vc=vc, model=model)
         decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
         return ent if decision == Decision.ALLOW else None
 
     @classmethod
     async def _genx_from_model(
-        cls, vc: ExampleViewerContext, model: EntParentModel
-    ) -> EntParent:
-        ent = await EntParent._gen_from_model(vc=vc, model=model)
+        cls, vc: ExampleViewerContext, model: EntPrivacyParentModel
+    ) -> EntPrivacyParent:
+        ent = await EntPrivacyParent._gen_from_model(vc=vc, model=model)
         if not ent:
-            raise EntNotFoundError(f"No EntParent found for ID {model.id}")
+            raise EntNotFoundError(f"No EntPrivacyParent found for ID {model.id}")
         return ent
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntParentQuery:
-        return EntParentQuery(vc=vc)
+    def query(cls, vc: ExampleViewerContext) -> EntPrivacyParentQuery:
+        return EntPrivacyParentQuery(vc=vc)
 
 
 T = TypeVar("T")
 
 
-class EntParentQuery(EntQuery[EntParent, EntParentModel]):
+class EntPrivacyParentQuery(EntQuery[EntPrivacyParent, EntPrivacyParentModel]):
     vc: ExampleViewerContext
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
 
-        self.query = select(EntParentModel)
+        self.query = select(EntPrivacyParentModel)
 
-    async def gen(self) -> list[EntParent]:
+    async def gen(self) -> list[EntPrivacyParent]:
         session = get_session()
         result = await session.execute(self.query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
     async def _gen_ents(
-        self, result: Result[tuple[EntParentModel]]
-    ) -> list[EntParent | None]:
+        self, result: Result[tuple[EntPrivacyParentModel]]
+    ) -> list[EntPrivacyParent | None]:
         models = result.scalars().all()
         return [
-            await EntParent._gen_from_model(self.vc, model)  # noqa: SLF001
+            await EntPrivacyParent._gen_from_model(self.vc, model)  # noqa: SLF001
             for model in models
         ]
 
-    async def gen_first(self) -> EntParent | None:
+    async def gen_first(self) -> EntPrivacyParent | None:
         session = get_session()
         result = await session.execute(self.query.limit(1))
         return await self._gen_ent(result)
 
-    async def _gen_ent(self, result: Result[tuple[EntParentModel]]) -> EntParent | None:
+    async def _gen_ent(
+        self, result: Result[tuple[EntPrivacyParentModel]]
+    ) -> EntPrivacyParent | None:
         model = result.scalar_one_or_none()
-        return await EntParent._gen_from_model(self.vc, model)  # noqa: SLF001
+        return await EntPrivacyParent._gen_from_model(self.vc, model)  # noqa: SLF001
 
-    async def genx_first(self) -> EntParent:
+    async def genx_first(self) -> EntPrivacyParent:
         ent = await self.gen_first()
         if not ent:
             raise EntNotFoundError("Expected query to return an ent, got None.")
@@ -220,52 +193,45 @@ class EntParentQuery(EntQuery[EntParent, EntParentModel]):
             raise ExecutionError("Unable to get the count")
         return count
 
-    def order_by_id_asc(self) -> "EntParentQuery":
-        self.query = self.query.order_by(EntParentModel.id.asc())
+    def order_by_id_asc(self) -> "EntPrivacyParentQuery":
+        self.query = self.query.order_by(EntPrivacyParentModel.id.asc())
         return self
 
-    def order_by_id_desc(self) -> "EntParentQuery":
-        self.query = self.query.order_by(EntParentModel.id.desc())
+    def order_by_id_desc(self) -> "EntPrivacyParentQuery":
+        self.query = self.query.order_by(EntPrivacyParentModel.id.desc())
         return self
 
 
-class EntParentMutator:
+class EntPrivacyParentMutator:
     @classmethod
     def create(
         cls,
         vc: ExampleViewerContext,
-        grand_parent_id: UUID,
         name: str,
         id: UUID | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
-    ) -> EntParentMutatorCreationAction:
-        return EntParentMutatorCreationAction(
-            vc=vc,
-            id=id,
-            created_at=created_at,
-            updated_at=updated_at,
-            grand_parent_id=grand_parent_id,
-            name=name,
+    ) -> EntPrivacyParentMutatorCreationAction:
+        return EntPrivacyParentMutatorCreationAction(
+            vc=vc, id=id, created_at=created_at, updated_at=updated_at, name=name
         )
 
     @classmethod
     def update(
-        cls, vc: ExampleViewerContext, ent: EntParent
-    ) -> EntParentMutatorUpdateAction:
-        return EntParentMutatorUpdateAction(vc=vc, ent=ent)
+        cls, vc: ExampleViewerContext, ent: EntPrivacyParent
+    ) -> EntPrivacyParentMutatorUpdateAction:
+        return EntPrivacyParentMutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
     def delete(
-        cls, vc: ExampleViewerContext, ent: EntParent
-    ) -> EntParentMutatorDeletionAction:
-        return EntParentMutatorDeletionAction(vc=vc, ent=ent)
+        cls, vc: ExampleViewerContext, ent: EntPrivacyParent
+    ) -> EntPrivacyParentMutatorDeletionAction:
+        return EntPrivacyParentMutatorDeletionAction(vc=vc, ent=ent)
 
 
-class EntParentMutatorCreationAction:
+class EntPrivacyParentMutatorCreationAction:
     vc: ExampleViewerContext
     id: UUID
-    grand_parent_id: UUID
     name: str
 
     def __init__(
@@ -274,64 +240,58 @@ class EntParentMutatorCreationAction:
         id: UUID | None,
         created_at: datetime | None,
         updated_at: datetime | None,
-        grand_parent_id: UUID,
         name: str,
     ) -> None:
         self.vc = vc
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
         self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntParent, self.created_at)
-        self.grand_parent_id = grand_parent_id
+        self.id = id if id else generate_uuid(EntPrivacyParent, self.created_at)
         self.name = name
 
-    async def gen_savex(self) -> EntParent:
+    async def gen_savex(self) -> EntPrivacyParent:
         session = get_session()
 
-        model = EntParentModel(
+        model = EntPrivacyParentModel(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
-            grand_parent_id=self.grand_parent_id,
             name=self.name,
         )
         session.add(model)
         await session.flush()
         # TODO privacy checks
-        return await EntParent._genx_from_model(self.vc, model)  # noqa: SLF001
+        return await EntPrivacyParent._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntParentMutatorUpdateAction:
+class EntPrivacyParentMutatorUpdateAction:
     vc: ExampleViewerContext
-    ent: EntParent
+    ent: EntPrivacyParent
     id: UUID
-    grand_parent_id: UUID
     name: str
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntParent) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntPrivacyParent) -> None:
         self.vc = vc
         self.ent = ent
-        self.grand_parent_id = ent.grand_parent_id
         self.name = ent.name
 
-    async def gen_savex(self) -> EntParent:
+    async def gen_savex(self) -> EntPrivacyParent:
         session = get_session()
 
         model = self.ent.model
-        model.grand_parent_id = self.grand_parent_id
         model.name = self.name
         model.updated_at = datetime.now(tz=UTC)
         session.add(model)
         await session.flush()
         await session.refresh(model)
         # TODO privacy checks
-        return await EntParent._genx_from_model(self.vc, model)  # noqa: SLF001
+        return await EntPrivacyParent._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntParentMutatorDeletionAction:
+class EntPrivacyParentMutatorDeletionAction:
     vc: ExampleViewerContext
-    ent: EntParent
+    ent: EntPrivacyParent
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntParent) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntPrivacyParent) -> None:
         self.vc = vc
         self.ent = ent
 
@@ -343,31 +303,25 @@ class EntParentMutatorDeletionAction:
         await session.flush()
 
 
-class EntParentExample:
+class EntPrivacyParentExample:
     @classmethod
     async def gen_create(
         cls,
         vc: ExampleViewerContext,
         created_at: datetime | None = None,
-        grand_parent_id: UUID | Sentinel = NOTHING,
         name: str | Sentinel = NOTHING,
-    ) -> EntParent:
+    ) -> EntPrivacyParent:
         # TODO make sure we only use this in test mode
 
-        if isinstance(grand_parent_id, Sentinel) or grand_parent_id is None:
-            from .ent_grand_parent import EntGrandParentExample
+        name = "Privacy Parent" if isinstance(name, Sentinel) else name
 
-            grand_parent_id_ent = await EntGrandParentExample.gen_create(vc)
-            grand_parent_id = grand_parent_id_ent.id
-        name = "Vincent" if isinstance(name, Sentinel) else name
-
-        return await EntParentMutator.create(
-            vc=vc, created_at=created_at, grand_parent_id=grand_parent_id, name=name
+        return await EntPrivacyParentMutator.create(
+            vc=vc, created_at=created_at, name=name
         ).gen_savex()
 
 
 def _get_field(field_name: str) -> Field:
-    schema = EntParentSchema()
+    schema = EntPrivacyParentSchema()
     fields = schema.get_all_fields()
     field = next(
         filter(

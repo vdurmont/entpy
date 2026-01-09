@@ -17,6 +17,7 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
+from .ent_parent import EntParent, EntParentModel
 from .ent_query import EntQuery
 from ent_child_schema import EntChildSchema
 from entpy import EdgeDelegate, PrivacyRule
@@ -108,7 +109,14 @@ class EntChild(Ent[ExampleViewerContext]):
 
     async def _gen_load_delegate(self, edge_name: str) -> Ent:
         if edge_name == "parent":
-            return await self.gen_parent()
+            # Load delegate without privacy checks for privacy evaluation
+            session = get_session()
+            model = await session.get(EntParentModel, self.model.parent_id)
+            if not model:
+                raise ExecutionError(
+                    "Delegate entity not found for EntParent with ID {self.model.parent_id}"
+                )
+            return EntParent(vc=self.vc, model=model)
 
         raise ExecutionError(
             "An invalid privacy configuration was found for EntChild: could not find delegate for {edge_name}"
