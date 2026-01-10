@@ -30,7 +30,9 @@ def generate(
     imports = ["from entpy import EdgeDelegate, PrivacyRule, Ent, BypassViewerContext"]
 
     preprended_rules_str = ""
-    for rule in prepended_rules:
+    # Iterating in reverse because we insert each one at index 0 and want to
+    # keep the user's rules order
+    for rule in reversed(prepended_rules):
         imports.append(str(rule.rule))
         actions = ", ".join([str(a) for a in rule.actions])
         preprended_rules_str += f"            if action in [{actions}]:\n"

@@ -92,10 +92,10 @@ class EntParent(Ent[ExampleViewerContext]):
         elif isinstance(config, list) and all(
             isinstance(item, PrivacyRule) for item in config
         ):
-            if action in [Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE]:
-                config.insert(0, AllowIfTestViewerContext())
             if action in [Action.READ]:
                 config.insert(0, AllowIfOmniscientViewerContext())
+            if action in [Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE]:
+                config.insert(0, AllowIfTestViewerContext())
 
             for rule in config:
                 decision = await rule.gen_evaluate(vc, self)
