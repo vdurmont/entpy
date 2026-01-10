@@ -24,7 +24,6 @@ def generate(
     pattern = pattern_class()
     base_name = pattern_class.__name__.replace("Pattern", "")
     schemas = [s() for s in children_schema_classes]
-    print(f"I got {len(schemas)} schemas")
 
     selects = ""
     imports = []
@@ -41,6 +40,7 @@ def generate(
         {schema_base_name}Model.id,
         {schema_base_name}Model.created_at,
         {schema_base_name}Model.updated_at,
+        {schema_base_name}Model.soft_deleted_at,
         {fields_code}
     ),
 """
@@ -141,6 +141,7 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
         Column("id", DBUUID(), primary_key=True),
         Column("created_at", DateTime()),
         Column("updated_at", DateTime()),
+        Column("soft_deleted_at", DateTime()),
         Column("ent_type", String(50)),
 {code}""",
     )

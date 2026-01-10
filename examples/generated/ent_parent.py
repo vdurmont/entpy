@@ -23,12 +23,13 @@ from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
+from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import UUID as DBUUID
 from sqlalchemy import select
-from sqlalchemy import func, Result
+from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
 from typing import TYPE_CHECKING
@@ -69,6 +70,10 @@ class EntParent(Ent[ExampleViewerContext]):
         return self.model.updated_at
 
     @property
+    def soft_deleted_at(self) -> datetime | None:
+        return self.model.soft_deleted_at
+
+    @property
     def grand_parent_id(self) -> UUID:
         return self.model.grand_parent_id
 
@@ -94,8 +99,16 @@ class EntParent(Ent[ExampleViewerContext]):
             isinstance(item, PrivacyRule) for item in config
         ):
             if action in [Action.READ]:
+                config.insert(0, DenyIfSoftDeleted())
+            if action in [Action.READ]:
                 config.insert(0, AllowIfOmniscientViewerContext())
-            if action in [Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE]:
+            if action in [
+                Action.READ,
+                Action.CREATE,
+                Action.UPDATE,
+                Action.HARD_DELETE,
+                Action.SOFT_DELETE,
+            ]:
                 config.insert(0, AllowIfTestViewerContext())
 
             for rule in config:
@@ -196,6 +209,7 @@ T = TypeVar("T")
 
 class EntParentQuery(EntQuery[EntParent, EntParentModel]):
     vc: ExampleViewerContext
+    include_soft_deleted: bool = False
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
@@ -204,10 +218,20 @@ class EntParentQuery(EntQuery[EntParent, EntParentModel]):
 
     async def gen(self, for_update: bool = False) -> list[EntParent]:
         session = get_session()
-        query = self.query.with_for_update() if for_update else self.query
+        query = (
+            self._finalize_query().with_for_update()
+            if for_update
+            else self._finalize_query()
+        )
         result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
+
+    def _finalize_query(self) -> Select:
+        if self.include_soft_deleted:
+            return self.query
+        else:
+            return self.query.where(EntParentModel.soft_deleted_at.is_(None))
 
     async def _gen_ents(
         self, result: Result[tuple[EntParentModel]]
@@ -220,7 +244,7 @@ class EntParentQuery(EntQuery[EntParent, EntParentModel]):
 
     async def gen_first(self, for_update: bool = False) -> EntParent | None:
         session = get_session()
-        query = self.query.limit(1)
+        query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
         result = await session.execute(query)
@@ -238,9 +262,11 @@ class EntParentQuery(EntQuery[EntParent, EntParentModel]):
 
     async def gen_count_NO_PRIVACY(self) -> int:
         session = get_session()
-        count_query = self.query.with_only_columns(
-            func.count(), maintain_column_froms=True
-        ).order_by(None)
+        count_query = (
+            self._finalize_query()
+            .with_only_columns(func.count(), maintain_column_froms=True)
+            .order_by(None)
+        )
         result = await session.execute(count_query)
         count = result.scalar()
         if count is None:
@@ -253,6 +279,10 @@ class EntParentQuery(EntQuery[EntParent, EntParentModel]):
 
     def order_by_id_desc(self) -> "EntParentQuery":
         self.query = self.query.order_by(EntParentModel.id.desc())
+        return self
+
+    def with_soft_deleted(self) -> "EntParentQuery":
+        self.include_soft_deleted = True
         return self
 
 
@@ -283,10 +313,16 @@ class EntParentMutator:
         return EntParentMutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
-    def delete(
+    def hard_delete(
         cls, vc: ExampleViewerContext, ent: EntParent
     ) -> EntParentMutatorDeletionAction:
-        return EntParentMutatorDeletionAction(vc=vc, ent=ent)
+        return EntParentMutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=False)
+
+    @classmethod
+    def soft_delete(
+        cls, vc: ExampleViewerContext, ent: EntParent
+    ) -> EntParentMutatorDeletionAction:
+        return EntParentMutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=True)
 
 
 class EntParentMutatorCreationAction:
@@ -358,15 +394,23 @@ class EntParentMutatorDeletionAction:
     vc: ExampleViewerContext
     ent: EntParent
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntParent) -> None:
+    def __init__(
+        self, vc: ExampleViewerContext, ent: EntParent, is_soft_delete: bool
+    ) -> None:
         self.vc = vc
         self.ent = ent
+        self.is_soft_delete = is_soft_delete
 
     async def gen_save(self) -> None:
         session = get_session()
         model = self.ent.model
-        # TODO privacy checks
-        await session.delete(model)
+        if self.is_soft_delete:
+            model.soft_deleted_at = datetime.now(tz=UTC)
+            model.updated_at = datetime.now(tz=UTC)
+            session.add(model)
+        else:
+            # TODO privacy checks
+            await session.delete(model)
         await session.flush()
 
 

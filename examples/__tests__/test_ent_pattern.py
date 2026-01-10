@@ -1,3 +1,5 @@
+from ent_test_thing_pattern import ThingStatus
+from evc import ExampleViewerContext
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
@@ -5,11 +7,9 @@ from generated.ent_test_object import (
 from generated.ent_test_object2 import (
     EntTestObject2Example,
 )
+from generated.ent_test_object5 import EntTestObject5Example
 from generated.ent_test_thing import IEntTestThing, IEntTestThingMutator
 from generated.ent_test_thing_view import EntTestThingView
-from generated.ent_test_object5 import EntTestObject5Example
-from evc import ExampleViewerContext
-from ent_test_thing_pattern import ThingStatus
 
 
 async def test_gen_from_pattern(vc: ExampleViewerContext) -> None:
@@ -133,7 +133,7 @@ async def test_pattern_mutator_delete(vc: ExampleViewerContext) -> None:
     thing_id = thing.id
 
     # Delete using the pattern mutator
-    mutator = IEntTestThingMutator.delete(vc, thing)
+    mutator = IEntTestThingMutator.hard_delete(vc, thing)
     await mutator.gen_save()
 
     # Verify it was deleted

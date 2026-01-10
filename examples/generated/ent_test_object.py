@@ -31,6 +31,7 @@ from entpy import Field, FieldWithDynamicExample
 from entpy.types import DateTime
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
+from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Boolean
 from sqlalchemy import Enum as DBEnum
@@ -42,7 +43,7 @@ from sqlalchemy import Text
 from sqlalchemy import Time
 from sqlalchemy import UUID as DBUUID
 from sqlalchemy import select
-from sqlalchemy import func, Result
+from sqlalchemy import Select, func, Result
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
@@ -127,6 +128,10 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     @property
     def updated_at(self) -> datetime:
         return self.model.updated_at
+
+    @property
+    def soft_deleted_at(self) -> datetime | None:
+        return self.model.soft_deleted_at
 
     @property
     def a_good_thing(self) -> str:
@@ -296,8 +301,16 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
             isinstance(item, PrivacyRule) for item in config
         ):
             if action in [Action.READ]:
+                config.insert(0, DenyIfSoftDeleted())
+            if action in [Action.READ]:
                 config.insert(0, AllowIfOmniscientViewerContext())
-            if action in [Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE]:
+            if action in [
+                Action.READ,
+                Action.CREATE,
+                Action.UPDATE,
+                Action.HARD_DELETE,
+                Action.SOFT_DELETE,
+            ]:
                 config.insert(0, AllowIfTestViewerContext())
 
             for rule in config:
@@ -427,6 +440,7 @@ T = TypeVar("T")
 
 class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
     vc: ExampleViewerContext
+    include_soft_deleted: bool = False
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
@@ -435,10 +449,20 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
 
     async def gen(self, for_update: bool = False) -> list[EntTestObject]:
         session = get_session()
-        query = self.query.with_for_update() if for_update else self.query
+        query = (
+            self._finalize_query().with_for_update()
+            if for_update
+            else self._finalize_query()
+        )
         result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
+
+    def _finalize_query(self) -> Select:
+        if self.include_soft_deleted:
+            return self.query
+        else:
+            return self.query.where(EntTestObjectModel.soft_deleted_at.is_(None))
 
     async def _gen_ents(
         self, result: Result[tuple[EntTestObjectModel]]
@@ -451,7 +475,7 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
 
     async def gen_first(self, for_update: bool = False) -> EntTestObject | None:
         session = get_session()
-        query = self.query.limit(1)
+        query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
         result = await session.execute(query)
@@ -471,9 +495,11 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
 
     async def gen_count_NO_PRIVACY(self) -> int:
         session = get_session()
-        count_query = self.query.with_only_columns(
-            func.count(), maintain_column_froms=True
-        ).order_by(None)
+        count_query = (
+            self._finalize_query()
+            .with_only_columns(func.count(), maintain_column_froms=True)
+            .order_by(None)
+        )
         result = await session.execute(count_query)
         count = result.scalar()
         if count is None:
@@ -486,6 +512,10 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
 
     def order_by_id_desc(self) -> "EntTestObjectQuery":
         self.query = self.query.order_by(EntTestObjectModel.id.desc())
+        return self
+
+    def with_soft_deleted(self) -> "EntTestObjectQuery":
+        self.include_soft_deleted = True
         return self
 
 
@@ -564,10 +594,16 @@ class EntTestObjectMutator:
         return EntTestObjectMutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
-    def delete(
+    def hard_delete(
         cls, vc: ExampleViewerContext, ent: EntTestObject
     ) -> EntTestObjectMutatorDeletionAction:
-        return EntTestObjectMutatorDeletionAction(vc=vc, ent=ent)
+        return EntTestObjectMutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=False)
+
+    @classmethod
+    def soft_delete(
+        cls, vc: ExampleViewerContext, ent: EntTestObject
+    ) -> EntTestObjectMutatorDeletionAction:
+        return EntTestObjectMutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=True)
 
 
 class EntTestObjectMutatorCreationAction:
@@ -832,15 +868,23 @@ class EntTestObjectMutatorDeletionAction(IEntTestThingMutatorDeletionAction):
     vc: ExampleViewerContext
     ent: EntTestObject
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject) -> None:
+    def __init__(
+        self, vc: ExampleViewerContext, ent: EntTestObject, is_soft_delete: bool
+    ) -> None:
         self.vc = vc
         self.ent = ent
+        self.is_soft_delete = is_soft_delete
 
     async def gen_save(self) -> None:
         session = get_session()
         model = self.ent.model
-        # TODO privacy checks
-        await session.delete(model)
+        if self.is_soft_delete:
+            model.soft_deleted_at = datetime.now(tz=UTC)
+            model.updated_at = datetime.now(tz=UTC)
+            session.add(model)
+        else:
+            # TODO privacy checks
+            await session.delete(model)
         await session.flush()
 
 

@@ -39,6 +39,10 @@ class EntModel(Base):
             nullable=False,
         )
 
+    @declared_attr
+    def soft_deleted_at(self) -> Mapped[datetime]:
+        return mapped_column(DateTime(), nullable=True)
+
     def __repr__(self) -> str:
         return f"<{{self.__class__.__name__}}({{self.id}})>"
 """

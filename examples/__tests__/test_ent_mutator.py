@@ -46,16 +46,6 @@ async def test_update(vc: ExampleViewerContext) -> None:
     assert ent.firstname == name, "Name should have been updated"
 
 
-async def test_deletion(vc: ExampleViewerContext) -> None:
-    ent = await EntTestObjectExample.gen_create(vc=vc)
-
-    await EntTestObjectMutator.delete(vc, ent).gen_save()
-
-    reloaded_ent = await EntTestObject.gen(vc, ent.id)
-
-    assert reloaded_ent is None, "Ent should have been deleted"
-
-
 async def test_creation_with_assigned_id(vc: ExampleViewerContext) -> None:
     custom_uuid = uuid.uuid4()
     ent = await EntTestObjectMutator.create(

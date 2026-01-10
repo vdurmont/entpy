@@ -18,7 +18,7 @@ from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import UUID as DBUUID
-from sqlalchemy import select, func, Result
+from sqlalchemy import select, Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
 from typing import cast
@@ -162,6 +162,7 @@ T = TypeVar("T")
 
 class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
     vc: ExampleViewerContext
+    include_soft_deleted: bool = False
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
@@ -171,10 +172,22 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
 
     async def gen(self, for_update: bool = False) -> list[IEntTestThing]:
         session = get_session()
-        query = self.query.with_for_update() if for_update else self.query
+        query = (
+            self._finalize_query().with_for_update()
+            if for_update
+            else self._finalize_query()
+        )
         result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
+
+    def _finalize_query(self) -> Select:
+        if self.include_soft_deleted:
+            return self.query
+        else:
+            from .ent_test_thing_view import EntTestThingView
+
+            return self.query.where(EntTestThingView.soft_deleted_at.is_(None))
 
     async def _gen_ents(
         self, result: Result[tuple[UUID]]
@@ -184,7 +197,7 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
 
     async def gen_first(self, for_update: bool = False) -> IEntTestThing | None:
         session = get_session()
-        query = self.query.limit(1)
+        query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
         result = await session.execute(query)
@@ -212,9 +225,11 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
 
     async def gen_count_NO_PRIVACY(self) -> int:
         session = get_session()
-        count_query = self.query.with_only_columns(
-            func.count(), maintain_column_froms=True
-        ).order_by(None)
+        count_query = (
+            self._finalize_query()
+            .with_only_columns(func.count(), maintain_column_froms=True)
+            .order_by(None)
+        )
         result = await session.execute(count_query)
         count = result.scalar()
         if count is None:
@@ -231,6 +246,10 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         from .ent_test_thing_view import EntTestThingView
 
         self.query = self.query.order_by(EntTestThingView.id.desc())
+        return self
+
+    def with_soft_deleted(self) -> "IEntTestThingQuery":
+        self.include_soft_deleted = True
         return self
 
 
@@ -256,7 +275,7 @@ class IEntTestThingMutator:
         raise ValueError(f"Unknown implementation for IEntTestThing: {type(ent)}")
 
     @classmethod
-    def delete(
+    def hard_delete(
         cls, vc: ExampleViewerContext, ent: IEntTestThing
     ) -> IEntTestThingMutatorDeletionAction:
         from .ent_test_object2 import EntTestObject2
@@ -264,14 +283,34 @@ class IEntTestThingMutator:
         if isinstance(ent, EntTestObject2):
             from .ent_test_object2 import EntTestObject2Mutator
 
-            return EntTestObject2Mutator.delete(vc, ent)
+            return EntTestObject2Mutator.hard_delete(vc, ent)
 
         from .ent_test_object import EntTestObject
 
         if isinstance(ent, EntTestObject):
             from .ent_test_object import EntTestObjectMutator
 
-            return EntTestObjectMutator.delete(vc, ent)
+            return EntTestObjectMutator.hard_delete(vc, ent)
+
+        raise ValueError(f"Unknown implementation for IEntTestThing: {type(ent)}")
+
+    @classmethod
+    def soft_delete(
+        cls, vc: ExampleViewerContext, ent: IEntTestThing
+    ) -> IEntTestThingMutatorDeletionAction:
+        from .ent_test_object2 import EntTestObject2
+
+        if isinstance(ent, EntTestObject2):
+            from .ent_test_object2 import EntTestObject2Mutator
+
+            return EntTestObject2Mutator.soft_delete(vc, ent)
+
+        from .ent_test_object import EntTestObject
+
+        if isinstance(ent, EntTestObject):
+            from .ent_test_object import EntTestObjectMutator
+
+            return EntTestObjectMutator.soft_delete(vc, ent)
 
         raise ValueError(f"Unknown implementation for IEntTestThing: {type(ent)}")
 

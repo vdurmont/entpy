@@ -41,6 +41,7 @@ def generate(
         is_pattern=is_pattern, base_name=base_name
     )
     generic = "UUID" if is_pattern else f"{base_name}Model"
+    column_holder = f"{base_name}View" if is_pattern else f"{base_name}Model"
 
     return GeneratedContent(
         imports=imports,
@@ -49,6 +50,7 @@ T = TypeVar("T")
 
 class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
     vc: {vc.name}
+    include_soft_deleted: bool = False
 
     def __init__(self, vc: {vc.name}) -> None:
         self.vc = vc
@@ -57,16 +59,23 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
 
     async def gen(self, for_update: bool = False) -> list[{i}{base_name}]:
         session = {session_getter.name}()
-        query = self.query.with_for_update() if for_update else self.query
+        query = self._finalize_query().with_for_update() if for_update else self._finalize_query()
         result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
+
+    def _finalize_query(self) -> Select:
+        if self.include_soft_deleted:
+            return self.query
+        else:
+            {view_import}
+            return self.query.where({column_holder}.soft_deleted_at.is_(None))
 
 {gen_ents}
 
     async def gen_first(self, for_update: bool = False) -> {i}{base_name} | None:
         session = {session_getter.name}()
-        query = self.query.limit(1)
+        query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
         result = await session.execute(query)
@@ -84,7 +93,7 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
 
     async def gen_count_NO_PRIVACY(self) -> int:
         session = {session_getter.name}()
-        count_query = self.query.with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
+        count_query = self._finalize_query().with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
         result = await session.execute(count_query)
         count = result.scalar()
         if count is None:
@@ -92,6 +101,10 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
         return count
 
 {order_by_methods}
+
+    def with_soft_deleted(self) -> "{i}{base_name}Query":
+        self.include_soft_deleted = True
+        return self
 """,  # noqa: E501
     )
 
