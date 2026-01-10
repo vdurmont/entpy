@@ -13,12 +13,16 @@ if __name__ == "__main__":
         prepended_rules=[
             PrivacyRuleImport(
                 rule=ImportedObject(module="rules", name="AllowIfTestViewerContext"),
-                actions=[Action.CREATE, Action.DELETE, Action.READ, Action.UPDATE],
+                actions=list(Action),
             ),
             PrivacyRuleImport(
                 rule=ImportedObject(
                     module="rules", name="AllowIfOmniscientViewerContext"
                 ),
+                actions=[Action.READ],
+            ),
+            PrivacyRuleImport(
+                rule=ImportedObject(module="rules", name="DenyIfSoftDeleted"),
                 actions=[Action.READ],
             ),
         ],

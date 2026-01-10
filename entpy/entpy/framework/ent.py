@@ -26,6 +26,11 @@ class Ent(ABC, Generic[VC]):
     def updated_at(self) -> datetime:
         pass
 
+    @property
+    @abstractmethod
+    def soft_deleted_at(self) -> datetime | None:
+        pass
+
     @abstractmethod
     async def _gen_evaluate_privacy(self, vc: VC, action: Action) -> Decision:
         pass

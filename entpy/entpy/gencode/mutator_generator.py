@@ -73,10 +73,16 @@ class {base_name}Mutator:
         return {base_name}MutatorCreationAction(vc=vc, id=id, created_at=created_at, updated_at=updated_at{arguments_usage})
 {update_function}
     @classmethod
-    def delete(
+    def hard_delete(
         cls, vc: {vc.name}, ent: {base_name}
     ) -> {base_name}MutatorDeletionAction:
-        return {base_name}MutatorDeletionAction(vc=vc, ent=ent)
+        return {base_name}MutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=False)
+
+    @classmethod
+    def soft_delete(
+        cls, vc: {vc.name}, ent: {base_name}
+    ) -> {base_name}MutatorDeletionAction:
+        return {base_name}MutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=True)
 """,  # noqa: E501
     )
 
@@ -251,15 +257,21 @@ class {base_name}MutatorDeletionAction{inheritance}:
     vc: {vc.name}
     ent: {base_name}
 
-    def __init__(self, vc: {vc.name}, ent: {base_name}) -> None:
+    def __init__(self, vc: {vc.name}, ent: {base_name}, is_soft_delete: bool) -> None:
         self.vc = vc
         self.ent = ent
+        self.is_soft_delete=is_soft_delete
 
     async def gen_save(self) -> None:
         session = {session_getter.name}()
         model = self.ent.model
-        # TODO privacy checks
-        await session.delete(model)
+        if self.is_soft_delete:
+            model.soft_deleted_at = datetime.now(tz=UTC)
+            model.updated_at = datetime.now(tz=UTC)
+            session.add(model)
+        else:
+            # TODO privacy checks
+            await session.delete(model)
         await session.flush()
 """,
     )

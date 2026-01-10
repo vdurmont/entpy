@@ -84,6 +84,10 @@ class {base_name}({extends}):{get_description(schema)}
     def updated_at(self) -> datetime:
         return self.model.updated_at
 
+    @property
+    def soft_deleted_at(self) -> datetime | None:
+        return self.model.soft_deleted_at
+
 {accessors.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action) -> Decision:

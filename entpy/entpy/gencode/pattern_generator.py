@@ -232,6 +232,22 @@ class I{base_name}Mutator:
     return GeneratedContent(code=code)
 
 
+def _generate_delete_checks(
+    children_schema_classes: list[type[Schema]], prefix: str
+) -> str:
+    delete_checks = ""
+    for schema_class in children_schema_classes:
+        schema_base_name = schema_class.__name__.replace("Schema", "")
+        lower_schema = to_snake_case(schema_base_name)
+        delete_checks += f"""
+        from .{lower_schema} import {schema_base_name}
+        if isinstance(ent, {schema_base_name}):
+            from .{lower_schema} import {schema_base_name}Mutator
+            return {schema_base_name}Mutator.{prefix}_delete(vc, ent)
+"""
+    return delete_checks
+
+
 def _generate_mutator_methods(
     base_name: str, children_schema_classes: list[type[Schema]], vc: ImportedObject
 ) -> str:
@@ -247,17 +263,13 @@ def _generate_mutator_methods(
             return {schema_base_name}Mutator.update(vc, ent)
 """
 
-    # Generate delete method
-    delete_checks = ""
-    for schema_class in children_schema_classes:
-        schema_base_name = schema_class.__name__.replace("Schema", "")
-        lower_schema = to_snake_case(schema_base_name)
-        delete_checks += f"""
-        from .{lower_schema} import {schema_base_name}
-        if isinstance(ent, {schema_base_name}):
-            from .{lower_schema} import {schema_base_name}Mutator
-            return {schema_base_name}Mutator.delete(vc, ent)
-"""
+    # Generate delete methods
+    soft_delete_checks = _generate_delete_checks(
+        children_schema_classes=children_schema_classes, prefix="soft"
+    )
+    hard_delete_checks = _generate_delete_checks(
+        children_schema_classes=children_schema_classes, prefix="hard"
+    )
 
     return f"""
     @classmethod
@@ -268,10 +280,17 @@ def _generate_mutator_methods(
         raise ValueError(f"Unknown implementation for I{base_name}: {{type(ent)}}")
 
     @classmethod
-    def delete(
+    def hard_delete(
         cls, vc: {vc.name}, ent: I{base_name}
     ) -> I{base_name}MutatorDeletionAction:
-{delete_checks}
+{hard_delete_checks}
+        raise ValueError(f"Unknown implementation for I{base_name}: {{type(ent)}}")
+
+    @classmethod
+    def soft_delete(
+        cls, vc: {vc.name}, ent: I{base_name}
+    ) -> I{base_name}MutatorDeletionAction:
+{soft_delete_checks}
         raise ValueError(f"Unknown implementation for I{base_name}: {{type(ent)}}")
 """
 
