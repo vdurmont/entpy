@@ -27,7 +27,8 @@ from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import UUID as DBUUID
-from sqlalchemy import select, func, Result
+from sqlalchemy import select
+from sqlalchemy import func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
 from typing import TYPE_CHECKING
@@ -121,27 +122,47 @@ class EntChild(Ent[ExampleViewerContext]):
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntChild:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntChildModel, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select(EntChildModel)
+                .where(EntChildModel.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get(EntChildModel, real_ent_id)
         if model is None:
             raise EntNotFoundError(f"No EntChild found for ID {ent_id}")
         return EntChild(vc=vc, model=model)
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntChild:
-        ent = await cls.gen(vc, ent_id)
+    async def genx(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
+    ) -> EntChild:
+        ent = await cls.gen(vc, ent_id, for_update)
         if not ent:
             raise EntNotFoundError(f"No EntChild found for ID {ent_id}")
         return ent
 
     @classmethod
-    async def gen(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntChild | None:
+    async def gen(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
+    ) -> EntChild | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntChildModel, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select(EntChildModel)
+                .where(EntChildModel.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get(EntChildModel, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -179,9 +200,10 @@ class EntChildQuery(EntQuery[EntChild, EntChildModel]):
 
         self.query = select(EntChildModel)
 
-    async def gen(self) -> list[EntChild]:
+    async def gen(self, for_update: bool = False) -> list[EntChild]:
         session = get_session()
-        result = await session.execute(self.query)
+        query = self.query.with_for_update() if for_update else self.query
+        result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -194,17 +216,20 @@ class EntChildQuery(EntQuery[EntChild, EntChildModel]):
             for model in models
         ]
 
-    async def gen_first(self) -> EntChild | None:
+    async def gen_first(self, for_update: bool = False) -> EntChild | None:
         session = get_session()
-        result = await session.execute(self.query.limit(1))
+        query = self.query.limit(1)
+        if for_update:
+            query = query.with_for_update()
+        result = await session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(self, result: Result[tuple[EntChildModel]]) -> EntChild | None:
         model = result.scalar_one_or_none()
         return await EntChild._gen_from_model(self.vc, model)  # noqa: SLF001
 
-    async def genx_first(self) -> EntChild:
-        ent = await self.gen_first()
+    async def genx_first(self, for_update: bool = False) -> EntChild:
+        ent = await self.gen_first(for_update)
         if not ent:
             raise EntNotFoundError("Expected query to return an ent, got None.")
         return ent

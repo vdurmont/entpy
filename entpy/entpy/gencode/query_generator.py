@@ -55,25 +55,29 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
         {view_import}
         self.query = select({query_target})
 
-    async def gen(self) -> list[{i}{base_name}]:
+    async def gen(self, for_update: bool = False) -> list[{i}{base_name}]:
         session = {session_getter.name}()
-        result = await session.execute(self.query)
+        query = self.query.with_for_update() if for_update else self.query
+        result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
 {gen_ents}
 
-    async def gen_first(self) -> {i}{base_name} | None:
+    async def gen_first(self, for_update: bool = False) -> {i}{base_name} | None:
         session = {session_getter.name}()
-        result = await session.execute(self.query.limit(1))
+        query = self.query.limit(1)
+        if for_update:
+            query = query.with_for_update()
+        result = await session.execute(query)
         return await self._gen_ent(result)
 
 {gen_ent}
 
 {gen_single_ent}
 
-    async def genx_first(self) -> {i}{base_name}:
-        ent = await self.gen_first()
+    async def genx_first(self, for_update: bool = False) -> {i}{base_name}:
+        ent = await self.gen_first(for_update)
         if not ent:
             raise EntNotFoundError(f"Expected query to return an ent, got None.")
         return ent

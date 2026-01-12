@@ -40,9 +40,7 @@ def generate(
             f"                config.insert(0, {rule.rule.name}())\n"
         )
 
-    if unique_gens:
-        # only add this import if we have unique gens :)
-        imports += ["from sqlalchemy import select"]
+    imports += ["from sqlalchemy import select"]
 
     for pattern in schema.get_patterns():
         pattern_base_name = pattern.__class__.__name__.replace("Pattern", "")
@@ -110,30 +108,46 @@ class {base_name}({extends}):{get_description(schema)}
         raise ExecutionError(f"An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
 
     @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str) -> {base_name}:
+    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name}:
         real_ent_id = validate_ent_id(ent_id)
         session = {session_getter.name}()
-        model = await session.get({base_name}Model, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select({base_name}Model)
+                .where({base_name}Model.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get({base_name}Model, real_ent_id)
         if model is None:
             raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
         return {base_name}(vc=vc, model=model)
 
     @classmethod
     async def genx(
-        cls, vc: {vc.name}, ent_id: UUID | str
+        cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False
     ) -> {base_name}:
-        ent = await cls.gen(vc, ent_id)
+        ent = await cls.gen(vc, ent_id, for_update)
         if not ent:
             raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
         return ent
 
     @classmethod
     async def gen(
-        cls, vc: {vc.name}, ent_id: UUID | str
+        cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False
     ) -> {base_name} | None:
         real_ent_id = validate_ent_id(ent_id)
         session = {session_getter.name}()
-        model = await session.get({base_name}Model, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select({base_name}Model)
+                .where({base_name}Model.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get({base_name}Model, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     {unique_gens}
@@ -231,18 +245,18 @@ def _generate_unique_gens(schema: Schema, base_name: str, vc: ImportedObject) ->
         if field.is_unique:
             unique_gens += f"""
     @classmethod
-    async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}) -> {base_name} | None:
+    async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> {base_name} | None:
         session = get_session()
-        result = await session.execute(
-            select({base_name}Model)
-            .where({base_name}Model.{field.name} == {field.name})
-        )
+        query = select({base_name}Model).where({base_name}Model.{field.name} == {field.name})
+        if for_update:
+            query = query.with_for_update()
+        result = await session.execute(query)
         model = result.scalar_one_or_none()
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
-    async def genx_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}) -> {base_name}:
-        result = await cls.gen_from_{field.name}(vc, {field.name})
+    async def genx_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> {base_name}:
+        result = await cls.gen_from_{field.name}(vc, {field.name}, for_update)
         if not result:
             raise EntNotFoundError(f"No EntTestObject found for {field.name} {{{field.name}}}")
         return result

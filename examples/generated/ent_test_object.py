@@ -332,47 +332,68 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntTestObject:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntTestObjectModel, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select(EntTestObjectModel)
+                .where(EntTestObjectModel.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get(EntTestObjectModel, real_ent_id)
         if model is None:
             raise EntNotFoundError(f"No EntTestObject found for ID {ent_id}")
         return EntTestObject(vc=vc, model=model)
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntTestObject:
-        ent = await cls.gen(vc, ent_id)
+    async def genx(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
+    ) -> EntTestObject:
+        ent = await cls.gen(vc, ent_id, for_update)
         if not ent:
             raise EntNotFoundError(f"No EntTestObject found for ID {ent_id}")
         return ent
 
     @classmethod
     async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntTestObject | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntTestObjectModel, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select(EntTestObjectModel)
+                .where(EntTestObjectModel.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get(EntTestObjectModel, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
     async def gen_from_username(
-        cls, vc: ExampleViewerContext, username: str
+        cls, vc: ExampleViewerContext, username: str, for_update: bool = False
     ) -> EntTestObject | None:
         session = get_session()
-        result = await session.execute(
-            select(EntTestObjectModel).where(EntTestObjectModel.username == username)
+        query = select(EntTestObjectModel).where(
+            EntTestObjectModel.username == username
         )
+        if for_update:
+            query = query.with_for_update()
+        result = await session.execute(query)
         model = result.scalar_one_or_none()
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
     async def genx_from_username(
-        cls, vc: ExampleViewerContext, username: str
+        cls, vc: ExampleViewerContext, username: str, for_update: bool = False
     ) -> EntTestObject:
-        result = await cls.gen_from_username(vc, username)
+        result = await cls.gen_from_username(vc, username, for_update)
         if not result:
             raise EntNotFoundError(f"No EntTestObject found for username {username}")
         return result
@@ -412,9 +433,10 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
 
         self.query = select(EntTestObjectModel)
 
-    async def gen(self) -> list[EntTestObject]:
+    async def gen(self, for_update: bool = False) -> list[EntTestObject]:
         session = get_session()
-        result = await session.execute(self.query)
+        query = self.query.with_for_update() if for_update else self.query
+        result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -427,9 +449,12 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
             for model in models
         ]
 
-    async def gen_first(self) -> EntTestObject | None:
+    async def gen_first(self, for_update: bool = False) -> EntTestObject | None:
         session = get_session()
-        result = await session.execute(self.query.limit(1))
+        query = self.query.limit(1)
+        if for_update:
+            query = query.with_for_update()
+        result = await session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(
@@ -438,8 +463,8 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
         model = result.scalar_one_or_none()
         return await EntTestObject._gen_from_model(self.vc, model)  # noqa: SLF001
 
-    async def genx_first(self) -> EntTestObject:
-        ent = await self.gen_first()
+    async def genx_first(self, for_update: bool = False) -> EntTestObject:
+        ent = await self.gen_first(for_update)
         if not ent:
             raise EntNotFoundError("Expected query to return an ent, got None.")
         return ent

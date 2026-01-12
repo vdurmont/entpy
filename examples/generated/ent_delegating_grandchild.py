@@ -27,7 +27,8 @@ from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import UUID as DBUUID
-from sqlalchemy import select, func, Result
+from sqlalchemy import select
+from sqlalchemy import func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
 from typing import TYPE_CHECKING
@@ -125,31 +126,47 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext]):
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntDelegatingGrandchild:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntDelegatingGrandchildModel, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select(EntDelegatingGrandchildModel)
+                .where(EntDelegatingGrandchildModel.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get(EntDelegatingGrandchildModel, real_ent_id)
         if model is None:
             raise EntNotFoundError(f"No EntDelegatingGrandchild found for ID {ent_id}")
         return EntDelegatingGrandchild(vc=vc, model=model)
 
     @classmethod
     async def genx(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntDelegatingGrandchild:
-        ent = await cls.gen(vc, ent_id)
+        ent = await cls.gen(vc, ent_id, for_update)
         if not ent:
             raise EntNotFoundError(f"No EntDelegatingGrandchild found for ID {ent_id}")
         return ent
 
     @classmethod
     async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntDelegatingGrandchild | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntDelegatingGrandchildModel, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select(EntDelegatingGrandchildModel)
+                .where(EntDelegatingGrandchildModel.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get(EntDelegatingGrandchildModel, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -191,9 +208,10 @@ class EntDelegatingGrandchildQuery(
 
         self.query = select(EntDelegatingGrandchildModel)
 
-    async def gen(self) -> list[EntDelegatingGrandchild]:
+    async def gen(self, for_update: bool = False) -> list[EntDelegatingGrandchild]:
         session = get_session()
-        result = await session.execute(self.query)
+        query = self.query.with_for_update() if for_update else self.query
+        result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -206,9 +224,14 @@ class EntDelegatingGrandchildQuery(
             for model in models
         ]
 
-    async def gen_first(self) -> EntDelegatingGrandchild | None:
+    async def gen_first(
+        self, for_update: bool = False
+    ) -> EntDelegatingGrandchild | None:
         session = get_session()
-        result = await session.execute(self.query.limit(1))
+        query = self.query.limit(1)
+        if for_update:
+            query = query.with_for_update()
+        result = await session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(
@@ -217,8 +240,8 @@ class EntDelegatingGrandchildQuery(
         model = result.scalar_one_or_none()
         return await EntDelegatingGrandchild._gen_from_model(self.vc, model)  # noqa: SLF001
 
-    async def genx_first(self) -> EntDelegatingGrandchild:
-        ent = await self.gen_first()
+    async def genx_first(self, for_update: bool = False) -> EntDelegatingGrandchild:
+        ent = await self.gen_first(for_update)
         if not ent:
             raise EntNotFoundError("Expected query to return an ent, got None.")
         return ent

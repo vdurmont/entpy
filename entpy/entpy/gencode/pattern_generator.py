@@ -117,21 +117,21 @@ class I{base_name}(Ent):{get_description(pattern)}
 {gen_edges.code}
 
     @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name}:
+    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name}:
         real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
         {loaders_gen_no_privacy}
         raise ValueError(f"No {base_name} found for ID {{real_ent_id}}")
 
     @classmethod
-    async def gen(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name} | None:
+    async def gen(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name} | None:
         real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
         {loaders_gen}
         return None
 
     @classmethod
-    async def genx(cls, vc: {vc.name}, ent_id: UUID | str) -> I{base_name}:
+    async def genx(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name}:
         real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
         {loaders_gen}
@@ -168,7 +168,7 @@ def _get_loaders(
         gen = "_genx_no_privacy_DO_NOT_USE" if no_privacy else "gen"
         loaders += f"""
         from .{lower_schema} import {schema_base_name}
-        {lower_schema} = await {schema_base_name}.{gen}(vc, real_ent_id)
+        {lower_schema} = await {schema_base_name}.{gen}(vc, real_ent_id, for_update)
         if {lower_schema}:
             return {lower_schema}
 """

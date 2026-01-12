@@ -30,7 +30,8 @@ from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
-from sqlalchemy import select, func, Result
+from sqlalchemy import select
+from sqlalchemy import func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
 from typing import TYPE_CHECKING
@@ -142,29 +143,47 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntTestObject2:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntTestObject2Model, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select(EntTestObject2Model)
+                .where(EntTestObject2Model.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get(EntTestObject2Model, real_ent_id)
         if model is None:
             raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
         return EntTestObject2(vc=vc, model=model)
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> EntTestObject2:
-        ent = await cls.gen(vc, ent_id)
+    async def genx(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
+    ) -> EntTestObject2:
+        ent = await cls.gen(vc, ent_id, for_update)
         if not ent:
             raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
         return ent
 
     @classmethod
     async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntTestObject2 | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        model = await session.get(EntTestObject2Model, real_ent_id)
+        if for_update:
+            result = await session.execute(
+                select(EntTestObject2Model)
+                .where(EntTestObject2Model.id == real_ent_id)
+                .with_for_update()
+            )
+            model = result.scalar_one_or_none()
+        else:
+            model = await session.get(EntTestObject2Model, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -202,9 +221,10 @@ class EntTestObject2Query(EntQuery[EntTestObject2, EntTestObject2Model]):
 
         self.query = select(EntTestObject2Model)
 
-    async def gen(self) -> list[EntTestObject2]:
+    async def gen(self, for_update: bool = False) -> list[EntTestObject2]:
         session = get_session()
-        result = await session.execute(self.query)
+        query = self.query.with_for_update() if for_update else self.query
+        result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -217,9 +237,12 @@ class EntTestObject2Query(EntQuery[EntTestObject2, EntTestObject2Model]):
             for model in models
         ]
 
-    async def gen_first(self) -> EntTestObject2 | None:
+    async def gen_first(self, for_update: bool = False) -> EntTestObject2 | None:
         session = get_session()
-        result = await session.execute(self.query.limit(1))
+        query = self.query.limit(1)
+        if for_update:
+            query = query.with_for_update()
+        result = await session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(
@@ -228,8 +251,8 @@ class EntTestObject2Query(EntQuery[EntTestObject2, EntTestObject2Model]):
         model = result.scalar_one_or_none()
         return await EntTestObject2._gen_from_model(self.vc, model)  # noqa: SLF001
 
-    async def genx_first(self) -> EntTestObject2:
-        ent = await self.gen_first()
+    async def genx_first(self, for_update: bool = False) -> EntTestObject2:
+        ent = await self.gen_first(for_update)
         if not ent:
             raise EntNotFoundError("Expected query to return an ent, got None.")
         return ent

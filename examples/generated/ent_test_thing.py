@@ -87,7 +87,7 @@ class IEntTestThing(Ent):
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> IEntTestThing:
         real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
@@ -95,7 +95,7 @@ class IEntTestThing(Ent):
         from .ent_test_object2 import EntTestObject2
 
         ent_test_object2 = await EntTestObject2._genx_no_privacy_DO_NOT_USE(
-            vc, real_ent_id
+            vc, real_ent_id, for_update
         )
         if ent_test_object2:
             return ent_test_object2
@@ -103,7 +103,7 @@ class IEntTestThing(Ent):
         from .ent_test_object import EntTestObject
 
         ent_test_object = await EntTestObject._genx_no_privacy_DO_NOT_USE(
-            vc, real_ent_id
+            vc, real_ent_id, for_update
         )
         if ent_test_object:
             return ent_test_object
@@ -112,39 +112,41 @@ class IEntTestThing(Ent):
 
     @classmethod
     async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> IEntTestThing | None:
         real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
 
         from .ent_test_object2 import EntTestObject2
 
-        ent_test_object2 = await EntTestObject2.gen(vc, real_ent_id)
+        ent_test_object2 = await EntTestObject2.gen(vc, real_ent_id, for_update)
         if ent_test_object2:
             return ent_test_object2
 
         from .ent_test_object import EntTestObject
 
-        ent_test_object = await EntTestObject.gen(vc, real_ent_id)
+        ent_test_object = await EntTestObject.gen(vc, real_ent_id, for_update)
         if ent_test_object:
             return ent_test_object
 
         return None
 
     @classmethod
-    async def genx(cls, vc: ExampleViewerContext, ent_id: UUID | str) -> IEntTestThing:
+    async def genx(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
+    ) -> IEntTestThing:
         real_ent_id = validate_ent_id(ent_id)
         # TODO refactor this to read the bytes from the UUID
 
         from .ent_test_object2 import EntTestObject2
 
-        ent_test_object2 = await EntTestObject2.gen(vc, real_ent_id)
+        ent_test_object2 = await EntTestObject2.gen(vc, real_ent_id, for_update)
         if ent_test_object2:
             return ent_test_object2
 
         from .ent_test_object import EntTestObject
 
-        ent_test_object = await EntTestObject.gen(vc, real_ent_id)
+        ent_test_object = await EntTestObject.gen(vc, real_ent_id, for_update)
         if ent_test_object:
             return ent_test_object
 
@@ -167,9 +169,10 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
 
         self.query = select(EntTestThingView.id)
 
-    async def gen(self) -> list[IEntTestThing]:
+    async def gen(self, for_update: bool = False) -> list[IEntTestThing]:
         session = get_session()
-        result = await session.execute(self.query)
+        query = self.query.with_for_update() if for_update else self.query
+        result = await session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -179,9 +182,12 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         ent_ids = result.scalars().all()
         return [await self._gen_single_ent(ent_id) for ent_id in ent_ids]
 
-    async def gen_first(self) -> IEntTestThing | None:
+    async def gen_first(self, for_update: bool = False) -> IEntTestThing | None:
         session = get_session()
-        result = await session.execute(self.query.limit(1))
+        query = self.query.limit(1)
+        if for_update:
+            query = query.with_for_update()
+        result = await session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(self, result: Result[tuple[UUID]]) -> IEntTestThing | None:
@@ -198,8 +204,8 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         # Casting is ok here, the id always inherits IEntTestThing
         return await cast(type[IEntTestThing], ent_type).gen(self.vc, ent_id)
 
-    async def genx_first(self) -> IEntTestThing:
-        ent = await self.gen_first()
+    async def genx_first(self, for_update: bool = False) -> IEntTestThing:
+        ent = await self.gen_first(for_update)
         if not ent:
             raise EntNotFoundError("Expected query to return an ent, got None.")
         return ent
