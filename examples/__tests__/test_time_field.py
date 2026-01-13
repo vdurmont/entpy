@@ -1,6 +1,5 @@
 from datetime import time
 
-import pytest
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
@@ -27,7 +26,9 @@ async def test_time_field_with_dynamic_example(
 
     assert ent.end_time is not None, "end_time should be set from dynamic example"
     assert isinstance(ent.end_time, time), "end_time should be a time object"
-    assert ent.end_time == time(17, 30, 0), "end_time should match the dynamic example value"
+    assert ent.end_time == time(17, 30, 0), (
+        "end_time should match the dynamic example value"
+    )
 
 
 async def test_time_field_with_custom_value(
@@ -87,9 +88,7 @@ async def test_time_field_with_microseconds(
         end_time=precise_time,
     )
 
-    assert ent.end_time == precise_time, (
-        "end_time should preserve microseconds"
-    )
+    assert ent.end_time == precise_time, "end_time should preserve microseconds"
 
 
 async def test_time_field_boundary_values(

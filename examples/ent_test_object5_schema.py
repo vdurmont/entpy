@@ -1,4 +1,13 @@
-from entpy import Action, AllowAll, BoolField, EdgeDelegate, Field, PrivacyRule, Schema, StringField
+from entpy import (
+    Action,
+    AllowAll,
+    BoolField,
+    EdgeDelegate,
+    Field,
+    PrivacyRule,
+    Schema,
+    StringField,
+)
 
 
 class EntTestObject5Schema(Schema):

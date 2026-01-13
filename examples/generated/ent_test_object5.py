@@ -21,6 +21,7 @@ from .ent_query import EntQuery
 from ent_test_object5_schema import EntTestObject5Schema
 from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
+from entpy.framework.database import emulate_for_update
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
@@ -108,15 +109,9 @@ class EntTestObject5(Ent[ExampleViewerContext]):
     ) -> EntTestObject5:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntTestObject5Model)
-                .where(EntTestObject5Model.id == real_ent_id)
-                .with_for_update()
-            )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntTestObject5Model, real_ent_id)
+        model = await session.get(
+            EntTestObject5Model, real_ent_id, with_for_update=for_update
+        )
         if model is None:
             raise EntNotFoundError(f"No EntTestObject5 found for ID {ent_id}")
         return EntTestObject5(vc=vc, model=model)
@@ -136,15 +131,12 @@ class EntTestObject5(Ent[ExampleViewerContext]):
     ) -> EntTestObject5 | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntTestObject5Model)
-                .where(EntTestObject5Model.id == real_ent_id)
-                .with_for_update()
+        async with emulate_for_update(
+            session, EntTestObject5Model, "id", real_ent_id, for_update
+        ):
+            model = await session.get(
+                EntTestObject5Model, real_ent_id, with_for_update=for_update
             )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntTestObject5Model, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

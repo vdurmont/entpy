@@ -27,7 +27,10 @@ def generate(
 
     unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
 
-    imports = ["from entpy import EdgeDelegate, PrivacyRule, Ent, BypassViewerContext"]
+    imports = [
+        "from entpy import EdgeDelegate, PrivacyRule, Ent, BypassViewerContext",
+        "from entpy.framework.database import emulate_for_update",
+    ]
 
     preprended_rules_str = ""
     # Iterating in reverse because we insert each one at index 0 and want to
@@ -111,15 +114,7 @@ class {base_name}({extends}):{get_description(schema)}
     async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name}:
         real_ent_id = validate_ent_id(ent_id)
         session = {session_getter.name}()
-        if for_update:
-            result = await session.execute(
-                select({base_name}Model)
-                .where({base_name}Model.id == real_ent_id)
-                .with_for_update()
-            )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get({base_name}Model, real_ent_id)
+        model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update)
         if model is None:
             raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
         return {base_name}(vc=vc, model=model)
@@ -139,15 +134,8 @@ class {base_name}({extends}):{get_description(schema)}
     ) -> {base_name} | None:
         real_ent_id = validate_ent_id(ent_id)
         session = {session_getter.name}()
-        if for_update:
-            result = await session.execute(
-                select({base_name}Model)
-                .where({base_name}Model.id == real_ent_id)
-                .with_for_update()
-            )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get({base_name}Model, real_ent_id)
+        async with emulate_for_update(session, {base_name}Model, "id", real_ent_id, for_update):
+            model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     {unique_gens}
@@ -248,9 +236,9 @@ def _generate_unique_gens(schema: Schema, base_name: str, vc: ImportedObject) ->
     async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> {base_name} | None:
         session = get_session()
         query = select({base_name}Model).where({base_name}Model.{field.name} == {field.name})
-        if for_update:
-            query = query.with_for_update()
-        result = await session.execute(query)
+        query = query.with_for_update()
+        async with emulate_for_update(session, {base_name}Model, "{field.name}", {field.name}, for_update):
+            result = await session.execute(query)
         model = result.scalar_one_or_none()
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 

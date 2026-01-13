@@ -26,6 +26,7 @@ from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
 from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
+from entpy.framework.database import emulate_for_update
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
@@ -147,15 +148,9 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     ) -> EntTestObject2:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntTestObject2Model)
-                .where(EntTestObject2Model.id == real_ent_id)
-                .with_for_update()
-            )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntTestObject2Model, real_ent_id)
+        model = await session.get(
+            EntTestObject2Model, real_ent_id, with_for_update=for_update
+        )
         if model is None:
             raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
         return EntTestObject2(vc=vc, model=model)
@@ -175,15 +170,12 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     ) -> EntTestObject2 | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntTestObject2Model)
-                .where(EntTestObject2Model.id == real_ent_id)
-                .with_for_update()
+        async with emulate_for_update(
+            session, EntTestObject2Model, "id", real_ent_id, for_update
+        ):
+            model = await session.get(
+                EntTestObject2Model, real_ent_id, with_for_update=for_update
             )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntTestObject2Model, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

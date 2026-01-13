@@ -21,6 +21,7 @@ from .ent_query import EntQuery
 from ent_privacy_parent_schema import EntPrivacyParentSchema
 from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
+from entpy.framework.database import emulate_for_update
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
@@ -100,15 +101,9 @@ class EntPrivacyParent(Ent[ExampleViewerContext]):
     ) -> EntPrivacyParent:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntPrivacyParentModel)
-                .where(EntPrivacyParentModel.id == real_ent_id)
-                .with_for_update()
-            )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntPrivacyParentModel, real_ent_id)
+        model = await session.get(
+            EntPrivacyParentModel, real_ent_id, with_for_update=for_update
+        )
         if model is None:
             raise EntNotFoundError(f"No EntPrivacyParent found for ID {ent_id}")
         return EntPrivacyParent(vc=vc, model=model)
@@ -128,15 +123,12 @@ class EntPrivacyParent(Ent[ExampleViewerContext]):
     ) -> EntPrivacyParent | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntPrivacyParentModel)
-                .where(EntPrivacyParentModel.id == real_ent_id)
-                .with_for_update()
+        async with emulate_for_update(
+            session, EntPrivacyParentModel, "id", real_ent_id, for_update
+        ):
+            model = await session.get(
+                EntPrivacyParentModel, real_ent_id, with_for_update=for_update
             )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntPrivacyParentModel, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

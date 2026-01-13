@@ -21,6 +21,7 @@ from .ent_query import EntQuery
 from ent_delegating_child_schema import EntDelegatingChildSchema
 from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
+from entpy.framework.database import emulate_for_update
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
@@ -130,15 +131,9 @@ class EntDelegatingChild(Ent[ExampleViewerContext]):
     ) -> EntDelegatingChild:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntDelegatingChildModel)
-                .where(EntDelegatingChildModel.id == real_ent_id)
-                .with_for_update()
-            )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntDelegatingChildModel, real_ent_id)
+        model = await session.get(
+            EntDelegatingChildModel, real_ent_id, with_for_update=for_update
+        )
         if model is None:
             raise EntNotFoundError(f"No EntDelegatingChild found for ID {ent_id}")
         return EntDelegatingChild(vc=vc, model=model)
@@ -158,15 +153,12 @@ class EntDelegatingChild(Ent[ExampleViewerContext]):
     ) -> EntDelegatingChild | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntDelegatingChildModel)
-                .where(EntDelegatingChildModel.id == real_ent_id)
-                .with_for_update()
+        async with emulate_for_update(
+            session, EntDelegatingChildModel, "id", real_ent_id, for_update
+        ):
+            model = await session.get(
+                EntDelegatingChildModel, real_ent_id, with_for_update=for_update
             )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntDelegatingChildModel, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

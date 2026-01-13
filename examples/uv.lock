@@ -60,7 +60,7 @@ dependencies = [
     { name = "entpy" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "mypy" },
     { name = "pytest" },
@@ -69,14 +69,15 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "entpy", editable = "../entpy" },
-    { name = "mypy", marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'" },
-    { name = "ruff", marker = "extra == 'dev'" },
+requires-dist = [{ name = "entpy", editable = "../entpy" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
 ]
-provides-extras = ["dev"]
 
 [[package]]
 name = "greenlet"
