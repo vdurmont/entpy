@@ -19,7 +19,11 @@ def generate(
         schema=schema, base_name=base_name, session_getter=session_getter, vc=vc
     )
     return GeneratedContent(
-        imports=base.imports + creation.imports + update.imports + deletion.imports,
+        imports=["from entpy import PrivacyError"]
+        + base.imports
+        + creation.imports
+        + update.imports
+        + deletion.imports,
         code=base.code
         + "\n\n"
         + creation.code
@@ -143,8 +147,11 @@ class {base_name}MutatorCreationAction:
 {model_assignments}
         )
         session.add(model)
+        ent = {base_name}(vc=self.vc, model=model)
+        decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
+        if decision != Decision.ALLOW:
+            raise PrivacyError(f"Current viewer context is not authorized to CREATE {base_name} with ID {{ent.id}}")
         await session.flush()
-        # TODO privacy checks
         return await {base_name}._genx_from_model(self.vc, model)  # noqa: SLF001
 """,  # noqa: E501
     )
@@ -220,9 +227,12 @@ class {base_name}MutatorUpdateAction{inheritance}:
 {model_assignments}
         model.updated_at = datetime.now(tz=UTC)
         session.add(model)
+        new_ent = {base_name}(vc=self.vc, model=model)
+        decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
+        if decision != Decision.ALLOW:
+            raise PrivacyError(f"Current viewer context is not authorized to UPDATE {base_name} with ID {{new_ent.id}}")
         await session.flush()
         await session.refresh(model)
-        # TODO privacy checks
         return await {base_name}._genx_from_model(self.vc, model)  # noqa: SLF001
 """,
     )
@@ -265,12 +275,15 @@ class {base_name}MutatorDeletionAction{inheritance}:
     async def gen_save(self) -> None:
         session = {session_getter.name}()
         model = self.ent.model
+        action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
+        decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
+        if decision != Decision.ALLOW:
+            raise PrivacyError(f"Current viewer context is not authorized to {{action}} {base_name} with ID {{self.ent.id}}")
         if self.is_soft_delete:
             model.soft_deleted_at = datetime.now(tz=UTC)
             model.updated_at = datetime.now(tz=UTC)
             session.add(model)
         else:
-            # TODO privacy checks
             await session.delete(model)
         await session.flush()
 """,

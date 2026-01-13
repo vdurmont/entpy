@@ -27,6 +27,7 @@ from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
 from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field
+from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -422,8 +423,13 @@ class EntTestObject2MutatorCreationAction:
             thing_status=self.thing_status,
         )
         session.add(model)
+        ent = EntTestObject2(vc=self.vc, model=model)
+        decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
+        if decision != Decision.ALLOW:
+            raise PrivacyError(
+                f"Current viewer context is not authorized to CREATE EntTestObject2 with ID {ent.id}"
+            )
         await session.flush()
-        # TODO privacy checks
         return await EntTestObject2._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
@@ -469,9 +475,14 @@ class EntTestObject2MutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         model.thing_status = self.thing_status
         model.updated_at = datetime.now(tz=UTC)
         session.add(model)
+        new_ent = EntTestObject2(vc=self.vc, model=model)
+        decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
+        if decision != Decision.ALLOW:
+            raise PrivacyError(
+                f"Current viewer context is not authorized to UPDATE EntTestObject2 with ID {new_ent.id}"
+            )
         await session.flush()
         await session.refresh(model)
-        # TODO privacy checks
         return await EntTestObject2._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
@@ -489,12 +500,17 @@ class EntTestObject2MutatorDeletionAction(IEntTestThingMutatorDeletionAction):
     async def gen_save(self) -> None:
         session = get_session()
         model = self.ent.model
+        action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
+        decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
+        if decision != Decision.ALLOW:
+            raise PrivacyError(
+                f"Current viewer context is not authorized to {action} EntTestObject2 with ID {self.ent.id}"
+            )
         if self.is_soft_delete:
             model.soft_deleted_at = datetime.now(tz=UTC)
             model.updated_at = datetime.now(tz=UTC)
             session.add(model)
         else:
-            # TODO privacy checks
             await session.delete(model)
         await session.flush()
 
