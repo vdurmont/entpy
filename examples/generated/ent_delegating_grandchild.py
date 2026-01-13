@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .ent_delegating_child import EntDelegatingChild
 
-privacy_logger = logging.getLogger("entpy-privacy")
+privacy_logger = logging.getLogger("entpy.privacy")
 
 
 class EntDelegatingGrandchildModel(EntModel):

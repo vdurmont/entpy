@@ -100,7 +100,7 @@ from abc import ABC
 {imports_code}
 {type_checking_imports_code}
 
-privacy_logger = logging.getLogger("entpy-privacy")
+privacy_logger = logging.getLogger("entpy.privacy")
 
 {model_content.code}
 

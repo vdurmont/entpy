@@ -33,7 +33,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
 
 
-privacy_logger = logging.getLogger("entpy-privacy")
+privacy_logger = logging.getLogger("entpy.privacy")
 
 
 class EntTestSubObjectModel(EntModel):

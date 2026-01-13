@@ -41,7 +41,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5
 
-privacy_logger = logging.getLogger("entpy-privacy")
+privacy_logger = logging.getLogger("entpy.privacy")
 
 
 class EntTestObject2Model(EntTestThingModel):

@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     from .ent_test_sub_object import EntTestSubObject
     from .ent_test_thing import IEntTestThing
 
-privacy_logger = logging.getLogger("entpy-privacy")
+privacy_logger = logging.getLogger("entpy.privacy")
 
 
 class EntTestObjectModel(EntTestThingModel):
