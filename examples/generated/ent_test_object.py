@@ -29,6 +29,7 @@ from ent_test_object_schema import Status
 from ent_test_thing_pattern import ThingStatus
 from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
 from entpy import Field, FieldWithDynamicExample
+from entpy.framework.database import emulate_for_update
 from entpy.types import DateTime
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -243,7 +244,6 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         return self.model.self_id
 
     async def gen_self(self) -> "EntTestObject" | None:
-
         if self.model.self_id:
             return await EntTestObject.gen(self.vc, self.model.self_id)
         return None
@@ -367,15 +367,9 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     ) -> EntTestObject:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntTestObjectModel)
-                .where(EntTestObjectModel.id == real_ent_id)
-                .with_for_update()
-            )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntTestObjectModel, real_ent_id)
+        model = await session.get(
+            EntTestObjectModel, real_ent_id, with_for_update=for_update
+        )
         if model is None:
             raise EntNotFoundError(f"No EntTestObject found for ID {ent_id}")
         return EntTestObject(vc=vc, model=model)
@@ -395,15 +389,12 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     ) -> EntTestObject | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
-        if for_update:
-            result = await session.execute(
-                select(EntTestObjectModel)
-                .where(EntTestObjectModel.id == real_ent_id)
-                .with_for_update()
+        async with emulate_for_update(
+            session, EntTestObjectModel, "id", real_ent_id, for_update
+        ):
+            model = await session.get(
+                EntTestObjectModel, real_ent_id, with_for_update=for_update
             )
-            model = result.scalar_one_or_none()
-        else:
-            model = await session.get(EntTestObjectModel, real_ent_id)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -414,9 +405,11 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         query = select(EntTestObjectModel).where(
             EntTestObjectModel.username == username
         )
-        if for_update:
-            query = query.with_for_update()
-        result = await session.execute(query)
+        query = query.with_for_update()
+        async with emulate_for_update(
+            session, EntTestObjectModel, "username", username, for_update
+        ):
+            result = await session.execute(query)
         model = result.scalar_one_or_none()
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 

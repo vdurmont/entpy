@@ -1,4 +1,13 @@
-from entpy import Field, Schema, StringField, EdgeField, Action, AllowAll, EdgeDelegate, PrivacyRule
+from entpy import (
+    Field,
+    Schema,
+    StringField,
+    EdgeField,
+    Action,
+    AllowAll,
+    EdgeDelegate,
+    PrivacyRule,
+)
 from ent_grand_parent_schema import EntGrandParentSchema
 
 

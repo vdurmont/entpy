@@ -37,7 +37,9 @@ class Ent(ABC, Generic[VC]):
 
     @classmethod
     @abstractmethod
-    async def gen(cls, vc: VC, ent_id: UUID | str, for_update: bool = False) -> Self | None:
+    async def gen(
+        cls, vc: VC, ent_id: UUID | str, for_update: bool = False
+    ) -> Self | None:
         pass
 
     @classmethod
