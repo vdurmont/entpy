@@ -3,6 +3,7 @@
 ####################
 
 from __future__ import annotations
+import logging
 from entpy import (
     Ent,
     generate_uuid,
@@ -53,6 +54,8 @@ if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5
     from .ent_test_sub_object import EntTestSubObject
     from .ent_test_thing import IEntTestThing
+
+privacy_logger = logging.getLogger("entpy-privacy")
 
 
 class EntTestObjectModel(EntTestThingModel):
@@ -295,6 +298,11 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
             return Decision.ALLOW
         config = EntTestObjectSchema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
+            privacy_logger.debug(
+                "Delegating privacy of EntTestObject with ID %s to edge %s",
+                self.id,
+                config.edge_name,
+            )
             delegate = await self._gen_load_delegate(vc, config.edge_name)
             return await delegate._gen_evaluate_privacy(vc, action)
         elif isinstance(config, list) and all(
@@ -315,10 +323,20 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
 
             for rule in config:
                 decision = await rule.gen_evaluate(vc, self)
+                privacy_logger.debug(
+                    "Privacy rule %s of EntTestObject with ID %s returned %s",
+                    type(rule),
+                    self.id,
+                    decision,
+                )
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
                 if decision != Decision.PASS:
                     return decision
             # We default to denying
+            privacy_logger.debug(
+                "Defaulting to denying access to EntTestObject with ID %s after exhausting all privacy rules.",
+                self.id,
+            )
             return Decision.DENY
         raise ExecutionError(
             "An invalid privacy configuration was found for EntTestObject: invalid config type"

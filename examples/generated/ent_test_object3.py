@@ -3,6 +3,7 @@
 ####################
 
 from __future__ import annotations
+import logging
 from entpy import (
     Ent,
     generate_uuid,
@@ -35,6 +36,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_test_object4 import EntTestObject4
+
+privacy_logger = logging.getLogger("entpy-privacy")
 
 
 class EntTestObject3Model(EntModel):
@@ -89,6 +92,11 @@ class EntTestObject3(Ent[ExampleViewerContext]):
             return Decision.ALLOW
         config = EntTestObject3Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
+            privacy_logger.debug(
+                "Delegating privacy of EntTestObject3 with ID %s to edge %s",
+                self.id,
+                config.edge_name,
+            )
             delegate = await self._gen_load_delegate(vc, config.edge_name)
             return await delegate._gen_evaluate_privacy(vc, action)
         elif isinstance(config, list) and all(
@@ -109,10 +117,20 @@ class EntTestObject3(Ent[ExampleViewerContext]):
 
             for rule in config:
                 decision = await rule.gen_evaluate(vc, self)
+                privacy_logger.debug(
+                    "Privacy rule %s of EntTestObject3 with ID %s returned %s",
+                    type(rule),
+                    self.id,
+                    decision,
+                )
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
                 if decision != Decision.PASS:
                     return decision
             # We default to denying
+            privacy_logger.debug(
+                "Defaulting to denying access to EntTestObject3 with ID %s after exhausting all privacy rules.",
+                self.id,
+            )
             return Decision.DENY
         raise ExecutionError(
             "An invalid privacy configuration was found for EntTestObject3: invalid config type"

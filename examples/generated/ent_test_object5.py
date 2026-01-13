@@ -3,6 +3,7 @@
 ####################
 
 from __future__ import annotations
+import logging
 from entpy import (
     Ent,
     generate_uuid,
@@ -31,6 +32,9 @@ from sqlalchemy import select
 from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
+
+
+privacy_logger = logging.getLogger("entpy-privacy")
 
 
 class EntTestObject5Model(EntModel):
@@ -81,6 +85,11 @@ class EntTestObject5(Ent[ExampleViewerContext]):
             return Decision.ALLOW
         config = EntTestObject5Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
+            privacy_logger.debug(
+                "Delegating privacy of EntTestObject5 with ID %s to edge %s",
+                self.id,
+                config.edge_name,
+            )
             delegate = await self._gen_load_delegate(vc, config.edge_name)
             return await delegate._gen_evaluate_privacy(vc, action)
         elif isinstance(config, list) and all(
@@ -101,10 +110,20 @@ class EntTestObject5(Ent[ExampleViewerContext]):
 
             for rule in config:
                 decision = await rule.gen_evaluate(vc, self)
+                privacy_logger.debug(
+                    "Privacy rule %s of EntTestObject5 with ID %s returned %s",
+                    type(rule),
+                    self.id,
+                    decision,
+                )
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
                 if decision != Decision.PASS:
                     return decision
             # We default to denying
+            privacy_logger.debug(
+                "Defaulting to denying access to EntTestObject5 with ID %s after exhausting all privacy rules.",
+                self.id,
+            )
             return Decision.DENY
         raise ExecutionError(
             "An invalid privacy configuration was found for EntTestObject5: invalid config type"
