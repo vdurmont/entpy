@@ -12,6 +12,7 @@ def generate(
     ent_model_import: str,
     session_getter: ImportedObject,
     vc: ImportedObject,
+    threshold_to_stop_loading_ents_for_count: int,
 ) -> str:
     pattern = pattern_class()
     base_name = pattern_class.__name__.replace("Pattern", "")
@@ -44,6 +45,7 @@ def generate(
         base_name=base_name,
         session_getter=session_getter,
         vc=vc,
+        threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
     )
 
     mutator_content = _generate_mutator(

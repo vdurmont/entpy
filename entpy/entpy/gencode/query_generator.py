@@ -9,6 +9,7 @@ def generate(
     base_name: str,
     session_getter: ImportedObject,
     vc: ImportedObject,
+    threshold_to_stop_loading_ents_for_count: int,
 ) -> GeneratedContent:
     is_pattern = isinstance(descriptor, Pattern)
     i = "I" if is_pattern else ""
@@ -23,6 +24,11 @@ def generate(
 
     if is_pattern:
         imports.append("from typing import cast")
+
+    gen_count = _generate_gen_count(
+        session_getter=session_getter,
+        threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
+    )
 
     # For patterns, we need to import and use the view
     query_target = f"{base_name}View.id" if is_pattern else f"{base_name}Model"
@@ -44,7 +50,7 @@ def generate(
     column_holder = f"{base_name}View" if is_pattern else f"{base_name}Model"
 
     return GeneratedContent(
-        imports=imports,
+        imports=imports + gen_count.imports,
         code=f"""
 T = TypeVar("T")
 
@@ -91,14 +97,7 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
             raise EntNotFoundError(f"Expected query to return an ent, got None.")
         return ent
 
-    async def gen_count_NO_PRIVACY(self) -> int:
-        session = {session_getter.name}()
-        count_query = self._finalize_query().with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
-        result = await session.execute(count_query)
-        count = result.scalar()
-        if count is None:
-            raise ExecutionError("Unable to get the count")
-        return count
+{gen_count.code}
 
 {order_by_methods}
 
@@ -184,3 +183,31 @@ def _generate_order_by_methods(is_pattern: bool, base_name: str) -> str:
         self.query = self.query.order_by({base_name}Model.id.desc())
         return self
 """
+
+
+def _generate_gen_count(
+    session_getter: ImportedObject,
+    threshold_to_stop_loading_ents_for_count: int,
+) -> GeneratedContent:
+    ent_loader = ""
+    if threshold_to_stop_loading_ents_for_count > 0:
+        ent_loader = f"""
+        if count <= {threshold_to_stop_loading_ents_for_count}:
+            # We have just a few ents, let's load them and check privacy
+            # to make sure our count is more accurate.
+            fetch_query = self._finalize_query().limit(None).offset(None)
+            result = await session.execute(fetch_query)
+            ents = await self._gen_ents(result)
+            return len(list(filter(None, ents)))
+"""
+    return GeneratedContent(
+        code=f"""
+    async def gen_count_NO_PRIVACY(self) -> int:
+        session = {session_getter.name}()
+        count_query = self._finalize_query().with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
+        result = await session.execute(count_query)
+        count = result.scalar()
+        if count is None:
+            raise ExecutionError("Unable to get the count"){ent_loader}
+        return count"""
+    )

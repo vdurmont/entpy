@@ -58,7 +58,7 @@ async def test_soft_delete_specific_queries_with_regular_vc(
         "Query should never return the soft deleted ents with regular vc"
     )
     count = await EntTestObject.query(vc).with_soft_deleted().gen_count_NO_PRIVACY()
-    assert count == 1
+    assert count == 0
 
 
 async def test_soft_delete_default_queries_with_super_vc(

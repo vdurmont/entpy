@@ -19,6 +19,7 @@ def run(
     session_getter: ImportedObject,
     vc: ImportedObject,
     prepended_rules: list[PrivacyRuleImport] | None = None,
+    threshold_to_stop_loading_ents_for_count: int = 50,
 ) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()
@@ -60,6 +61,7 @@ def run(
                 session_getter=session_getter,
                 vc=vc,
                 prepended_rules=prepended_rules or [],
+                threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
             )
         elif issubclass(descriptor_class, Pattern):
             children = get_children_schema_classes(
@@ -71,6 +73,7 @@ def run(
                 ent_model_import="from .ent_model import EntModel",
                 session_getter=session_getter,
                 vc=vc,
+                threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
             )
             view_code = generate_view(
                 pattern_class=descriptor_class,

@@ -16,6 +16,7 @@ def generate(
     session_getter: ImportedObject,
     vc: ImportedObject,
     prepended_rules: list[PrivacyRuleImport],
+    threshold_to_stop_loading_ents_for_count: int,
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.replace("Schema", "")
@@ -43,6 +44,7 @@ def generate(
         base_name=base_name,
         session_getter=session_getter,
         vc=vc,
+        threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
     )
     mutator_content = generate_mutator(
         schema=schema,

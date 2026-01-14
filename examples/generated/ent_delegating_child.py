@@ -286,6 +286,14 @@ class EntDelegatingChildQuery(EntQuery[EntDelegatingChild, EntDelegatingChildMod
         count = result.scalar()
         if count is None:
             raise ExecutionError("Unable to get the count")
+        if count <= 50:
+            # We have just a few ents, let's load them and check privacy
+            # to make sure our count is more accurate.
+            fetch_query = self._finalize_query().limit(None).offset(None)
+            result = await session.execute(fetch_query)
+            ents = await self._gen_ents(result)
+            return len(list(filter(None, ents)))
+
         return count
 
     def order_by_id_asc(self) -> "EntDelegatingChildQuery":
