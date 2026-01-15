@@ -143,6 +143,7 @@ class {base_name}({extends}):{get_description(schema)}
         session = {session_getter.name}()
         async with emulate_for_update(session, {base_name}Model, "id", real_ent_id, for_update):
             model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update)
+        session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     {unique_gens}
@@ -247,6 +248,7 @@ def _generate_unique_gens(schema: Schema, base_name: str, vc: ImportedObject) ->
         async with emulate_for_update(session, {base_name}Model, "{field.name}", {field.name}, for_update):
             result = await session.execute(query)
         model = result.scalar_one_or_none()
+        session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
