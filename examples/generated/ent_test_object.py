@@ -56,10 +56,13 @@ from sqlalchemy import select
 from sqlalchemy import Select, func, Result
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
 from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_test_object5 import EntTestObject5Model
+    from .ent_test_sub_object import EntTestSubObjectModel
     from .ent_test_sub_object import EntTestSubObjectAPIModel
     from .ent_test_thing import EntTestThingAPIModel
     from .ent_test_object5 import EntTestObject5
@@ -119,6 +122,30 @@ class EntTestObjectModel(EntTestThingModel):
     trace_id: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
     validated_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
     when_is_it_cool: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
+    obj5: Mapped["EntTestObject5Model"] = relationship(
+        "EntTestObject5Model",
+        primaryjoin="EntTestObjectModel.obj5_id == EntTestObject5Model.id",
+    )
+    required_sub_object: Mapped["EntTestSubObjectModel"] = relationship(
+        "EntTestSubObjectModel",
+        primaryjoin="EntTestObjectModel.required_sub_object_id == EntTestSubObjectModel.id",
+    )
+    obj5_opt: Mapped["EntTestObject5Model"] = relationship(
+        "EntTestObject5Model",
+        primaryjoin="EntTestObjectModel.obj5_opt_id == EntTestObject5Model.id",
+    )
+    optional_sub_object: Mapped["EntTestSubObjectModel"] = relationship(
+        "EntTestSubObjectModel",
+        primaryjoin="EntTestObjectModel.optional_sub_object_id == EntTestSubObjectModel.id",
+    )
+    optional_sub_object_no_ex: Mapped["EntTestSubObjectModel"] = relationship(
+        "EntTestSubObjectModel",
+        primaryjoin="EntTestObjectModel.optional_sub_object_no_ex_id == EntTestSubObjectModel.id",
+    )
+    self: Mapped["EntTestObjectModel"] = relationship(
+        "EntTestObjectModel",
+        primaryjoin="EntTestObjectModel.self_id == EntTestObjectModel.id",
+    )
 
 
 class EntTestObjectAPIModel(EntTestThingAPIModel):

@@ -35,10 +35,12 @@ from sqlalchemy import UUID as DBUUID
 from sqlalchemy import select
 from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
 from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_test_object3 import EntTestObject3Model
     from .ent_test_object3 import EntTestObject3APIModel
     from .ent_test_object3 import EntTestObject3
 
@@ -52,6 +54,10 @@ class EntTestObject4Model(EntModel):
         DBUUID(),
         ForeignKey("test_object3.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
+    )
+    other: Mapped["EntTestObject3Model"] = relationship(
+        "EntTestObject3Model",
+        primaryjoin="EntTestObject4Model.other_id == EntTestObject3Model.id",
     )
 
 

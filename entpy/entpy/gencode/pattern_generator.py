@@ -89,7 +89,11 @@ def generate(
     imports_code = "\n".join(imports)
 
     type_checking_imports = (
-        api_model.type_checking_imports + gen_edges.type_checking_imports
+        model.type_checking_imports
+        + api_model.type_checking_imports
+        + gen_edges.type_checking_imports
+        + query_content.type_checking_imports
+        + mutator_content.type_checking_imports
     )
     if type_checking_imports:
         imports_code += "\n\nfrom typing import TYPE_CHECKING\n\n"

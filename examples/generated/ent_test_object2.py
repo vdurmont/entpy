@@ -39,10 +39,12 @@ from sqlalchemy import String
 from sqlalchemy import select
 from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
 from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_test_object5 import EntTestObject5Model
     from .ent_test_object5 import EntTestObject5
 
 privacy_logger = logging.getLogger("entpy.privacy")
@@ -52,6 +54,14 @@ class EntTestObject2Model(EntTestThingModel):
     __tablename__ = "test_object2"
 
     some_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    obj5: Mapped["EntTestObject5Model"] = relationship(
+        "EntTestObject5Model",
+        primaryjoin="EntTestObject2Model.obj5_id == EntTestObject5Model.id",
+    )
+    obj5_opt: Mapped["EntTestObject5Model"] = relationship(
+        "EntTestObject5Model",
+        primaryjoin="EntTestObject2Model.obj5_opt_id == EntTestObject5Model.id",
+    )
 
 
 class EntTestObject2APIModel(EntTestThingAPIModel):
