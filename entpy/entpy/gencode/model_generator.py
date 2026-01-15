@@ -30,6 +30,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
 
     fields_code = ""
     types_imports = []
+    type_checking_imports = []
     for field in fields:
         common_column_attributes = ", nullable=" + (
             "True" if field.nullable else "False"
@@ -114,6 +115,22 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
 
+    if isinstance(descriptor, Schema):
+        for field in descriptor.get_all_fields():
+            if isinstance(field, EdgeField) and issubclass(field.edge_class, Schema):
+                types_imports.append("from sqlalchemy.orm import relationship")
+                edge_base_name = field.edge_class.__name__.replace("Schema", "")
+                module = "." + to_snake_case(edge_base_name)
+                if base_name != edge_base_name:
+                    type_checking_imports.append(
+                        f"from {module} import {edge_base_name}Model"
+                    )
+
+                fields_code += (
+                    f'    {field.original_name}: Mapped["{edge_base_name}Model"] = '
+                )
+                fields_code += f'relationship("{edge_base_name}Model", primaryjoin="{base_name}Model.{field.name} == {edge_base_name}Model.id")\n'
+
     indexes = (
         _generate_indexes(schema=descriptor, base_name=base_name)
         if isinstance(descriptor, Schema)
@@ -136,6 +153,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         + types_imports
         + indexes.imports
         + extends.imports,
+        type_checking_imports=type_checking_imports,
         code=f"""
 class {base_name}Model({extends.code}):
     {metadata}

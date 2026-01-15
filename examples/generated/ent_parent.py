@@ -36,10 +36,12 @@ from sqlalchemy import UUID as DBUUID
 from sqlalchemy import select
 from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
 from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_grand_parent import EntGrandParentModel
     from .ent_grand_parent import EntGrandParentAPIModel
     from .ent_grand_parent import EntGrandParent
 
@@ -55,6 +57,10 @@ class EntParentModel(EntModel):
         nullable=False,
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    grand_parent: Mapped["EntGrandParentModel"] = relationship(
+        "EntGrandParentModel",
+        primaryjoin="EntParentModel.grand_parent_id == EntGrandParentModel.id",
+    )
 
 
 class EntParentAPIModel(APIEntity):
