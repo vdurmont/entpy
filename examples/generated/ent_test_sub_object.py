@@ -77,13 +77,15 @@ class EntTestSubObject(Ent[ExampleViewerContext]):
     ) -> Decision:
         config = EntTestSubObjectSchema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
-            privacy_logger.debug(
-                "Delegating privacy of EntTestSubObject with ID %s to edge %s",
-                self.id,
-                config.edge_name,
-            )
             delegate = await self._gen_load_delegate(vc, config.edge_name)
-            return await delegate._gen_evaluate_privacy(vc, action)
+            decision = await delegate._gen_evaluate_privacy(vc, action)
+            if decision == Decision.DENY:
+                privacy_logger.debug(
+                    "Delegate privacy of EntTestSubObject with ID %s to edge %s was denied",
+                    self.id,
+                    config.edge_name,
+                )
+            return decision
         elif isinstance(config, list) and all(
             isinstance(item, PrivacyRule) for item in config
         ):
@@ -102,12 +104,12 @@ class EntTestSubObject(Ent[ExampleViewerContext]):
 
             for rule in config:
                 decision = await rule.gen_evaluate(vc, self)
-                privacy_logger.debug(
-                    "Privacy rule %s of EntTestSubObject with ID %s returned %s",
-                    type(rule),
-                    self.id,
-                    decision,
-                )
+                if decision == Decision.DENY:
+                    privacy_logger.debug(
+                        "Privacy rule %s of EntTestSubObject with ID %s was denied",
+                        type(rule),
+                        self.id,
+                    )
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
                 if decision != Decision.PASS:
                     return decision
