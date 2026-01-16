@@ -162,6 +162,7 @@ class EntPrivacyParent(Ent[ExampleViewerContext]):
             model = await session.get(
                 EntPrivacyParentModel, real_ent_id, with_for_update=for_update
             )
+        session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

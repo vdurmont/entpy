@@ -397,6 +397,7 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
             model = await session.get(
                 EntTestObjectModel, real_ent_id, with_for_update=for_update
             )
+        session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -413,6 +414,7 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         ):
             result = await session.execute(query)
         model = result.scalar_one_or_none()
+        session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
