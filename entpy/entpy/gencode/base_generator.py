@@ -28,7 +28,7 @@ def generate(
     unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
 
     imports = [
-        "from entpy import EdgeDelegate, PrivacyRule, Ent, BypassViewerContext",
+        "from entpy import EdgeDelegate, PrivacyRule, Ent",
         "from entpy.framework.database import emulate_for_update",
     ]
 
@@ -59,7 +59,6 @@ def generate(
             delegate_loaders += f"""
         if edge_name == "{field.original_name}":
             from .{other_module} import {other_ent}
-            # return await {other_ent}.genx(BypassViewerContext(), self.{field.name})
             return await {other_ent}._genx_no_privacy_DO_NOT_USE(vc, self.{field.name})
 """
 
@@ -94,8 +93,6 @@ class {base_name}({extends}):{get_description(schema)}
 {accessors.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action) -> Decision:
-        if isinstance(vc, BypassViewerContext):
-            return Decision.ALLOW
         config = {base_name}Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
             privacy_logger.debug("Delegating privacy of {base_name} with ID %s to edge %s", self.id, config.edge_name)
@@ -118,13 +115,20 @@ class {base_name}({extends}):{get_description(schema)}
         raise ExecutionError(f"An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
 
     @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name}:
+    async def _gen_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name} | None:
         real_ent_id = validate_ent_id(ent_id)
         session = {session_getter.name}()
         model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update)
         if model is None:
-            raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
+            return None
         return {base_name}(vc=vc, model=model)
+
+    @classmethod
+    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name}:
+        ent = await {base_name}._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        if ent is None:
+            raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
+        return ent
 
     @classmethod
     async def genx(

@@ -20,7 +20,7 @@ from database import get_session
 from .ent_model import EntModel
 from .ent_query import EntQuery
 from ent_grand_parent_schema import EntGrandParentSchema
-from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
+from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
@@ -75,8 +75,6 @@ class EntGrandParent(Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
-        if isinstance(vc, BypassViewerContext):
-            return Decision.ALLOW
         config = EntGrandParentSchema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
             privacy_logger.debug(
@@ -129,17 +127,26 @@ class EntGrandParent(Ent[ExampleViewerContext]):
         )
 
     @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(
+    async def _gen_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntGrandParent:
+    ) -> EntGrandParent | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
         model = await session.get(
             EntGrandParentModel, real_ent_id, with_for_update=for_update
         )
         if model is None:
-            raise EntNotFoundError(f"No EntGrandParent found for ID {ent_id}")
+            return None
         return EntGrandParent(vc=vc, model=model)
+
+    @classmethod
+    async def _genx_no_privacy_DO_NOT_USE(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
+    ) -> EntGrandParent:
+        ent = await EntGrandParent._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        if ent is None:
+            raise EntNotFoundError(f"No EntGrandParent found for ID {ent_id}")
+        return ent
 
     @classmethod
     async def genx(
@@ -162,6 +169,7 @@ class EntGrandParent(Ent[ExampleViewerContext]):
             model = await session.get(
                 EntGrandParentModel, real_ent_id, with_for_update=for_update
             )
+        session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

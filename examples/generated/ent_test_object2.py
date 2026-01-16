@@ -25,7 +25,7 @@ from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
 from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
-from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
+from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
@@ -115,8 +115,6 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
-        if isinstance(vc, BypassViewerContext):
-            return Decision.ALLOW
         config = EntTestObject2Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
             privacy_logger.debug(
@@ -167,7 +165,6 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
         if edge_name == "obj5":
             from .ent_test_object5 import EntTestObject5
 
-            # return await EntTestObject5.genx(BypassViewerContext(), self.obj5_id)
             return await EntTestObject5._genx_no_privacy_DO_NOT_USE(vc, self.obj5_id)
 
         raise ExecutionError(
@@ -175,17 +172,26 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
         )
 
     @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(
+    async def _gen_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntTestObject2:
+    ) -> EntTestObject2 | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
         model = await session.get(
             EntTestObject2Model, real_ent_id, with_for_update=for_update
         )
         if model is None:
-            raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
+            return None
         return EntTestObject2(vc=vc, model=model)
+
+    @classmethod
+    async def _genx_no_privacy_DO_NOT_USE(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
+    ) -> EntTestObject2:
+        ent = await EntTestObject2._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        if ent is None:
+            raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
+        return ent
 
     @classmethod
     async def genx(
@@ -208,6 +214,7 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
             model = await session.get(
                 EntTestObject2Model, real_ent_id, with_for_update=for_update
             )
+        session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

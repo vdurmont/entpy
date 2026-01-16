@@ -167,7 +167,7 @@ def _get_loaders(
     for schema_class in children_schema_classes:
         schema_base_name = schema_class.__name__.replace("Schema", "")
         lower_schema = to_snake_case(schema_base_name)
-        gen = "_genx_no_privacy_DO_NOT_USE" if no_privacy else "gen"
+        gen = "_gen_no_privacy_DO_NOT_USE" if no_privacy else "gen"
         loaders += f"""
         from .{lower_schema} import {schema_base_name}
         {lower_schema} = await {schema_base_name}.{gen}(vc, real_ent_id, for_update)

@@ -94,7 +94,7 @@ class IEntTestThing(Ent):
 
         from .ent_test_object2 import EntTestObject2
 
-        ent_test_object2 = await EntTestObject2._genx_no_privacy_DO_NOT_USE(
+        ent_test_object2 = await EntTestObject2._gen_no_privacy_DO_NOT_USE(
             vc, real_ent_id, for_update
         )
         if ent_test_object2:
@@ -102,7 +102,7 @@ class IEntTestThing(Ent):
 
         from .ent_test_object import EntTestObject
 
-        ent_test_object = await EntTestObject._genx_no_privacy_DO_NOT_USE(
+        ent_test_object = await EntTestObject._gen_no_privacy_DO_NOT_USE(
             vc, real_ent_id, for_update
         )
         if ent_test_object:

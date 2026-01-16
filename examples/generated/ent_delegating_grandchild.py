@@ -20,7 +20,7 @@ from database import get_session
 from .ent_model import EntModel
 from .ent_query import EntQuery
 from ent_delegating_grandchild_schema import EntDelegatingGrandchildSchema
-from entpy import EdgeDelegate, PrivacyRule, BypassViewerContext
+from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
@@ -96,8 +96,6 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
-        if isinstance(vc, BypassViewerContext):
-            return Decision.ALLOW
         config = EntDelegatingGrandchildSchema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
             privacy_logger.debug(
@@ -148,7 +146,6 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext]):
         if edge_name == "delegating_child":
             from .ent_delegating_child import EntDelegatingChild
 
-            # return await EntDelegatingChild.genx(BypassViewerContext(), self.delegating_child_id)
             return await EntDelegatingChild._genx_no_privacy_DO_NOT_USE(
                 vc, self.delegating_child_id
             )
@@ -158,17 +155,26 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext]):
         )
 
     @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(
+    async def _gen_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntDelegatingGrandchild:
+    ) -> EntDelegatingGrandchild | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
         model = await session.get(
             EntDelegatingGrandchildModel, real_ent_id, with_for_update=for_update
         )
         if model is None:
-            raise EntNotFoundError(f"No EntDelegatingGrandchild found for ID {ent_id}")
+            return None
         return EntDelegatingGrandchild(vc=vc, model=model)
+
+    @classmethod
+    async def _genx_no_privacy_DO_NOT_USE(
+        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
+    ) -> EntDelegatingGrandchild:
+        ent = await EntDelegatingGrandchild._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        if ent is None:
+            raise EntNotFoundError(f"No EntDelegatingGrandchild found for ID {ent_id}")
+        return ent
 
     @classmethod
     async def genx(
@@ -191,6 +197,7 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext]):
             model = await session.get(
                 EntDelegatingGrandchildModel, real_ent_id, with_for_update=for_update
             )
+        session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

@@ -25,4 +25,4 @@ from .framework.pattern import Pattern  # noqa: F401
 from .framework.privacy_rule import EdgeDelegate, PrivacyRule  # noqa: F401
 from .framework.rules import AllOf, AllowAll  # noqa: F401
 from .framework.schema import Schema  # noqa: F401
-from .framework.viewer_context import BypassViewerContext, ViewerContext  # noqa: F401
+from .framework.viewer_context import ViewerContext  # noqa: F401
