@@ -43,7 +43,9 @@ def run(
     print(f"Found {len(configs)} schema(s) and pattern(s).")
 
     # Gencode all the things!
-    models_list = ""
+    examples_list_imports = ""
+    examples_list = ""
+    models_list_imports = ""
     models_list_mapping = ""
     for config in configs:
         descriptor_class = config[0]
@@ -54,8 +56,14 @@ def run(
             uuid_type = sha256(base_name.encode()).digest()[:2]
             uuid_hex = "".join(f"\\x{b:02x}" for b in uuid_type)
             models_list_mapping += f'\n    b"{uuid_hex}": {base_name},'
-            models_list += f"\nfrom .{descriptor_output_path.stem} import {base_name}Model  # noqa: F401"  # noqa: E501
-            models_list += f"\nfrom .{descriptor_output_path.stem} import {base_name}"
+            models_list_imports += f"\nfrom .{descriptor_output_path.stem} import {base_name}Model  # noqa: F401"  # noqa: E501
+            models_list_imports += (
+                f"\nfrom .{descriptor_output_path.stem} import {base_name}"
+            )
+            examples_list_imports += (
+                f"from .{descriptor_output_path.stem} import {base_name}Example\n"
+            )
+            examples_list += f"    {base_name}Example,\n"
             code = generate_schema(
                 schema_class=descriptor_class,
                 session_getter=session_getter,
@@ -84,7 +92,7 @@ def run(
                 descriptor_output_path.with_stem(f"{descriptor_output_path.stem}_view"),
                 view_code,
             )
-            models_list += (
+            models_list_imports += (
                 "\nfrom ."
                 + descriptor_output_path.stem
                 + "_view import "
@@ -93,18 +101,28 @@ def run(
             )
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
+
         _write_file(descriptor_output_path, code)
 
     models_list_code = f"""
 from entpy import Ent
 {vc}
-{models_list}
+{models_list_imports}
 
 UUID_TO_ENT: dict[bytes, type[Ent[{vc.name}]]] = {{
 {models_list_mapping}
 }}
 """
     _write_file(output_path / "all_models.py", models_list_code)
+
+    examples_list_code = f"""
+{examples_list_imports}
+
+examples = [
+{examples_list}
+]
+"""
+    _write_file(output_path / "all_examples.py", examples_list_code)
 
     # Format the code before returning
     # TODO make this a config, not everyone uses ruff
