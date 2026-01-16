@@ -81,9 +81,10 @@ class EntGrandParent(Ent[ExampleViewerContext]):
             decision = await delegate._gen_evaluate_privacy(vc, action)
             if decision == Decision.DENY:
                 privacy_logger.debug(
-                    "Delegate privacy of EntGrandParent with ID %s to edge %s was denied",
+                    "Delegate privacy of EntGrandParent with ID %s to edge %s was denied for %s",
                     self.id,
                     config.edge_name,
+                    str(vc),
                 )
             return decision
         elif isinstance(config, list) and all(
@@ -106,17 +107,19 @@ class EntGrandParent(Ent[ExampleViewerContext]):
                 decision = await rule.gen_evaluate(vc, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug(
-                        "Privacy rule %s of EntGrandParent with ID %s was denied",
+                        "Privacy rule %s of EntGrandParent with ID %s was denied for %s",
                         type(rule),
                         self.id,
+                        str(vc),
                     )
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
                 if decision != Decision.PASS:
                     return decision
             # We default to denying
             privacy_logger.debug(
-                "Defaulting to denying access to EntGrandParent with ID %s after exhausting all privacy rules.",
+                "Defaulting to denying access to EntGrandParent with ID %s after exhausting all privacy rules for %s",
                 self.id,
+                str(vc),
             )
             return Decision.DENY
         raise ExecutionError(

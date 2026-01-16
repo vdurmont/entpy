@@ -98,19 +98,19 @@ class {base_name}({extends}):{get_description(schema)}
             delegate = await self._gen_load_delegate(vc, config.edge_name)
             decision = await delegate._gen_evaluate_privacy(vc, action)
             if decision == Decision.DENY:
-                privacy_logger.debug("Delegate privacy of {base_name} with ID %s to edge %s was denied", self.id, config.edge_name)
+                privacy_logger.debug("Delegate privacy of {base_name} with ID %s to edge %s was denied for %s", self.id, config.edge_name, str(vc))
             return decision
         elif isinstance(config, list) and all(isinstance(item, PrivacyRule) for item in config):
 {preprended_rules_str}
             for rule in config:
                 decision = await rule.gen_evaluate(vc, self)
                 if decision == Decision.DENY:
-                    privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied", type(rule), self.id)
+                    privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(rule), self.id, str(vc))
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
                 if decision != Decision.PASS:
                     return decision
             # We default to denying
-            privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules.", self.id)
+            privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s", self.id, str(vc))
             return Decision.DENY
         raise ExecutionError("An invalid privacy configuration was found for {base_name}: invalid config type")
 
