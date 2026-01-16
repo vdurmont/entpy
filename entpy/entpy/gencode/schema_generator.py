@@ -1,6 +1,7 @@
 import re
 
 from entpy import Action, EdgeDelegate, EdgeField, PrivacyRule, Schema
+from entpy.framework.fields.core import FieldWithDynamicExample
 from entpy.framework.fields.enum_field import EnumField
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
@@ -30,6 +31,7 @@ def generate(
     # Validate that field names only contain lowercase letters, numbers, and underscores
     _validate_field_name_format(schema)
     _validate_privacy_config(schema)
+    _validate_unique_examples(schema)
 
     model_content = generate_model(descriptor=schema, base_name=base_name)
     base_content = generate_base(
@@ -210,6 +212,19 @@ def _validate_privacy_config(schema: Schema) -> None:
         raise ValueError(
             f"Unsupported type of privacy config for {type(schema).__name__} for {action}"
         )
+
+
+def _validate_unique_examples(schema: Schema) -> None:
+    """Validate that unique fields have a dynamic example generator."""
+    for field in schema.get_all_fields():
+        if (
+            isinstance(field, FieldWithDynamicExample)
+            and field.is_unique
+            and field.get_example_generator() is None
+        ):
+            raise ValueError(
+                f"Unique field '{field.name}' must have a dynamic example generator."
+            )
 
 
 def _get_patterns_imports(schema: Schema) -> list[str]:
