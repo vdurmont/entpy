@@ -12,4 +12,4 @@ class IntField(Field, FieldWithExample[int], FieldWithDynamicExample[int]):
         return "int"
 
     def get_example_as_string(self) -> str | None:
-        return str(self._example) if self._example else None
+        return str(self._example) if self._example is not None else None
