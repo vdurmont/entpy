@@ -171,7 +171,9 @@ class EntDelegatingChild(Ent[ExampleViewerContext]):
     async def _genx_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntDelegatingChild:
-        ent = await EntDelegatingChild._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        ent = await EntDelegatingChild._gen_no_privacy_DO_NOT_USE(
+            vc, ent_id, for_update
+        )
         if ent is None:
             raise EntNotFoundError(f"No EntDelegatingChild found for ID {ent_id}")
         return ent

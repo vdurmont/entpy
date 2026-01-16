@@ -167,7 +167,7 @@ class EntChild(Ent[ExampleViewerContext]):
     async def _genx_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntChild:
-        ent = await EntChild._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        ent = await EntChild._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
         if ent is None:
             raise EntNotFoundError(f"No EntChild found for ID {ent_id}")
         return ent

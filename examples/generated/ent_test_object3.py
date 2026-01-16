@@ -158,7 +158,7 @@ class EntTestObject3(Ent[ExampleViewerContext]):
     async def _genx_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntTestObject3:
-        ent = await EntTestObject3._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        ent = await EntTestObject3._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
         if ent is None:
             raise EntNotFoundError(f"No EntTestObject3 found for ID {ent_id}")
         return ent

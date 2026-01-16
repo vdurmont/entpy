@@ -143,7 +143,7 @@ class EntGrandParent(Ent[ExampleViewerContext]):
     async def _genx_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntGrandParent:
-        ent = await EntGrandParent._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        ent = await EntGrandParent._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
         if ent is None:
             raise EntNotFoundError(f"No EntGrandParent found for ID {ent_id}")
         return ent
