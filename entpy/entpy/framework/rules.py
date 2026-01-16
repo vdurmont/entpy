@@ -13,6 +13,11 @@ class AllowAll(PrivacyRule):
         return Decision.ALLOW
 
 
+class DenyAll(PrivacyRule):
+    async def gen_evaluate(self, vc: ViewerContext, ent: T) -> Decision:
+        return Decision.DENY
+
+
 class AllOf(PrivacyRule):
     rules: list[PrivacyRule]
 
