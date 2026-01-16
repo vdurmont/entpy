@@ -1,7 +1,11 @@
 import re
 
 from entpy import Action, EdgeDelegate, EdgeField, PrivacyRule, Schema
-from entpy.framework.fields.core import FieldWithDynamicExample
+from entpy.framework.fields.core import (
+    FieldWithDefault,
+    FieldWithDynamicExample,
+    FieldWithExample,
+)
 from entpy.framework.fields.enum_field import EnumField
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
@@ -31,7 +35,7 @@ def generate(
     # Validate that field names only contain lowercase letters, numbers, and underscores
     _validate_field_name_format(schema)
     _validate_privacy_config(schema)
-    _validate_unique_examples(schema)
+    _validate_examples(schema)
 
     model_content = generate_model(descriptor=schema, base_name=base_name)
     base_content = generate_base(
@@ -214,16 +218,41 @@ def _validate_privacy_config(schema: Schema) -> None:
         )
 
 
-def _validate_unique_examples(schema: Schema) -> None:
+def _validate_examples(schema: Schema) -> None:
     """Validate that unique fields have a dynamic example generator."""
     for field in schema.get_all_fields():
         if (
-            isinstance(field, FieldWithDynamicExample)
-            and field.is_unique
+            field.is_unique
+            and isinstance(field, FieldWithDynamicExample)
             and field.get_example_generator() is None
         ):
             raise ValueError(
                 f"Unique field '{field.name}' must have a dynamic example generator."
+            )
+
+        if (
+            not field.nullable
+            and not isinstance(field, EdgeField)
+            and isinstance(
+                field, FieldWithExample | FieldWithDynamicExample | FieldWithDefault
+            )
+            and not (
+                (
+                    isinstance(field, FieldWithExample)
+                    and field.get_example() is not None
+                )
+                or (
+                    isinstance(field, FieldWithDynamicExample)
+                    and field.get_example_generator() is not None
+                )
+                or (
+                    isinstance(field, FieldWithDefault)
+                    and field.generate_default() is not None
+                )
+            )
+        ):
+            raise ValueError(
+                f"Non-nullable field '{field.name}' must have an example or default."
             )
 
 
