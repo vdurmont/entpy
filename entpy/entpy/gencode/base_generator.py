@@ -125,7 +125,7 @@ class {base_name}({extends}):{get_description(schema)}
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name}:
-        ent = await {base_name}._gen_no_privacy_DO_NOT_USE(vc, ent_id)
+        ent = await {base_name}._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
         if ent is None:
             raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
         return ent
