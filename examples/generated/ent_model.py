@@ -19,7 +19,7 @@ class EntModel(Base):
 
     @declared_attr
     def id(self) -> Mapped[PYUUID]:
-        return mapped_column(UUID(), primary_key=True, index=True, nullable=False)
+        return mapped_column(UUID(), primary_key=True, nullable=False)
 
     @declared_attr
     def created_at(self) -> Mapped[datetime]:

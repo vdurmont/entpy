@@ -245,7 +245,6 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         return self.model.self_id
 
     async def gen_self(self) -> "EntTestObject" | None:
-
         if self.model.self_id:
             return await EntTestObject.gen(self.vc, self.model.self_id)
         return None
