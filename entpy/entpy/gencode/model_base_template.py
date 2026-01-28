@@ -21,7 +21,7 @@ class EntModel(Base):
     @declared_attr
     def id(self) -> Mapped[PYUUID]:
         return mapped_column(
-            UUID(), primary_key=True, index=True, nullable=False
+            UUID(), primary_key=True, nullable=False
         )
 
     @declared_attr
