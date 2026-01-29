@@ -10,10 +10,12 @@ from .framework.errors import (  # noqa: F401
 )
 from .framework.fields.bool_field import BoolField  # noqa: F401
 from .framework.fields.core import Field, FieldWithDynamicExample  # noqa: F401
+from .framework.fields.date_field import DateField  # noqa: F401
 from .framework.fields.datetime_field import DatetimeField  # noqa: F401
 from .framework.fields.edge_field import EdgeField  # noqa: F401
 from .framework.fields.enum_field import EnumField  # noqa: F401
 from .framework.fields.int_field import IntField  # noqa: F401
+from .framework.fields.interval_field import IntervalField  # noqa: F401
 from .framework.fields.json_field import JsonField  # noqa: F401
 from .framework.fields.string_field import StringField  # noqa: F401
 from .framework.fields.text_field import TextField  # noqa: F401

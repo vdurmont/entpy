@@ -23,7 +23,9 @@ from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
+from datetime import date
 from datetime import time
+from datetime import timedelta
 from ent_test_object_schema import EntTestObjectSchema
 from ent_test_object_schema import Status
 from ent_test_thing_pattern import ThingStatus
@@ -37,9 +39,11 @@ from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Boolean
+from sqlalchemy import Date
 from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
+from sqlalchemy import Interval
 from sqlalchemy import JSON
 from sqlalchemy import String
 from sqlalchemy import Text
@@ -79,6 +83,8 @@ class EntTestObjectModel(EntTestThingModel):
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     context: Mapped[str | None] = mapped_column(Text(), nullable=True)
     correlation_id: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
+    dob: Mapped[date | None] = mapped_column(Date(), nullable=True)
+    duration: Mapped[timedelta | None] = mapped_column(Interval(), nullable=True)
     end_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
     is_it_true: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
@@ -194,6 +200,14 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     @property
     def correlation_id(self) -> UUID | None:
         return self.model.correlation_id
+
+    @property
+    def dob(self) -> date | None:
+        return self.model.dob
+
+    @property
+    def duration(self) -> timedelta | None:
+        return self.model.duration
 
     @property
     def end_time(self) -> time | None:
@@ -567,6 +581,8 @@ class EntTestObjectMutator:
         city: str | None = None,
         context: str | None = None,
         correlation_id: UUID | None = None,
+        dob: date | None = None,
+        duration: timedelta | None = None,
         end_time: time | None = None,
         is_it_true: bool | None = None,
         obj5_opt_id: UUID | None = None,
@@ -602,6 +618,8 @@ class EntTestObjectMutator:
             city=city,
             context=context,
             correlation_id=correlation_id,
+            dob=dob,
+            duration=duration,
             end_time=end_time,
             is_it_true=is_it_true,
             obj5_opt_id=obj5_opt_id,
@@ -652,6 +670,8 @@ class EntTestObjectMutatorCreationAction:
     city: str | None = None
     context: str | None = None
     correlation_id: UUID | None = None
+    dob: date | None = None
+    duration: timedelta | None = None
     end_time: time | None = None
     is_it_true: bool | None = None
     obj5_opt_id: UUID | None = None
@@ -685,6 +705,8 @@ class EntTestObjectMutatorCreationAction:
         city: str | None,
         context: str | None,
         correlation_id: UUID | None,
+        dob: date | None,
+        duration: timedelta | None,
         end_time: time | None,
         is_it_true: bool | None,
         obj5_opt_id: UUID | None,
@@ -716,6 +738,8 @@ class EntTestObjectMutatorCreationAction:
         self.city = city
         self.context = context
         self.correlation_id = correlation_id
+        self.dob = dob
+        self.duration = duration
         self.end_time = end_time
         self.is_it_true = is_it_true
         self.obj5_opt_id = obj5_opt_id
@@ -764,6 +788,8 @@ class EntTestObjectMutatorCreationAction:
             city=self.city,
             context=self.context,
             correlation_id=self.correlation_id,
+            dob=self.dob,
+            duration=self.duration,
             end_time=self.end_time,
             is_it_true=self.is_it_true,
             obj5_opt_id=self.obj5_opt_id,
@@ -805,6 +831,8 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
     a_pattern_validated_field: str | None = None
     city: str | None = None
     correlation_id: UUID | None = None
+    dob: date | None = None
+    duration: timedelta | None = None
     end_time: time | None = None
     is_it_true: bool | None = None
     obj5_opt_id: UUID | None = None
@@ -834,6 +862,8 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         self.a_pattern_validated_field = ent.a_pattern_validated_field
         self.city = ent.city
         self.correlation_id = ent.correlation_id
+        self.dob = ent.dob
+        self.duration = ent.duration
         self.end_time = ent.end_time
         self.is_it_true = ent.is_it_true
         self.obj5_opt_id = ent.obj5_opt_id
@@ -878,6 +908,8 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         model.a_pattern_validated_field = self.a_pattern_validated_field
         model.city = self.city
         model.correlation_id = self.correlation_id
+        model.dob = self.dob
+        model.duration = self.duration
         model.end_time = self.end_time
         model.is_it_true = self.is_it_true
         model.obj5_opt_id = self.obj5_opt_id
@@ -952,6 +984,8 @@ class EntTestObjectExample:
         city: str | Sentinel = NOTHING,
         context: str | Sentinel = NOTHING,
         correlation_id: UUID | None = None,
+        dob: date | Sentinel = NOTHING,
+        duration: timedelta | Sentinel = NOTHING,
         end_time: time | Sentinel = NOTHING,
         is_it_true: bool | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
@@ -1015,6 +1049,12 @@ class EntTestObjectExample:
 
         context = (
             "This is some good context." if isinstance(context, Sentinel) else context
+        )
+
+        dob = date.fromisoformat("2000-01-01") if isinstance(dob, Sentinel) else dob
+
+        duration = (
+            timedelta(seconds=123.456) if isinstance(duration, Sentinel) else duration
         )
 
         if isinstance(end_time, Sentinel):
@@ -1089,6 +1129,8 @@ class EntTestObjectExample:
             city=city,
             context=context,
             correlation_id=correlation_id,
+            dob=dob,
+            duration=duration,
             end_time=end_time,
             is_it_true=is_it_true,
             obj5_opt_id=obj5_opt_id,
