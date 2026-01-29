@@ -1,12 +1,13 @@
 import re
 import uuid
-from datetime import UTC, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from enum import Enum
 
 from entpy import (
     Action,
     AllowAll,
     BoolField,
+    DateField,
     DatetimeField,
     EdgeDelegate,
     EdgeField,
@@ -21,6 +22,7 @@ from entpy import (
     StringField,
     TextField,
     TimeField,
+    IntervalField,
     UuidField,
 )
 
@@ -69,6 +71,8 @@ class EntTestObjectSchema(Schema):
             UuidField("trace_id").dynamic_example(lambda: uuid.uuid4()),
             TimeField("start_time").example(time(9, 30, 0)),
             TimeField("end_time").dynamic_example(lambda: time(17, 30, 0)),
+            DateField("dob").example(date(2000, 1, 1)),
+            IntervalField("duration").example(timedelta(seconds=123.456)),
         ]
 
     def get_privacy_config(self, action: Action) -> list[PrivacyRule] | EdgeDelegate:

@@ -1,4 +1,4 @@
-from entpy import EdgeField, Schema, TimeField
+from entpy import DateField, EdgeField, IntervalField, Schema, TimeField
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import (
     ImportedObject,
@@ -188,8 +188,12 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
     type_checking_imports = []
 
     for field in fields:
+        if isinstance(field, DateField):
+            imports.append("from datetime import date")
         if isinstance(field, TimeField):
             imports.append("from datetime import time")
+        if isinstance(field, IntervalField):
+            imports.append("from datetime import timedelta")
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
         description = field.description
         if description:
