@@ -29,14 +29,15 @@ class PrivacyRule(ABC, Generic[VC, T]):
         action: Action,
         ent: T,
     ) -> Decision:
-        key = self.cache_key(ent)
-        if key is None:
+        ent_key = self.cache_key(ent)
+        if ent_key is None:
             return await self.gen_evaluate(vc, ent)
 
-        result = session.info.setdefault("privacy", {}).get((vc, action, key))
+        full_key = (type(self), id(vc), action, ent_key)
+        result = session.info.setdefault("privacy", {}).get(full_key)
         if result is None:
             result = await self.gen_evaluate(vc, ent)
-            session.info["privacy"][(vc, action, key)] = result
+            session.info["privacy"][full_key] = result
 
         return result  # type: ignore[no-any-return]
 
