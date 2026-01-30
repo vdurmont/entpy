@@ -1,0 +1,2 @@
+# Mark generated entity files as generated for GitHub
+examples/generated/** linguist-generated=true

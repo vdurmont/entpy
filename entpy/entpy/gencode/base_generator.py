@@ -210,6 +210,7 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
         # If the field is an edge, we want to generate a utility function to
         # load the edge directly
         if isinstance(field, EdgeField):
+            load = ""
             if field.edge_class != schema.__class__:
                 module = "." + to_snake_case(
                     field.edge_class.__name__.replace("Schema", "").replace(
@@ -220,11 +221,7 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
                 type_checking_imports.append(
                     f"from {module} import {field.get_edge_type()}"
                 )
-                load = (
-                    f"from {module} import {field.get_edge_type()}\n        "
-                    if field.edge_class != schema.__class__
-                    else ""
-                )
+                load = f"from {module} import {field.get_edge_type()}\n        "
             if field.nullable:
                 accessors_code += f"""
     async def gen_{field.original_name}(self) -> "{field.get_edge_type()}" | None:

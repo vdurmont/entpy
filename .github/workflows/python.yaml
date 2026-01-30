@@ -41,3 +41,30 @@ jobs:
       - name: "Run mypy"
         working-directory: entpy
         run: "uv run mypy ."
+
+      - name: "Install dependencies (examples)"
+        working-directory: examples
+        run: "uv sync --locked"
+
+      - name: "Check that generated code is up-to-date"
+        working-directory: "examples"
+        run: |
+          uv run python run_gencode.py
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Error: Generated code is out of date. Please run 'uv run python run_gencode.py' and commit the changes."
+            git status
+            git diff
+            exit 1
+          fi
+
+      - name: "Run ruff (examples)"
+        working-directory: examples
+        run: "uv run ruff check ."
+
+      - name: "Run ruff format (examples)"
+        working-directory: examples
+        run: "uv run ruff format --check ."
+
+      - name: "Run mypy (examples)"
+        working-directory: examples
+        run: "uv run mypy ."
