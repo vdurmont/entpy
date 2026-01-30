@@ -47,6 +47,7 @@ class EntGrandParentModel(EntModel):
 class EntGrandParent(Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
     model: EntGrandParentModel
+    m = EntGrandParentModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntGrandParentModel) -> None:
         self.vc = vc

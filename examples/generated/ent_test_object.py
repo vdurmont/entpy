@@ -123,6 +123,7 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
 
     vc: ExampleViewerContext
     model: EntTestObjectModel
+    m = EntTestObjectModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntTestObjectModel) -> None:
         self.vc = vc

@@ -55,6 +55,7 @@ class EntTestObject2Model(EntTestThingModel):
 class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
     model: EntTestObject2Model
+    m = EntTestObject2Model
 
     def __init__(self, vc: ExampleViewerContext, model: EntTestObject2Model) -> None:
         self.vc = vc

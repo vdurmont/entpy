@@ -57,6 +57,7 @@ class EntDelegatingChildModel(EntModel):
 class EntDelegatingChild(Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
     model: EntDelegatingChildModel
+    m = EntDelegatingChildModel
 
     def __init__(
         self, vc: ExampleViewerContext, model: EntDelegatingChildModel

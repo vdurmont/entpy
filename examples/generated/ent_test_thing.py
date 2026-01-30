@@ -10,6 +10,7 @@ from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 from .ent_model import EntModel
 from .ent_query import EntQuery
+from collections import defaultdict
 from database import get_session
 from ent_test_thing_pattern import ThingStatus
 from entpy import EntNotFoundError, ExecutionError
@@ -158,8 +159,25 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
     async def _gen_ents(
         self, result: Result[tuple[UUID]]
     ) -> list[IEntTestThing | None]:
+        from .all_models import UUID_TO_ENT
+
         ent_ids = result.scalars().all()
-        return [await self._gen_single_ent(ent_id) for ent_id in ent_ids]
+        ids_by_type = defaultdict(list)
+        for ent_id in ent_ids:
+            ids_by_type[ent_id.bytes[6:8]].append(ent_id)
+
+        all_ents = {}
+        for uuid_type, ids in ids_by_type.items():
+            ent_type = UUID_TO_ENT[uuid_type]
+            for ent in (
+                await ent_type.query(self.vc)  # type: ignore[attr-defined]
+                .where(ent_type.m.id.in_(ids))  # type: ignore[attr-defined]
+                .limit(None)
+                .gen()
+            ):
+                all_ents[ent.id] = ent
+
+        return [all_ents[ent_id] for ent_id in ent_ids if ent_id in all_ents]
 
     async def gen_first(self, for_update: bool = False) -> IEntTestThing | None:
         session = get_session()
