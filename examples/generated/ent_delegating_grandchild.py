@@ -173,6 +173,7 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext]):
         )
         if model is None:
             return None
+        session.info.setdefault("cache", set()).add(model)
         return EntDelegatingGrandchild(vc=vc, model=model)
 
     @classmethod

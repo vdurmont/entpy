@@ -389,6 +389,7 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         )
         if model is None:
             return None
+        session.info.setdefault("cache", set()).add(model)
         return EntTestObject(vc=vc, model=model)
 
     @classmethod

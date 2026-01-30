@@ -125,6 +125,7 @@ class {base_name}({extends}):{get_description(schema)}
         model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
         if model is None:
             return None
+        session.info.setdefault("cache", set()).add(model)
         return {base_name}(vc=vc, model=model)
 
     @classmethod
