@@ -5,7 +5,6 @@ from typing import Any, Generic, TypeVar
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio.scoping import async_scoped_session
 
-from entpy.framework.action import Action
 from entpy.framework.decision import Decision
 from entpy.framework.ent import Ent
 from entpy.framework.viewer_context import ViewerContext
@@ -19,21 +18,22 @@ class PrivacyRule(ABC, Generic[VC, T]):
     async def gen_evaluate(self, vc: VC, ent: T) -> Decision:
         pass
 
+    # This should return the field values which are inspected during evaluation.
+    # Subsequent ents with the same values will use the cached decision.
     def cache_key(self, ent: T) -> Any:
-        return ent.id
+        return None
 
     async def gen_evaluate_cached(
         self,
         session: async_scoped_session | AsyncSession,
         vc: VC,
-        action: Action,
         ent: T,
     ) -> Decision:
         ent_key = self.cache_key(ent)
         if ent_key is None:
             return await self.gen_evaluate(vc, ent)
 
-        full_key = (type(self), id(vc), action, ent_key)
+        full_key = (type(self), id(vc), ent_key)
         result = session.info.setdefault("privacy", {}).get(full_key)
         if result is None:
             result = await self.gen_evaluate(vc, ent)
