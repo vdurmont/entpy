@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from hashlib import sha256
 
 from entpy import Action, EdgeDelegate, PrivacyRule
 from entpy.framework.composite_index import CompositeIndex
@@ -15,3 +16,8 @@ class Schema(Descriptor, ABC):
 
     def is_immutable(self) -> bool:
         return False
+
+    @classmethod
+    def get_uuid_type(cls) -> bytes:
+        base_name = cls.__name__.replace("Schema", "")
+        return sha256(base_name.encode()).digest()[:2]
