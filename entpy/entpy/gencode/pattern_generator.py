@@ -32,12 +32,6 @@ def generate(
         pass
 """  # noqa: E501
 
-    # We are trying to load the various subclasses of ents
-    loaders_gen = _get_loaders(children_schema_classes=children_schema_classes)
-    loaders_gen_no_privacy = _get_loaders(
-        children_schema_classes=children_schema_classes, no_privacy=True
-    )
-
     gen_edges = _generate_edges(pattern=pattern)
 
     query_content = generate_query(
@@ -120,24 +114,26 @@ class I{base_name}(Ent):{get_description(pattern)}
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name}:
+        from .all_models import UUID_TO_ENT
         real_ent_id = validate_ent_id(ent_id)
-        # TODO refactor this to read the bytes from the UUID
-        {loaders_gen_no_privacy}
-        raise ValueError(f"No {base_name} found for ID {{real_ent_id}}")
+        ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
+        # Casting is ok here, the id always inherits I{base_name}
+        return await cast(type[I{base_name}], ent_type)._genx_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
 
     @classmethod
     async def gen(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name} | None:
+        from .all_models import UUID_TO_ENT
         real_ent_id = validate_ent_id(ent_id)
-        # TODO refactor this to read the bytes from the UUID
-        {loaders_gen}
-        return None
+        ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
+        # Casting is ok here, the id always inherits I{base_name}
+        return await cast(type[I{base_name}], ent_type).gen(vc, ent_id, for_update)
 
     @classmethod
     async def genx(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name}:
-        real_ent_id = validate_ent_id(ent_id)
-        # TODO refactor this to read the bytes from the UUID
-        {loaders_gen}
-        raise ValueError(f"No {base_name} found for ID {{real_ent_id}}")
+        ent = await cls.gen(vc, ent_id, for_update)
+        if not ent:
+            raise EntNotFoundError(f"No I{base_name} found for ID {{ent_id}}")
+        return ent
 
     @classmethod
     def query_{to_snake_case(base_name)}(cls, vc: {vc.name}) -> I{base_name}Query:
@@ -158,23 +154,6 @@ class I{base_name}Example:
 
         return await {example_base_name}Example.gen_create(vc=vc, created_at=created_at{example_arguments_assignment})
 """  # noqa: E501
-
-
-def _get_loaders(
-    children_schema_classes: list[type[Schema]], no_privacy: bool = False
-) -> str:
-    loaders = ""
-    for schema_class in children_schema_classes:
-        schema_base_name = schema_class.__name__.replace("Schema", "")
-        lower_schema = to_snake_case(schema_base_name)
-        gen = "_gen_no_privacy_DO_NOT_USE" if no_privacy else "gen"
-        loaders += f"""
-        from .{lower_schema} import {schema_base_name}
-        {lower_schema} = await {schema_base_name}.{gen}(vc, real_ent_id, for_update)
-        if {lower_schema}:
-            return {lower_schema}
-"""
-    return loaders
 
 
 def _generate_edges(pattern: Pattern) -> GeneratedContent:

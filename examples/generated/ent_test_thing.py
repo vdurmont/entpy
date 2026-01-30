@@ -89,68 +89,34 @@ class IEntTestThing(Ent):
     async def _genx_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> IEntTestThing:
+        from .all_models import UUID_TO_ENT
+
         real_ent_id = validate_ent_id(ent_id)
-        # TODO refactor this to read the bytes from the UUID
-
-        from .ent_test_object2 import EntTestObject2
-
-        ent_test_object2 = await EntTestObject2._gen_no_privacy_DO_NOT_USE(
-            vc, real_ent_id, for_update
+        ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
+        # Casting is ok here, the id always inherits IEntTestThing
+        return await cast(type[IEntTestThing], ent_type)._genx_no_privacy_DO_NOT_USE(
+            vc, ent_id, for_update
         )
-        if ent_test_object2:
-            return ent_test_object2
-
-        from .ent_test_object import EntTestObject
-
-        ent_test_object = await EntTestObject._gen_no_privacy_DO_NOT_USE(
-            vc, real_ent_id, for_update
-        )
-        if ent_test_object:
-            return ent_test_object
-
-        raise ValueError(f"No EntTestThing found for ID {real_ent_id}")
 
     @classmethod
     async def gen(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> IEntTestThing | None:
+        from .all_models import UUID_TO_ENT
+
         real_ent_id = validate_ent_id(ent_id)
-        # TODO refactor this to read the bytes from the UUID
-
-        from .ent_test_object2 import EntTestObject2
-
-        ent_test_object2 = await EntTestObject2.gen(vc, real_ent_id, for_update)
-        if ent_test_object2:
-            return ent_test_object2
-
-        from .ent_test_object import EntTestObject
-
-        ent_test_object = await EntTestObject.gen(vc, real_ent_id, for_update)
-        if ent_test_object:
-            return ent_test_object
-
-        return None
+        ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
+        # Casting is ok here, the id always inherits IEntTestThing
+        return await cast(type[IEntTestThing], ent_type).gen(vc, ent_id, for_update)
 
     @classmethod
     async def genx(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> IEntTestThing:
-        real_ent_id = validate_ent_id(ent_id)
-        # TODO refactor this to read the bytes from the UUID
-
-        from .ent_test_object2 import EntTestObject2
-
-        ent_test_object2 = await EntTestObject2.gen(vc, real_ent_id, for_update)
-        if ent_test_object2:
-            return ent_test_object2
-
-        from .ent_test_object import EntTestObject
-
-        ent_test_object = await EntTestObject.gen(vc, real_ent_id, for_update)
-        if ent_test_object:
-            return ent_test_object
-
-        raise ValueError(f"No EntTestThing found for ID {real_ent_id}")
+        ent = await cls.gen(vc, ent_id, for_update)
+        if not ent:
+            raise EntNotFoundError(f"No IEntTestThing found for ID {ent_id}")
+        return ent
 
     @classmethod
     def query_ent_test_thing(cls, vc: ExampleViewerContext) -> IEntTestThingQuery:

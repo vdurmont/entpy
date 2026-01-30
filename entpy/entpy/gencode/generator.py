@@ -1,5 +1,4 @@
 import subprocess
-from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
 
@@ -53,7 +52,7 @@ def run(
         print(f"Processing: {descriptor_class.__name__}")
         if issubclass(descriptor_class, Schema):
             base_name = descriptor_class.__name__.replace("Schema", "")
-            uuid_type = sha256(base_name.encode()).digest()[:2]
+            uuid_type = descriptor_class.get_uuid_type()
             uuid_hex = "".join(f"\\x{b:02x}" for b in uuid_type)
             models_list_mapping += f'\n    b"{uuid_hex}": {base_name},'
             models_list_imports += f"\nfrom .{descriptor_output_path.stem} import {base_name}Model  # noqa: F401"  # noqa: E501
