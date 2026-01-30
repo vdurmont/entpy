@@ -169,6 +169,7 @@ class EntParent(Ent[ExampleViewerContext]):
         )
         if model is None:
             return None
+        session.info.setdefault("cache", set()).add(model)
         return EntParent(vc=vc, model=model)
 
     @classmethod
