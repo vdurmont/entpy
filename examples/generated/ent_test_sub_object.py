@@ -105,7 +105,7 @@ class EntTestSubObject(Ent[ExampleViewerContext]):
 
             session = get_session()
             for rule in config:
-                decision = await rule.gen_evaluate_cached(session, vc, action, self)
+                decision = await rule.gen_evaluate_cached(session, vc, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug(
                         "Privacy rule %s of EntTestSubObject with ID %s was denied for %s",

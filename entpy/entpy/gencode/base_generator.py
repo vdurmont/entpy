@@ -104,7 +104,7 @@ class {base_name}({extends}):{get_description(schema)}
 {preprended_rules_str}
             session = {session_getter.name}()
             for rule in config:
-                decision = await rule.gen_evaluate_cached(session, vc, action, self)
+                decision = await rule.gen_evaluate_cached(session, vc, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(rule), self.id, str(vc))
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
