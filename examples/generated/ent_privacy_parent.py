@@ -47,6 +47,7 @@ class EntPrivacyParentModel(EntModel):
 class EntPrivacyParent(Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
     model: EntPrivacyParentModel
+    m = EntPrivacyParentModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntPrivacyParentModel) -> None:
         self.vc = vc

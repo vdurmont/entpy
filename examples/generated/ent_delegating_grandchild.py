@@ -57,6 +57,7 @@ class EntDelegatingGrandchildModel(EntModel):
 class EntDelegatingGrandchild(Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
     model: EntDelegatingGrandchildModel
+    m = EntDelegatingGrandchildModel
 
     def __init__(
         self, vc: ExampleViewerContext, model: EntDelegatingGrandchildModel

@@ -47,6 +47,7 @@ class EntTestSubObjectModel(EntModel):
 class EntTestSubObject(Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
     model: EntTestSubObjectModel
+    m = EntTestSubObjectModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntTestSubObjectModel) -> None:
         self.vc = vc

@@ -69,6 +69,7 @@ def generate(
 class {base_name}({extends}):{get_description(schema)}
     vc: {vc.name}
     model: {base_name}Model
+    m = {base_name}Model
 
     def __init__(self, vc: {vc.name}, model: {base_name}Model) -> None:
         self.vc = vc
