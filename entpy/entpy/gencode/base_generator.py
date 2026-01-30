@@ -102,8 +102,9 @@ class {base_name}({extends}):{get_description(schema)}
             return decision
         elif isinstance(config, list) and all(isinstance(item, PrivacyRule) for item in config):
 {preprended_rules_str}
+            session = {session_getter.name}()
             for rule in config:
-                decision = await rule.gen_evaluate(vc, self)
+                decision = await rule.gen_evaluate_cached(session, vc, action, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(rule), self.id, str(vc))
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.

@@ -124,8 +124,9 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext]):
             ]:
                 config.insert(0, AllowIfTestViewerContext())
 
+            session = get_session()
             for rule in config:
-                decision = await rule.gen_evaluate(vc, self)
+                decision = await rule.gen_evaluate_cached(session, vc, action, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug(
                         "Privacy rule %s of EntDelegatingGrandchild with ID %s was denied for %s",
