@@ -121,7 +121,7 @@ class {base_name}({extends}):{get_description(schema)}
     async def _gen_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name} | None:
         real_ent_id = validate_ent_id(ent_id)
         session = {session_getter.name}()
-        model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update)
+        model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
         if model is None:
             return None
         return {base_name}(vc=vc, model=model)
@@ -149,7 +149,7 @@ class {base_name}({extends}):{get_description(schema)}
         real_ent_id = validate_ent_id(ent_id)
         session = {session_getter.name}()
         async with emulate_for_update(session, {base_name}Model, "id", real_ent_id, for_update):
-            model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update)
+            model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
         session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 

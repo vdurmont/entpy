@@ -183,7 +183,7 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
         model = await session.get(
-            EntTestObject2Model, real_ent_id, with_for_update=for_update
+            EntTestObject2Model, real_ent_id, with_for_update=for_update or None
         )
         if model is None:
             return None
@@ -217,7 +217,7 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
             session, EntTestObject2Model, "id", real_ent_id, for_update
         ):
             model = await session.get(
-                EntTestObject2Model, real_ent_id, with_for_update=for_update
+                EntTestObject2Model, real_ent_id, with_for_update=for_update or None
             )
         session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
