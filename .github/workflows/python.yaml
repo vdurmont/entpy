@@ -1,0 +1,43 @@
+name: Python
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Setup Python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.13"
+          cache-dependency-path: "uv.lock"
+
+      - name: "Install uv"
+        run: "pip install uv"
+
+      - name: "Install dependencies"
+        working-directory: entpy
+        run: "uv sync --locked"
+
+      - name: "Run ruff"
+        working-directory: entpy
+        run: "uv run ruff check ."
+
+      - name: "Run ruff format"
+        working-directory: entpy
+        run: "uv run ruff format --check ."
+
+      - name: "Run mypy"
+        working-directory: entpy
+        run: "uv run mypy ."
