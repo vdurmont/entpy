@@ -18,7 +18,6 @@ from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_query import EntQuery
 from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
@@ -30,6 +29,7 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.framework.query import EntQuery
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -78,7 +78,7 @@ class EntTestObject2APIModel(EntTestThingAPIModel):
     some_field: str | None = APIField(None)
 
 
-class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
+class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext, EntTestObject2Model]):
     vc: ExampleViewerContext
     model: EntTestObject2Model
     m = EntTestObject2Model

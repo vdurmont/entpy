@@ -9,11 +9,11 @@ from entpy import Ent, validate_ent_id
 from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 from .ent_model import EntModel
-from .ent_query import EntQuery
 from collections import defaultdict
 from database import get_session
 from ent_test_thing_pattern import ThingStatus
 from entpy import EntNotFoundError, ExecutionError
+from entpy.framework.query import EntQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
 from pydantic import Field as APIField
@@ -184,14 +184,18 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         for uuid_type, ids in ids_by_type.items():
             ent_type = UUID_TO_ENT[uuid_type]
             for ent in (
-                await ent_type.query(self.vc)  # type: ignore[attr-defined]
-                .where(ent_type.m.id.in_(ids))  # type: ignore[attr-defined]
+                await ent_type.query(self.vc)
+                .where(ent_type.m.id.in_(ids))
                 .limit(None)
                 .gen()
             ):
                 all_ents[ent.id] = ent
 
-        return [all_ents[ent_id] for ent_id in ent_ids if ent_id in all_ents]
+        return [
+            cast(IEntTestThing, all_ents[ent_id])
+            for ent_id in ent_ids
+            if ent_id in all_ents
+        ]
 
     async def gen_first(self, for_update: bool = False) -> IEntTestThing | None:
         session = get_session()

@@ -1,21 +1,22 @@
 from abc import ABC, abstractmethod
-from typing import Self, TypeVar, Any
-from sqlalchemy import Select, Table
-from entpy.framework.ent import Ent
-from sqlalchemy.sql.expression import ColumnElement
-from sqlalchemy.orm.strategy_options import _AbstractLoad
+from typing import Any, Self, TypeVar
 
-from .ent_model import EntModel
+from sqlalchemy import Select, Table
+from sqlalchemy.orm.strategy_options import _AbstractLoad
+from sqlalchemy.sql.expression import ColumnElement
+
+from entpy.framework.ent import Ent
+from entpy.framework.model import ModelMixin
 
 ENT = TypeVar("ENT", bound=Ent)
-ENTMODEL = TypeVar("ENTMODEL")
+ENTMODEL = TypeVar("ENTMODEL", bound=ModelMixin)
 
 
 class EntQuery[ENT, ENTMODEL](ABC):
     query: Select[tuple[ENTMODEL]]
 
     def join(
-        self, model_class: type[EntModel] | Table, predicate: ColumnElement[bool]
+        self, model_class: type[ModelMixin] | Table, predicate: ColumnElement[bool]
     ) -> Self:
         self.query = self.query.join(model_class, predicate)
         return self
@@ -36,7 +37,7 @@ class EntQuery[ENT, ENTMODEL](ABC):
     def order_by_id_desc(self) -> Self:
         pass
 
-    def limit(self, limit: int) -> Self:
+    def limit(self, limit: int | None) -> Self:
         self.query = self.query.limit(limit)
         return self
 
@@ -61,5 +62,5 @@ class EntQuery[ENT, ENTMODEL](ABC):
         pass
 
     @abstractmethod
-    async def gen_count_NO_PRIVACY(self) -> int:
+    async def gen_count_NO_PRIVACY(self) -> int:  # noqa: N802
         pass

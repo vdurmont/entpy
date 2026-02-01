@@ -19,7 +19,7 @@ def generate(
         "from typing import Any, TypeVar",
         "from sqlalchemy import select, Select, func, Result",
         "from entpy import EntNotFoundError, ExecutionError",
-        "from .ent_query import EntQuery",
+        "from entpy.framework.query import EntQuery",
     ]
 
     if is_pattern:
@@ -117,14 +117,14 @@ def _generate_gen_ents(is_pattern: bool, base_name: str) -> str:
         for uuid_type, ids in ids_by_type.items():
             ent_type = UUID_TO_ENT[uuid_type]
             for ent in (
-                await ent_type.query(self.vc)  # type: ignore[attr-defined]
-                .where(ent_type.m.id.in_(ids))  # type: ignore[attr-defined]
+                await ent_type.query(self.vc)
+                .where(ent_type.m.id.in_(ids))
                 .limit(None)
                 .gen()
             ):
                 all_ents[ent.id] = ent
 
-        return [all_ents[ent_id] for ent_id in ent_ids if ent_id in all_ents]
+        return [cast(I{base_name}, all_ents[ent_id]) for ent_id in ent_ids if ent_id in all_ents]
 """  # noqa: E501
     return f"""
     async def _gen_ents(self, result: Result[tuple[{base_name}Model]]) -> list[{i}{base_name} | None]:

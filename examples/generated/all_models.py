@@ -1,5 +1,7 @@
 from entpy import Ent
+
 from evc import ExampleViewerContext
+from .ent_model import EntModel
 
 from .ent_child import EntChildModel  # noqa: F401
 from .ent_child import EntChild
@@ -35,7 +37,7 @@ from .ent_test_sub_object import EntTestSubObjectModel  # noqa: F401
 from .ent_test_sub_object import EntTestSubObject
 from .ent_test_thing_view import ent_test_thing_view  # noqa: F401
 
-UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext]]] = {
+UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x43\x48": EntChild,
     b"\x25\xcb": EntDelegateThenRule,
     b"\x49\xc2": EntDelegatingChild,

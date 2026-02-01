@@ -18,12 +18,12 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
-from .ent_query import EntQuery
 from ent_pass_then_deny_schema import EntPassThenDenySchema
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.framework.query import EntQuery
 from entpy.model import APIEntity
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
@@ -50,7 +50,7 @@ class EntPassThenDenyAPIModel(APIEntity):
     name: str = APIField(..., examples=["Pass Then Deny Entity"])
 
 
-class EntPassThenDeny(Ent[ExampleViewerContext]):
+class EntPassThenDeny(Ent[ExampleViewerContext, EntPassThenDenyModel]):
     vc: ExampleViewerContext
     model: EntPassThenDenyModel
     m = EntPassThenDenyModel

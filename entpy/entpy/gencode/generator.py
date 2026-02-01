@@ -3,7 +3,6 @@ from importlib import import_module
 from pathlib import Path
 
 from entpy import Pattern, Schema
-from entpy.gencode.ent_query_template import generate as generate_ent_query
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
@@ -29,11 +28,8 @@ def run(
     # Create output directory if it doesn't exist
     output_path.mkdir(parents=True, exist_ok=True)
 
-    # Generate base model that all models will inherit from, and the ent_query
     base_model = generate_base_model(base_import=base_model_import)
     _write_file(output_path / "ent_model.py", base_model)
-    ent_query = generate_ent_query()
-    _write_file(output_path / "ent_query.py", ent_query)
 
     # Load all descriptors to process
     configs = _load_descriptors_configs(
@@ -77,7 +73,6 @@ def run(
             code = generate_pattern(
                 pattern_class=descriptor_class,
                 children_schema_classes=children,
-                ent_model_import="from .ent_model import EntModel",
                 session_getter=session_getter,
                 vc=vc,
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
@@ -105,10 +100,12 @@ def run(
 
     models_list_code = f"""
 from entpy import Ent
+
 {vc}
+from .ent_model import EntModel
 {models_list_imports}
 
-UUID_TO_ENT: dict[bytes, type[Ent[{vc.name}]]] = {{
+UUID_TO_ENT: dict[bytes, type[Ent[{vc.name}, EntModel]]] = {{
 {models_list_mapping}
 }}
 """

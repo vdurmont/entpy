@@ -18,12 +18,12 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
-from .ent_query import EntQuery
 from ent_test_object5_schema import EntTestObject5Schema
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.framework.query import EntQuery
 from entpy.model import APIEntity
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
@@ -55,7 +55,7 @@ class EntTestObject5APIModel(APIEntity):
     is_it_true: bool = APIField(True)
 
 
-class EntTestObject5(Ent[ExampleViewerContext]):
+class EntTestObject5(Ent[ExampleViewerContext, EntTestObject5Model]):
     vc: ExampleViewerContext
     model: EntTestObject5Model
     m = EntTestObject5Model
