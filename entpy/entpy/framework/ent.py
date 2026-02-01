@@ -1,16 +1,23 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from datetime import datetime
-from typing import Generic, Self, TypeVar
+from typing import TYPE_CHECKING, Self, TypeVar
 from uuid import UUID
 
 from entpy.framework.action import Action
 from entpy.framework.decision import Decision
+from entpy.framework.model import ModelMixin
 from entpy.framework.viewer_context import ViewerContext
 
 VC = TypeVar("VC", bound=ViewerContext)
+ENTMODEL = TypeVar("ENTMODEL", bound=ModelMixin)
+if TYPE_CHECKING:
+    from entpy.framework.query import EntQuery
 
 
-class Ent(ABC, Generic[VC]):
+class Ent[VC, ENTMODEL]:
+    model: ENTMODEL
+    m: type[ENTMODEL]
+
     @property
     @abstractmethod
     def id(self) -> UUID:
@@ -47,4 +54,9 @@ class Ent(ABC, Generic[VC]):
     @classmethod
     @abstractmethod
     async def genx(cls, vc: VC, ent_id: UUID | str, for_update: bool = False) -> Self:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def query(cls, vc: VC) -> "EntQuery[Self, ENTMODEL]":
         pass

@@ -147,6 +147,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         imports=[
             "from sqlalchemy.orm import Mapped, mapped_column",
             "from sqlalchemy import UUID as DBUUID",
+            "from .ent_model import EntModel",
         ]
         + types_imports
         + indexes.imports

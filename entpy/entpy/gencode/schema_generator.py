@@ -77,8 +77,7 @@ def generate(
     )
 
     imports = (
-        ["from .ent_model import EntModel"]
-        + model_content.imports
+        model_content.imports
         + api_model_content.imports
         + base_content.imports
         + query_content.imports

@@ -18,12 +18,12 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
-from .ent_query import EntQuery
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.framework.query import EntQuery
 from entpy.model import APIEntity
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
@@ -50,7 +50,7 @@ class EntTestSubObjectAPIModel(APIEntity):
     email: str = APIField(..., examples=["vdurmont@gmail.com"])
 
 
-class EntTestSubObject(Ent[ExampleViewerContext]):
+class EntTestSubObject(Ent[ExampleViewerContext, EntTestSubObjectModel]):
     vc: ExampleViewerContext
     model: EntTestSubObjectModel
     m = EntTestSubObjectModel

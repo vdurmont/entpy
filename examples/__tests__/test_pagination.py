@@ -10,7 +10,7 @@ from generated.ent_test_object import (
     EntTestObjectModel,
 )
 from entpy import Ent
-from generated.ent_query import EntQuery
+from entpy.framework.query import EntQuery
 
 
 ENTTYPE = TypeVar("ENTTYPE", bound=Ent)

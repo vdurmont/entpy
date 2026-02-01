@@ -18,7 +18,6 @@ from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
-from .ent_query import EntQuery
 from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
@@ -34,6 +33,7 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.framework.query import EntQuery
 from entpy.types import DateTime
 from pydantic import AwareDatetime
 from pydantic import Field as APIField
@@ -219,7 +219,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     when_is_it_cool: AwareDatetime | None = APIField(None)
 
 
-class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
+class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]):
     """
     This is an object we use to test all the ent framework features!
     """
