@@ -19,6 +19,7 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_query import EntQuery
+from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
@@ -34,6 +35,8 @@ from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
 from entpy.types import DateTime
+from pydantic import AwareDatetime
+from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -57,6 +60,8 @@ from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_test_sub_object import EntTestSubObjectAPIModel
+    from .ent_test_thing import EntTestThingAPIModel
     from .ent_test_object5 import EntTestObject5
     from .ent_test_sub_object import EntTestSubObject
     from .ent_test_thing import IEntTestThing
@@ -114,6 +119,33 @@ class EntTestObjectModel(EntTestThingModel):
     trace_id: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
     validated_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
     when_is_it_cool: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
+
+
+class EntTestObjectAPIModel(EntTestThingAPIModel):
+    firstname: str = APIField(..., examples=["Vincent"])
+    required_sub_object: "EntTestSubObjectAPIModel" = APIField(...)
+    username: str = APIField(
+        ..., description="This is the username that you will use on the platform."
+    )
+    lastname: str | None = APIField("Doe")
+    sadness: Status | None = APIField(Status.SAD)
+    context: str | None = APIField(None, examples=["This is some good context."])
+    correlation_id: UUID | None = APIField(None)
+    dob: date | None = APIField(None, examples=[date.fromisoformat("2000-01-01")])
+    duration: timedelta | None = APIField(None, examples=[timedelta(seconds=123.456)])
+    end_time: time | None = APIField(None)
+    is_it_true: bool | None = APIField(None, examples=[False])
+    optional_sub_object: "EntTestSubObjectAPIModel | None" = APIField(None)
+    optional_sub_object_no_ex: "EntTestSubObjectAPIModel | None" = APIField(None)
+    self: "EntTestObjectAPIModel | None" = APIField(None)
+    some_json: list[str] | None = APIField(None, examples=[["hello", "world"]])
+    some_pattern: "EntTestThingAPIModel | None" = APIField(None)
+    start_time: time | None = APIField(None, examples=[time.fromisoformat("09:30:00")])
+    status: Status | None = APIField(None, examples=[Status.HAPPY])
+    status_code: int | None = APIField(None, examples=[404])
+    trace_id: UUID | None = APIField(None)
+    validated_field: str | None = APIField(None)
+    when_is_it_cool: AwareDatetime | None = APIField(None)
 
 
 class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):

@@ -24,6 +24,8 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.model import APIEntity
+from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -38,6 +40,7 @@ from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_privacy_parent import EntPrivacyParentAPIModel
     from .ent_privacy_parent import EntPrivacyParent
 
 privacy_logger = logging.getLogger("entpy.privacy")
@@ -52,6 +55,11 @@ class EntDelegatingChildModel(EntModel):
         ForeignKey("privacy_parent.id", deferrable=True, initially="DEFERRED"),
         nullable=False,
     )
+
+
+class EntDelegatingChildAPIModel(APIEntity):
+    name: str = APIField(..., examples=["Delegating Child"])
+    privacy_parent: "EntPrivacyParentAPIModel" = APIField(...)
 
 
 class EntDelegatingChild(Ent[ExampleViewerContext]):
