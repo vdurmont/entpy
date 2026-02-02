@@ -32,7 +32,9 @@ class Ent(ABC, Generic[VC]):
         pass
 
     @abstractmethod
-    async def _gen_evaluate_privacy(self, vc: VC, action: Action) -> Decision:
+    async def _gen_evaluate_privacy(
+        self, vc: VC, action: Action, default_to_deny: bool = True
+    ) -> Decision:
         pass
 
     @classmethod

@@ -91,7 +91,7 @@ class {base_name}({extends}):{get_description(schema)}
 
 {accessors.code}
 
-    async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action) -> Decision:
+    async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action, default_to_deny: bool = True) -> Decision:
         session = {session_getter.name}()
         # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
@@ -107,7 +107,7 @@ class {base_name}({extends}):{get_description(schema)}
                     privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(item), self.id, str(vc))
             elif isinstance(item, EdgeDelegate):
                 delegate = await self._gen_load_delegate(vc, item.edge_name)
-                decision = await delegate._gen_evaluate_privacy(vc, action)
+                decision = await delegate._gen_evaluate_privacy(vc, action, default_to_deny=False)
                 if decision == Decision.DENY:
                     privacy_logger.debug("Delegate privacy of {base_name} with ID %s to edge %s was denied for %s", self.id, item.edge_name, str(vc))
             else:
@@ -115,9 +115,11 @@ class {base_name}({extends}):{get_description(schema)}
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
             if decision != Decision.PASS:
                 return decision
-        # We default to denying
-        privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s", self.id, str(vc))
-        return Decision.DENY
+        # Return based on default behavior
+        if default_to_deny:
+            privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s", self.id, str(vc))
+            return Decision.DENY
+        return Decision.PASS
 
     async def _gen_load_delegate(self, vc: {vc.name}, edge_name: str) -> Ent:{delegate_loaders}
         raise ExecutionError(f"An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")

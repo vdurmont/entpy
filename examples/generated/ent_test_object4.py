@@ -89,7 +89,7 @@ class EntTestObject4(Ent[ExampleViewerContext]):
         return None
 
     async def _gen_evaluate_privacy(
-        self, vc: ExampleViewerContext, action: Action
+        self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True
     ) -> Decision:
         session = get_session()
         # Build the complete list: prepended rules + entity's config
@@ -123,7 +123,9 @@ class EntTestObject4(Ent[ExampleViewerContext]):
                     )
             elif isinstance(item, EdgeDelegate):
                 delegate = await self._gen_load_delegate(vc, item.edge_name)
-                decision = await delegate._gen_evaluate_privacy(vc, action)
+                decision = await delegate._gen_evaluate_privacy(
+                    vc, action, default_to_deny=False
+                )
                 if decision == Decision.DENY:
                     privacy_logger.debug(
                         "Delegate privacy of EntTestObject4 with ID %s to edge %s was denied for %s",
@@ -138,13 +140,15 @@ class EntTestObject4(Ent[ExampleViewerContext]):
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
             if decision != Decision.PASS:
                 return decision
-        # We default to denying
-        privacy_logger.debug(
-            "Defaulting to denying access to EntTestObject4 with ID %s after exhausting all privacy rules for %s",
-            self.id,
-            str(vc),
-        )
-        return Decision.DENY
+        # Return based on default behavior
+        if default_to_deny:
+            privacy_logger.debug(
+                "Defaulting to denying access to EntTestObject4 with ID %s after exhausting all privacy rules for %s",
+                self.id,
+                str(vc),
+            )
+            return Decision.DENY
+        return Decision.PASS
 
     async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
         raise ExecutionError(
