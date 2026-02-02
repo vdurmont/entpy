@@ -116,6 +116,36 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
+        # Evaluate prepended rules first
+        session = get_session()
+        prepended_rules: list[PrivacyRule] = []
+        if action in [
+            Action.READ,
+            Action.CREATE,
+            Action.UPDATE,
+            Action.HARD_DELETE,
+            Action.SOFT_DELETE,
+        ]:
+            prepended_rules.append(AllowIfTestViewerContext())
+        if action in [Action.READ]:
+            prepended_rules.append(AllowIfOmniscientViewerContext())
+        if action in [Action.READ]:
+            prepended_rules.append(DenyIfSoftDeleted())
+
+        for rule in prepended_rules:
+            decision = await rule.gen_evaluate_cached(session, vc, self)
+            if decision == Decision.DENY:
+                privacy_logger.debug(
+                    "Prepended privacy rule %s of EntTestObject2 with ID %s was denied for %s",
+                    type(rule),
+                    self.id,
+                    str(vc),
+                )
+            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+            if decision != Decision.PASS:
+                return decision
+
+        # Now evaluate the actual config
         config = EntTestObject2Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
             delegate = await self._gen_load_delegate(vc, config.edge_name)
@@ -128,31 +158,48 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
                     str(vc),
                 )
             return decision
-        elif isinstance(config, list) and all(
-            isinstance(item, PrivacyRule) for item in config
-        ):
-            if action in [Action.READ]:
-                config.insert(0, DenyIfSoftDeleted())
-            if action in [Action.READ]:
-                config.insert(0, AllowIfOmniscientViewerContext())
-            if action in [
-                Action.READ,
-                Action.CREATE,
-                Action.UPDATE,
-                Action.HARD_DELETE,
-                Action.SOFT_DELETE,
-            ]:
-                config.insert(0, AllowIfTestViewerContext())
-
-            session = get_session()
-            for rule in config:
-                decision = await rule.gen_evaluate_cached(session, vc, self)
-                if decision == Decision.DENY:
-                    privacy_logger.debug(
-                        "Privacy rule %s of EntTestObject2 with ID %s was denied for %s",
-                        type(rule),
-                        self.id,
-                        str(vc),
+        elif isinstance(config, PrivacyRule):
+            decision = await config.gen_evaluate_cached(session, vc, self)
+            if decision == Decision.DENY:
+                privacy_logger.debug(
+                    "Privacy rule %s of EntTestObject2 with ID %s was denied for %s",
+                    type(config),
+                    self.id,
+                    str(vc),
+                )
+            # If we get an ALLOW or DENY, we return it. If PASS, we default to DENY.
+            if decision != Decision.PASS:
+                return decision
+            privacy_logger.debug(
+                "Defaulting to denying access to EntTestObject2 with ID %s after privacy rule returned PASS for %s",
+                self.id,
+                str(vc),
+            )
+            return Decision.DENY
+        elif isinstance(config, list):
+            for item in config:
+                if isinstance(item, PrivacyRule):
+                    decision = await item.gen_evaluate_cached(session, vc, self)
+                    if decision == Decision.DENY:
+                        privacy_logger.debug(
+                            "Privacy rule %s of EntTestObject2 with ID %s was denied for %s",
+                            type(item),
+                            self.id,
+                            str(vc),
+                        )
+                elif isinstance(item, EdgeDelegate):
+                    delegate = await self._gen_load_delegate(vc, item.edge_name)
+                    decision = await delegate._gen_evaluate_privacy(vc, action)
+                    if decision == Decision.DENY:
+                        privacy_logger.debug(
+                            "Delegate privacy of EntTestObject2 with ID %s to edge %s was denied for %s",
+                            self.id,
+                            item.edge_name,
+                            str(vc),
+                        )
+                else:
+                    raise ExecutionError(
+                        "An invalid privacy configuration was found for EntTestObject2: invalid item type in list"
                     )
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
                 if decision != Decision.PASS:

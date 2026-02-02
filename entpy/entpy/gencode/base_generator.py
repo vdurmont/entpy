@@ -33,14 +33,12 @@ def generate(
     ]
 
     preprended_rules_str = ""
-    # Iterating in reverse because we insert each one at index 0 and want to
-    # keep the user's rules order
-    for rule in reversed(prepended_rules):
+    for rule in prepended_rules:
         imports.append(str(rule.rule))
         actions = ", ".join([str(a) for a in rule.actions])
-        preprended_rules_str += f"            if action in [{actions}]:\n"
+        preprended_rules_str += f"        if action in [{actions}]:\n"
         preprended_rules_str += (
-            f"                config.insert(0, {rule.rule.name}())\n"
+            f"            prepended_rules.append({rule.rule.name}())\n"
         )
 
     imports += ["from sqlalchemy import select"]
@@ -94,6 +92,19 @@ class {base_name}({extends}):{get_description(schema)}
 {accessors.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action) -> Decision:
+        # Evaluate prepended rules first
+        session = {session_getter.name}()
+        prepended_rules: list[PrivacyRule] = []
+{preprended_rules_str}
+        for rule in prepended_rules:
+            decision = await rule.gen_evaluate_cached(session, vc, self)
+            if decision == Decision.DENY:
+                privacy_logger.debug("Prepended privacy rule %s of {base_name} with ID %s was denied for %s", type(rule), self.id, str(vc))
+            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+            if decision != Decision.PASS:
+                return decision
+
+        # Now evaluate the actual config
         config = {base_name}Schema().get_privacy_config(action)
         if isinstance(config, EdgeDelegate):
             delegate = await self._gen_load_delegate(vc, config.edge_name)
@@ -101,13 +112,28 @@ class {base_name}({extends}):{get_description(schema)}
             if decision == Decision.DENY:
                 privacy_logger.debug("Delegate privacy of {base_name} with ID %s to edge %s was denied for %s", self.id, config.edge_name, str(vc))
             return decision
-        elif isinstance(config, list) and all(isinstance(item, PrivacyRule) for item in config):
-{preprended_rules_str}
-            session = {session_getter.name}()
-            for rule in config:
-                decision = await rule.gen_evaluate_cached(session, vc, self)
-                if decision == Decision.DENY:
-                    privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(rule), self.id, str(vc))
+        elif isinstance(config, PrivacyRule):
+            decision = await config.gen_evaluate_cached(session, vc, self)
+            if decision == Decision.DENY:
+                privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(config), self.id, str(vc))
+            # If we get an ALLOW or DENY, we return it. If PASS, we default to DENY.
+            if decision != Decision.PASS:
+                return decision
+            privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after privacy rule returned PASS for %s", self.id, str(vc))
+            return Decision.DENY
+        elif isinstance(config, list):
+            for item in config:
+                if isinstance(item, PrivacyRule):
+                    decision = await item.gen_evaluate_cached(session, vc, self)
+                    if decision == Decision.DENY:
+                        privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(item), self.id, str(vc))
+                elif isinstance(item, EdgeDelegate):
+                    delegate = await self._gen_load_delegate(vc, item.edge_name)
+                    decision = await delegate._gen_evaluate_privacy(vc, action)
+                    if decision == Decision.DENY:
+                        privacy_logger.debug("Delegate privacy of {base_name} with ID %s to edge %s was denied for %s", self.id, item.edge_name, str(vc))
+                else:
+                    raise ExecutionError("An invalid privacy configuration was found for {base_name}: invalid item type in list")
                 # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
                 if decision != Decision.PASS:
                     return decision
