@@ -68,3 +68,7 @@ jobs:
       - name: "Run mypy (examples)"
         working-directory: examples
         run: "uv run mypy ."
+
+      - name: "Run pytest (examples)"
+        working-directory: examples
+        run: "uv run pytest ."
