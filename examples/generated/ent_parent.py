@@ -283,7 +283,7 @@ class EntParentQuery(EntQuery[EntParent, EntParentModel]):
     async def genx_first(self, for_update: bool = False) -> EntParent:
         ent = await self.gen_first(for_update)
         if not ent:
-            raise EntNotFoundError("Expected query to return an ent, got None.")
+            raise EntNotFoundError("Expected to find a EntParent, got None.")
         return ent
 
     async def gen_count_NO_PRIVACY(self) -> int:

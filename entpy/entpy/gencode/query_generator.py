@@ -95,7 +95,7 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
     async def genx_first(self, for_update: bool = False) -> {i}{base_name}:
         ent = await self.gen_first(for_update)
         if not ent:
-            raise EntNotFoundError(f"Expected query to return an ent, got None.")
+            raise EntNotFoundError(f"Expected to find a {base_name}, got None.")
         return ent
 
 {gen_count.code}
