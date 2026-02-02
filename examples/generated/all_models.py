@@ -3,6 +3,8 @@ from evc import ExampleViewerContext
 
 from .ent_child import EntChildModel  # noqa: F401
 from .ent_child import EntChild
+from .ent_delegate_then_rule import EntDelegateThenRuleModel  # noqa: F401
+from .ent_delegate_then_rule import EntDelegateThenRule
 from .ent_delegating_child import EntDelegatingChildModel  # noqa: F401
 from .ent_delegating_child import EntDelegatingChild
 from .ent_delegating_grandchild import EntDelegatingGrandchildModel  # noqa: F401
@@ -35,6 +37,7 @@ from .ent_test_thing_view import EntTestThingView  # noqa: F401
 
 UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext]]] = {
     b"\x43\x48": EntChild,
+    b"\x25\xcb": EntDelegateThenRule,
     b"\x49\xc2": EntDelegatingChild,
     b"\x2a\x0c": EntDelegatingGrandchild,
     b"\x3b\xdf": EntGrandParent,

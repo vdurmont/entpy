@@ -19,7 +19,7 @@ from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
 from .ent_query import EntQuery
-from ent_child_schema import EntChildSchema
+from ent_delegate_then_rule_schema import EntDelegateThenRuleSchema
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
@@ -38,28 +38,30 @@ from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .ent_parent import EntParent
+    from .ent_privacy_parent import EntPrivacyParent
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
 
-class EntChildModel(EntModel):
-    __tablename__ = "child"
+class EntDelegateThenRuleModel(EntModel):
+    __tablename__ = "delegate_then_rule"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    parent_id: Mapped[UUID] = mapped_column(
+    privacy_parent_id: Mapped[UUID] = mapped_column(
         DBUUID(),
-        ForeignKey("parent.id", deferrable=True, initially="DEFERRED"),
+        ForeignKey("privacy_parent.id", deferrable=True, initially="DEFERRED"),
         nullable=False,
     )
 
 
-class EntChild(Ent[ExampleViewerContext]):
+class EntDelegateThenRule(Ent[ExampleViewerContext]):
     vc: ExampleViewerContext
-    model: EntChildModel
-    m = EntChildModel
+    model: EntDelegateThenRuleModel
+    m = EntDelegateThenRuleModel
 
-    def __init__(self, vc: ExampleViewerContext, model: EntChildModel) -> None:
+    def __init__(
+        self, vc: ExampleViewerContext, model: EntDelegateThenRuleModel
+    ) -> None:
         self.vc = vc
         self.model = model
 
@@ -84,13 +86,13 @@ class EntChild(Ent[ExampleViewerContext]):
         return self.model.name
 
     @property
-    def parent_id(self) -> UUID:
-        return self.model.parent_id
+    def privacy_parent_id(self) -> UUID:
+        return self.model.privacy_parent_id
 
-    async def gen_parent(self) -> EntParent:
-        from .ent_parent import EntParent
+    async def gen_privacy_parent(self) -> EntPrivacyParent:
+        from .ent_privacy_parent import EntPrivacyParent
 
-        return await EntParent.genx(self.vc, self.model.parent_id)
+        return await EntPrivacyParent.genx(self.vc, self.model.privacy_parent_id)
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True
@@ -111,7 +113,7 @@ class EntChild(Ent[ExampleViewerContext]):
         if action in [Action.READ]:
             prepended_rules.append(DenyIfSoftDeleted())
 
-        config = EntChildSchema().get_privacy_config(action)
+        config = EntDelegateThenRuleSchema().get_privacy_config(action)
         all_rules = prepended_rules + config
 
         # Evaluate each rule/delegate in order
@@ -120,7 +122,7 @@ class EntChild(Ent[ExampleViewerContext]):
                 decision = await item.gen_evaluate_cached(session, vc, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug(
-                        "Privacy rule %s of EntChild with ID %s was denied for %s",
+                        "Privacy rule %s of EntDelegateThenRule with ID %s was denied for %s",
                         type(item),
                         self.id,
                         str(vc),
@@ -132,14 +134,14 @@ class EntChild(Ent[ExampleViewerContext]):
                 )
                 if decision == Decision.DENY:
                     privacy_logger.debug(
-                        "Delegate privacy of EntChild with ID %s to edge %s was denied for %s",
+                        "Delegate privacy of EntDelegateThenRule with ID %s to edge %s was denied for %s",
                         self.id,
                         item.edge_name,
                         str(vc),
                     )
             else:
                 raise ExecutionError(
-                    "An invalid privacy configuration was found for EntChild: invalid item type in list"
+                    "An invalid privacy configuration was found for EntDelegateThenRule: invalid item type in list"
                 )
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
             if decision != Decision.PASS:
@@ -147,7 +149,7 @@ class EntChild(Ent[ExampleViewerContext]):
         # Return based on default behavior
         if default_to_deny:
             privacy_logger.debug(
-                "Defaulting to denying access to EntChild with ID %s after exhausting all privacy rules for %s",
+                "Defaulting to denying access to EntDelegateThenRule with ID %s after exhausting all privacy rules for %s",
                 self.id,
                 str(vc),
             )
@@ -155,99 +157,105 @@ class EntChild(Ent[ExampleViewerContext]):
         return Decision.PASS
 
     async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
-        if edge_name == "parent":
-            from .ent_parent import EntParent
+        if edge_name == "privacy_parent":
+            from .ent_privacy_parent import EntPrivacyParent
 
-            return await EntParent._genx_no_privacy_DO_NOT_USE(vc, self.parent_id)
+            return await EntPrivacyParent._genx_no_privacy_DO_NOT_USE(
+                vc, self.privacy_parent_id
+            )
 
         raise ExecutionError(
-            f"An invalid privacy configuration was found for EntChild: could not find delegate for {edge_name}"
+            f"An invalid privacy configuration was found for EntDelegateThenRule: could not find delegate for {edge_name}"
         )
 
     @classmethod
     async def _gen_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntChild | None:
+    ) -> EntDelegateThenRule | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
         model = await session.get(
-            EntChildModel, real_ent_id, with_for_update=for_update or None
+            EntDelegateThenRuleModel, real_ent_id, with_for_update=for_update or None
         )
         if model is None:
             return None
         session.info.setdefault("cache", set()).add(model)
-        return EntChild(vc=vc, model=model)
+        return EntDelegateThenRule(vc=vc, model=model)
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntChild:
-        ent = await EntChild._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
+    ) -> EntDelegateThenRule:
+        ent = await EntDelegateThenRule._gen_no_privacy_DO_NOT_USE(
+            vc, ent_id, for_update
+        )
         if ent is None:
-            raise EntNotFoundError(f"No EntChild found for ID {ent_id}")
+            raise EntNotFoundError(f"No EntDelegateThenRule found for ID {ent_id}")
         return ent
 
     @classmethod
     async def genx(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntChild:
+    ) -> EntDelegateThenRule:
         ent = await cls.gen(vc, ent_id, for_update)
         if not ent:
-            raise EntNotFoundError(f"No EntChild found for ID {ent_id}")
+            raise EntNotFoundError(f"No EntDelegateThenRule found for ID {ent_id}")
         return ent
 
     @classmethod
     async def gen(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntChild | None:
+    ) -> EntDelegateThenRule | None:
         real_ent_id = validate_ent_id(ent_id)
         session = get_session()
         async with emulate_for_update(
-            session, EntChildModel, "id", real_ent_id, for_update
+            session, EntDelegateThenRuleModel, "id", real_ent_id, for_update
         ):
             model = await session.get(
-                EntChildModel, real_ent_id, with_for_update=for_update or None
+                EntDelegateThenRuleModel,
+                real_ent_id,
+                with_for_update=for_update or None,
             )
         session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
     async def _gen_from_model(
-        cls, vc: ExampleViewerContext, model: EntChildModel | None
-    ) -> EntChild | None:
+        cls, vc: ExampleViewerContext, model: EntDelegateThenRuleModel | None
+    ) -> EntDelegateThenRule | None:
         if not model:
             return None
-        ent = EntChild(vc=vc, model=model)
+        ent = EntDelegateThenRule(vc=vc, model=model)
         decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
         return ent if decision == Decision.ALLOW else None
 
     @classmethod
     async def _genx_from_model(
-        cls, vc: ExampleViewerContext, model: EntChildModel
-    ) -> EntChild:
-        ent = await EntChild._gen_from_model(vc=vc, model=model)
+        cls, vc: ExampleViewerContext, model: EntDelegateThenRuleModel
+    ) -> EntDelegateThenRule:
+        ent = await EntDelegateThenRule._gen_from_model(vc=vc, model=model)
         if not ent:
-            raise EntNotFoundError(f"No EntChild found for ID {model.id}")
+            raise EntNotFoundError(f"No EntDelegateThenRule found for ID {model.id}")
         return ent
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntChildQuery:
-        return EntChildQuery(vc=vc)
+    def query(cls, vc: ExampleViewerContext) -> EntDelegateThenRuleQuery:
+        return EntDelegateThenRuleQuery(vc=vc)
 
 
 T = TypeVar("T")
 
 
-class EntChildQuery(EntQuery[EntChild, EntChildModel]):
+class EntDelegateThenRuleQuery(EntQuery[EntDelegateThenRule, EntDelegateThenRuleModel]):
     vc: ExampleViewerContext
     include_soft_deleted: bool = False
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
 
-        self.query = select(EntChildModel)
+        self.query = select(EntDelegateThenRuleModel)
 
-    async def gen(self, for_update: bool = False) -> list[EntChild]:
+    async def gen(self, for_update: bool = False) -> list[EntDelegateThenRule]:
         session = get_session()
         query = (
             self._finalize_query().with_for_update()
@@ -262,18 +270,18 @@ class EntChildQuery(EntQuery[EntChild, EntChildModel]):
         if self.include_soft_deleted:
             return self.query
         else:
-            return self.query.where(EntChildModel.soft_deleted_at.is_(None))
+            return self.query.where(EntDelegateThenRuleModel.soft_deleted_at.is_(None))
 
     async def _gen_ents(
-        self, result: Result[tuple[EntChildModel]]
-    ) -> list[EntChild | None]:
+        self, result: Result[tuple[EntDelegateThenRuleModel]]
+    ) -> list[EntDelegateThenRule | None]:
         models = result.scalars().all()
         return [
-            await EntChild._gen_from_model(self.vc, model)  # noqa: SLF001
+            await EntDelegateThenRule._gen_from_model(self.vc, model)  # noqa: SLF001
             for model in models
         ]
 
-    async def gen_first(self, for_update: bool = False) -> EntChild | None:
+    async def gen_first(self, for_update: bool = False) -> EntDelegateThenRule | None:
         session = get_session()
         query = self._finalize_query().limit(1)
         if for_update:
@@ -281,14 +289,16 @@ class EntChildQuery(EntQuery[EntChild, EntChildModel]):
         result = await session.execute(query)
         return await self._gen_ent(result)
 
-    async def _gen_ent(self, result: Result[tuple[EntChildModel]]) -> EntChild | None:
+    async def _gen_ent(
+        self, result: Result[tuple[EntDelegateThenRuleModel]]
+    ) -> EntDelegateThenRule | None:
         model = result.scalar_one_or_none()
-        return await EntChild._gen_from_model(self.vc, model)  # noqa: SLF001
+        return await EntDelegateThenRule._gen_from_model(self.vc, model)  # noqa: SLF001
 
-    async def genx_first(self, for_update: bool = False) -> EntChild:
+    async def genx_first(self, for_update: bool = False) -> EntDelegateThenRule:
         ent = await self.gen_first(for_update)
         if not ent:
-            raise EntNotFoundError("Expected to find a EntChild, got None.")
+            raise EntNotFoundError("Expected to find a EntDelegateThenRule, got None.")
         return ent
 
     async def gen_count_NO_PRIVACY(self) -> int:
@@ -312,63 +322,67 @@ class EntChildQuery(EntQuery[EntChild, EntChildModel]):
 
         return count
 
-    def order_by_id_asc(self) -> "EntChildQuery":
-        self.query = self.query.order_by(EntChildModel.id.asc())
+    def order_by_id_asc(self) -> "EntDelegateThenRuleQuery":
+        self.query = self.query.order_by(EntDelegateThenRuleModel.id.asc())
         return self
 
-    def order_by_id_desc(self) -> "EntChildQuery":
-        self.query = self.query.order_by(EntChildModel.id.desc())
+    def order_by_id_desc(self) -> "EntDelegateThenRuleQuery":
+        self.query = self.query.order_by(EntDelegateThenRuleModel.id.desc())
         return self
 
-    def with_soft_deleted(self) -> "EntChildQuery":
+    def with_soft_deleted(self) -> "EntDelegateThenRuleQuery":
         self.include_soft_deleted = True
         return self
 
 
-class EntChildMutator:
+class EntDelegateThenRuleMutator:
     @classmethod
     def create(
         cls,
         vc: ExampleViewerContext,
         name: str,
-        parent_id: UUID,
+        privacy_parent_id: UUID,
         id: UUID | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
-    ) -> EntChildMutatorCreationAction:
-        return EntChildMutatorCreationAction(
+    ) -> EntDelegateThenRuleMutatorCreationAction:
+        return EntDelegateThenRuleMutatorCreationAction(
             vc=vc,
             id=id,
             created_at=created_at,
             updated_at=updated_at,
             name=name,
-            parent_id=parent_id,
+            privacy_parent_id=privacy_parent_id,
         )
 
     @classmethod
     def update(
-        cls, vc: ExampleViewerContext, ent: EntChild
-    ) -> EntChildMutatorUpdateAction:
-        return EntChildMutatorUpdateAction(vc=vc, ent=ent)
+        cls, vc: ExampleViewerContext, ent: EntDelegateThenRule
+    ) -> EntDelegateThenRuleMutatorUpdateAction:
+        return EntDelegateThenRuleMutatorUpdateAction(vc=vc, ent=ent)
 
     @classmethod
     def hard_delete(
-        cls, vc: ExampleViewerContext, ent: EntChild
-    ) -> EntChildMutatorDeletionAction:
-        return EntChildMutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=False)
+        cls, vc: ExampleViewerContext, ent: EntDelegateThenRule
+    ) -> EntDelegateThenRuleMutatorDeletionAction:
+        return EntDelegateThenRuleMutatorDeletionAction(
+            vc=vc, ent=ent, is_soft_delete=False
+        )
 
     @classmethod
     def soft_delete(
-        cls, vc: ExampleViewerContext, ent: EntChild
-    ) -> EntChildMutatorDeletionAction:
-        return EntChildMutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=True)
+        cls, vc: ExampleViewerContext, ent: EntDelegateThenRule
+    ) -> EntDelegateThenRuleMutatorDeletionAction:
+        return EntDelegateThenRuleMutatorDeletionAction(
+            vc=vc, ent=ent, is_soft_delete=True
+        )
 
 
-class EntChildMutatorCreationAction:
+class EntDelegateThenRuleMutatorCreationAction:
     vc: ExampleViewerContext
     id: UUID
     name: str
-    parent_id: UUID
+    privacy_parent_id: UUID
 
     def __init__(
         self,
@@ -377,74 +391,74 @@ class EntChildMutatorCreationAction:
         created_at: datetime | None,
         updated_at: datetime | None,
         name: str,
-        parent_id: UUID,
+        privacy_parent_id: UUID,
     ) -> None:
         self.vc = vc
         self.created_at = created_at if created_at else datetime.now(tz=UTC)
         self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntChild, self.created_at)
+        self.id = id if id else generate_uuid(EntDelegateThenRule, self.created_at)
         self.name = name
-        self.parent_id = parent_id
+        self.privacy_parent_id = privacy_parent_id
 
-    async def gen_savex(self) -> EntChild:
+    async def gen_savex(self) -> EntDelegateThenRule:
         session = get_session()
 
-        model = EntChildModel(
+        model = EntDelegateThenRuleModel(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
             name=self.name,
-            parent_id=self.parent_id,
+            privacy_parent_id=self.privacy_parent_id,
         )
         session.add(model)
-        ent = EntChild(vc=self.vc, model=model)
+        ent = EntDelegateThenRule(vc=self.vc, model=model)
         decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
-                f"Current viewer context is not authorized to CREATE EntChild with ID {ent.id}"
+                f"Current viewer context is not authorized to CREATE EntDelegateThenRule with ID {ent.id}"
             )
         await session.flush()
-        return await EntChild._genx_from_model(self.vc, model)  # noqa: SLF001
+        return await EntDelegateThenRule._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntChildMutatorUpdateAction:
+class EntDelegateThenRuleMutatorUpdateAction:
     vc: ExampleViewerContext
-    ent: EntChild
+    ent: EntDelegateThenRule
     id: UUID
     name: str
-    parent_id: UUID
+    privacy_parent_id: UUID
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntChild) -> None:
+    def __init__(self, vc: ExampleViewerContext, ent: EntDelegateThenRule) -> None:
         self.vc = vc
         self.ent = ent
         self.name = ent.name
-        self.parent_id = ent.parent_id
+        self.privacy_parent_id = ent.privacy_parent_id
 
-    async def gen_savex(self) -> EntChild:
+    async def gen_savex(self) -> EntDelegateThenRule:
         session = get_session()
 
         model = self.ent.model
         model.name = self.name
-        model.parent_id = self.parent_id
+        model.privacy_parent_id = self.privacy_parent_id
         model.updated_at = datetime.now(tz=UTC)
         session.add(model)
-        new_ent = EntChild(vc=self.vc, model=model)
+        new_ent = EntDelegateThenRule(vc=self.vc, model=model)
         decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
-                f"Current viewer context is not authorized to UPDATE EntChild with ID {new_ent.id}"
+                f"Current viewer context is not authorized to UPDATE EntDelegateThenRule with ID {new_ent.id}"
             )
         await session.flush()
         await session.refresh(model)
-        return await EntChild._genx_from_model(self.vc, model)  # noqa: SLF001
+        return await EntDelegateThenRule._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntChildMutatorDeletionAction:
+class EntDelegateThenRuleMutatorDeletionAction:
     vc: ExampleViewerContext
-    ent: EntChild
+    ent: EntDelegateThenRule
 
     def __init__(
-        self, vc: ExampleViewerContext, ent: EntChild, is_soft_delete: bool
+        self, vc: ExampleViewerContext, ent: EntDelegateThenRule, is_soft_delete: bool
     ) -> None:
         self.vc = vc
         self.ent = ent
@@ -457,7 +471,7 @@ class EntChildMutatorDeletionAction:
         decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
         if decision != Decision.ALLOW:
             raise PrivacyError(
-                f"Current viewer context is not authorized to {action} EntChild with ID {self.ent.id}"
+                f"Current viewer context is not authorized to {action} EntDelegateThenRule with ID {self.ent.id}"
             )
         if self.is_soft_delete:
             model.soft_deleted_at = datetime.now(tz=UTC)
@@ -468,32 +482,32 @@ class EntChildMutatorDeletionAction:
         await session.flush()
 
 
-class EntChildExample:
+class EntDelegateThenRuleExample:
     @classmethod
     async def gen_create(
         cls,
         vc: ExampleViewerContext,
         created_at: datetime | None = None,
         name: str | Sentinel = NOTHING,
-        parent_id: UUID | Sentinel = NOTHING,
-    ) -> EntChild:
+        privacy_parent_id: UUID | Sentinel = NOTHING,
+    ) -> EntDelegateThenRule:
         # TODO make sure we only use this in test mode
 
-        name = "Benjamin" if isinstance(name, Sentinel) else name
+        name = "Delegate Then Rule Entity" if isinstance(name, Sentinel) else name
 
-        if isinstance(parent_id, Sentinel) or parent_id is None:
-            from .ent_parent import EntParentExample
+        if isinstance(privacy_parent_id, Sentinel) or privacy_parent_id is None:
+            from .ent_privacy_parent import EntPrivacyParentExample
 
-            parent_id_ent = await EntParentExample.gen_create(vc)
-            parent_id = parent_id_ent.id
+            privacy_parent_id_ent = await EntPrivacyParentExample.gen_create(vc)
+            privacy_parent_id = privacy_parent_id_ent.id
 
-        return await EntChildMutator.create(
-            vc=vc, created_at=created_at, name=name, parent_id=parent_id
+        return await EntDelegateThenRuleMutator.create(
+            vc=vc, created_at=created_at, name=name, privacy_parent_id=privacy_parent_id
         ).gen_savex()
 
 
 def _get_field(field_name: str) -> Field:
-    schema = EntChildSchema()
+    schema = EntDelegateThenRuleSchema()
     fields = schema.get_all_fields()
     field = next(
         filter(

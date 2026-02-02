@@ -8,9 +8,7 @@ from entpy.framework.descriptor import Descriptor
 
 class Schema(Descriptor, ABC):
     @abstractmethod
-    def get_privacy_config(
-        self, action: Action
-    ) -> list[EdgeDelegate | PrivacyRule]:
+    def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         pass
 
     def get_composite_indexes(self) -> list[CompositeIndex]:

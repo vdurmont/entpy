@@ -1,4 +1,5 @@
 from .ent_child import EntChildExample
+from .ent_delegate_then_rule import EntDelegateThenRuleExample
 from .ent_delegating_child import EntDelegatingChildExample
 from .ent_delegating_grandchild import EntDelegatingGrandchildExample
 from .ent_grand_parent import EntGrandParentExample
@@ -17,6 +18,7 @@ from .ent_test_sub_object import EntTestSubObjectExample
 
 examples = [
     EntChildExample,
+    EntDelegateThenRuleExample,
     EntDelegatingChildExample,
     EntDelegatingGrandchildExample,
     EntGrandParentExample,
