@@ -19,7 +19,6 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_query import EntQuery
-from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
@@ -30,7 +29,6 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
-from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -52,10 +50,6 @@ class EntTestObject2Model(EntTestThingModel):
     __tablename__ = "test_object2"
 
     some_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
-
-
-class EntTestObject2APIModel(EntTestThingAPIModel):
-    some_field: str | None = APIField(None)
 
 
 class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):

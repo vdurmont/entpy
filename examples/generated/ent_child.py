@@ -18,15 +18,12 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
-from .ent_parent import EntParentAPIModel
 from .ent_query import EntQuery
 from ent_child_schema import EntChildSchema
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
-from entpy.model import APIEntity
-from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -55,11 +52,6 @@ class EntChildModel(EntModel):
         ForeignKey("parent.id", deferrable=True, initially="DEFERRED"),
         nullable=False,
     )
-
-
-class EntChildAPIModel(APIEntity):
-    name: str = APIField(..., examples=["Benjamin"])
-    parent: EntParentAPIModel = APIField(...)
 
 
 class EntChild(Ent[ExampleViewerContext]):

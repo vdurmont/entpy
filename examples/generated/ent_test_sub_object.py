@@ -24,8 +24,6 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
-from entpy.model import APIEntity
-from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -44,10 +42,6 @@ class EntTestSubObjectModel(EntModel):
     __tablename__ = "test_sub_object"
 
     email: Mapped[str] = mapped_column(String(100), nullable=False)
-
-
-class EntTestSubObjectAPIModel(APIEntity):
-    email: str = APIField(..., examples=["vdurmont@gmail.com"])
 
 
 class EntTestSubObject(Ent[ExampleViewerContext]):

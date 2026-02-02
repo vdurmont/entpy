@@ -24,8 +24,6 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
-from entpy.model import APIEntity
-from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -48,11 +46,6 @@ class EntTestObject5Model(EntModel):
     is_it_true: Mapped[bool] = mapped_column(
         Boolean(), nullable=False, server_default="true"
     )
-
-
-class EntTestObject5APIModel(APIEntity):
-    obj5_field: str = APIField(..., examples=["blah!"])
-    is_it_true: bool = APIField(True)
 
 
 class EntTestObject5(Ent[ExampleViewerContext]):

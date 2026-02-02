@@ -19,14 +19,11 @@ from evc import ExampleViewerContext
 from database import get_session
 from .ent_model import EntModel
 from .ent_query import EntQuery
-from .ent_test_object4 import EntTestObject4APIModel
 from ent_test_object3_schema import EntTestObject3Schema
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
-from entpy.model import APIEntity
-from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -53,10 +50,6 @@ class EntTestObject3Model(EntModel):
         ForeignKey("test_object4.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
-
-
-class EntTestObject3APIModel(APIEntity):
-    other: EntTestObject4APIModel | None = APIField(None)
 
 
 class EntTestObject3(Ent[ExampleViewerContext]):
