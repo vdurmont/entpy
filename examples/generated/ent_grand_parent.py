@@ -76,8 +76,8 @@ class EntGrandParent(Ent[ExampleViewerContext]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action
     ) -> Decision:
-        # Evaluate prepended rules first
         session = get_session()
+        # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
         if action in [
             Action.READ,
@@ -92,88 +92,44 @@ class EntGrandParent(Ent[ExampleViewerContext]):
         if action in [Action.READ]:
             prepended_rules.append(DenyIfSoftDeleted())
 
-        for rule in prepended_rules:
-            decision = await rule.gen_evaluate_cached(session, vc, self)
-            if decision == Decision.DENY:
-                privacy_logger.debug(
-                    "Prepended privacy rule %s of EntGrandParent with ID %s was denied for %s",
-                    type(rule),
-                    self.id,
-                    str(vc),
+        config = EntGrandParentSchema().get_privacy_config(action)
+        all_rules = prepended_rules + config
+
+        # Evaluate each rule/delegate in order
+        for item in all_rules:
+            if isinstance(item, PrivacyRule):
+                decision = await item.gen_evaluate_cached(session, vc, self)
+                if decision == Decision.DENY:
+                    privacy_logger.debug(
+                        "Privacy rule %s of EntGrandParent with ID %s was denied for %s",
+                        type(item),
+                        self.id,
+                        str(vc),
+                    )
+            elif isinstance(item, EdgeDelegate):
+                delegate = await self._gen_load_delegate(vc, item.edge_name)
+                decision = await delegate._gen_evaluate_privacy(vc, action)
+                if decision == Decision.DENY:
+                    privacy_logger.debug(
+                        "Delegate privacy of EntGrandParent with ID %s to edge %s was denied for %s",
+                        self.id,
+                        item.edge_name,
+                        str(vc),
+                    )
+            else:
+                raise ExecutionError(
+                    "An invalid privacy configuration was found for EntGrandParent: invalid item type in list"
                 )
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
             if decision != Decision.PASS:
                 return decision
-
-        # Now evaluate the actual config
-        config = EntGrandParentSchema().get_privacy_config(action)
-        if isinstance(config, EdgeDelegate):
-            delegate = await self._gen_load_delegate(vc, config.edge_name)
-            decision = await delegate._gen_evaluate_privacy(vc, action)
-            if decision == Decision.DENY:
-                privacy_logger.debug(
-                    "Delegate privacy of EntGrandParent with ID %s to edge %s was denied for %s",
-                    self.id,
-                    config.edge_name,
-                    str(vc),
-                )
-            return decision
-        elif isinstance(config, PrivacyRule):
-            decision = await config.gen_evaluate_cached(session, vc, self)
-            if decision == Decision.DENY:
-                privacy_logger.debug(
-                    "Privacy rule %s of EntGrandParent with ID %s was denied for %s",
-                    type(config),
-                    self.id,
-                    str(vc),
-                )
-            # If we get an ALLOW or DENY, we return it. If PASS, we default to DENY.
-            if decision != Decision.PASS:
-                return decision
-            privacy_logger.debug(
-                "Defaulting to denying access to EntGrandParent with ID %s after privacy rule returned PASS for %s",
-                self.id,
-                str(vc),
-            )
-            return Decision.DENY
-        elif isinstance(config, list):
-            for item in config:
-                if isinstance(item, PrivacyRule):
-                    decision = await item.gen_evaluate_cached(session, vc, self)
-                    if decision == Decision.DENY:
-                        privacy_logger.debug(
-                            "Privacy rule %s of EntGrandParent with ID %s was denied for %s",
-                            type(item),
-                            self.id,
-                            str(vc),
-                        )
-                elif isinstance(item, EdgeDelegate):
-                    delegate = await self._gen_load_delegate(vc, item.edge_name)
-                    decision = await delegate._gen_evaluate_privacy(vc, action)
-                    if decision == Decision.DENY:
-                        privacy_logger.debug(
-                            "Delegate privacy of EntGrandParent with ID %s to edge %s was denied for %s",
-                            self.id,
-                            item.edge_name,
-                            str(vc),
-                        )
-                else:
-                    raise ExecutionError(
-                        "An invalid privacy configuration was found for EntGrandParent: invalid item type in list"
-                    )
-                # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
-                if decision != Decision.PASS:
-                    return decision
-            # We default to denying
-            privacy_logger.debug(
-                "Defaulting to denying access to EntGrandParent with ID %s after exhausting all privacy rules for %s",
-                self.id,
-                str(vc),
-            )
-            return Decision.DENY
-        raise ExecutionError(
-            "An invalid privacy configuration was found for EntGrandParent: invalid config type"
+        # We default to denying
+        privacy_logger.debug(
+            "Defaulting to denying access to EntGrandParent with ID %s after exhausting all privacy rules for %s",
+            self.id,
+            str(vc),
         )
+        return Decision.DENY
 
     async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
         raise ExecutionError(

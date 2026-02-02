@@ -1,8 +1,9 @@
 """
-Tests for different privacy config return type variations:
-1. Single PrivacyRule
-2. Single EdgeDelegate (already tested in test_edge_delegate.py)
-3. List of PrivacyRule | EdgeDelegate
+Tests for privacy config list variations.
+Privacy config always returns list[EdgeDelegate | PrivacyRule]:
+1. List with a single PrivacyRule
+2. List with a single EdgeDelegate (already tested in test_edge_delegate.py)
+3. List with mixed PrivacyRule and EdgeDelegate items
 """
 
 from evc import (
@@ -16,15 +17,15 @@ from generated.ent_privacy_parent import EntPrivacyParentExample
 from generated.ent_single_rule import EntSingleRule, EntSingleRuleExample
 
 # ==============================================================================
-# Test 1: Single PrivacyRule (not a list)
+# Test 1: List with Single PrivacyRule
 # ==============================================================================
 
 
 async def test_single_rule_allows_test_viewer_context() -> None:
-    """Test that a single PrivacyRule allows TestViewerContext."""
+    """Test that a list with a single PrivacyRule allows TestViewerContext."""
     vc = ExampleTestViewerContext()
 
-    # Create an entity with single rule config
+    # Create an entity with a list containing a single rule
     ent = await EntSingleRuleExample.gen_create(vc, name="Test Entity")
     assert ent is not None
 
@@ -35,7 +36,7 @@ async def test_single_rule_allows_test_viewer_context() -> None:
 
 
 async def test_single_rule_denies_regular_viewer_context() -> None:
-    """Test that a single PrivacyRule denies regular ViewerContext."""
+    """Test that a list with a single PrivacyRule denies regular ViewerContext."""
     create_vc = ExampleTestViewerContext()
     read_vc = ExampleViewerContext()
 

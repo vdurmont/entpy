@@ -34,8 +34,6 @@ class EntPassThenDenySchema(Schema):
             StringField("name", 100).not_null().example("Pass Then Deny Entity"),
         ]
 
-    def get_privacy_config(
-        self, action: Action
-    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
+    def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         # First rule passes, second rule denies
         return [AlwaysPass(), AlwaysDeny()]
