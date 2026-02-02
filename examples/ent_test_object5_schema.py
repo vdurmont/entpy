@@ -17,5 +17,7 @@ class EntTestObject5Schema(Schema):
             BoolField("is_it_true").not_null().default(True),
         ]
 
-    def get_privacy_config(self, action: Action) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
+    def get_privacy_config(
+        self, action: Action
+    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
         return [AllowAll()]

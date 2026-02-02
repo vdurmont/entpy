@@ -75,7 +75,9 @@ class EntTestObjectSchema(Schema):
             IntervalField("duration").example(timedelta(seconds=123.456)),
         ]
 
-    def get_privacy_config(self, action: Action) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
+    def get_privacy_config(
+        self, action: Action
+    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
         return [AllowAll()]
 
 

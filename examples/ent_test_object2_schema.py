@@ -18,5 +18,7 @@ class EntTestObject2Schema(Schema):
     def get_fields(self) -> list[Field]:
         return [StringField("some_field", 100)]
 
-    def get_privacy_config(self, action: Action) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
+    def get_privacy_config(
+        self, action: Action
+    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
         return [AllowAll()]
