@@ -17,5 +17,7 @@ class EntTestObject4Schema(Schema):
             EdgeField("other", EntTestObject3Schema),
         ]
 
-    def get_privacy_config(self, action: Action) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
+    def get_privacy_config(
+        self, action: Action
+    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
         return [AllowAll()]

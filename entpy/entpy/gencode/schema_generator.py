@@ -204,14 +204,39 @@ def _validate_privacy_config(schema: Schema) -> None:
             raise ValueError(
                 f"Unable to find edge {config.edge_name} to delegate the privacy of {type(schema).__name__}"
             )
-        elif isinstance(config, list) and all(
-            isinstance(item, PrivacyRule) for item in config
-        ):
-            # We're looking for at least one privacy rule
+        elif isinstance(config, PrivacyRule):
+            # Single privacy rule is valid
+            return
+        elif isinstance(config, list):
+            # List can contain both PrivacyRule and EdgeDelegate
             if len(config) == 0:
                 raise ValueError(
-                    f"You need to provide at least one PrivacyRule for {type(schema).__name__}"
+                    f"You need to provide at least one item in the privacy config list for {type(schema).__name__}"
                 )
+            # Validate each item in the list
+            for item in config:
+                if isinstance(item, EdgeDelegate):
+                    # Validate the edge exists and is not nullable
+                    found = False
+                    for field in schema.get_all_fields():
+                        if (
+                            isinstance(field, EdgeField)
+                            and field.original_name == item.edge_name
+                        ):
+                            if field.nullable:
+                                raise ValueError(
+                                    f"Edge {item.edge_name} cannot be used to delegate the privacy of {type(schema).__name__} because it is nullable."
+                                )
+                            found = True
+                            break
+                    if not found:
+                        raise ValueError(
+                            f"Unable to find edge {item.edge_name} to delegate the privacy of {type(schema).__name__}"
+                        )
+                elif not isinstance(item, PrivacyRule):
+                    raise ValueError(
+                        f"Invalid item type in privacy config list for {type(schema).__name__}: {type(item)}"
+                    )
             return
         raise ValueError(
             f"Unsupported type of privacy config for {type(schema).__name__} for {action}"
