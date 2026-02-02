@@ -1,5 +1,6 @@
 from entpy import Pattern, Schema, TimeField
 from entpy.framework.fields.edge_field import EdgeField
+from entpy.gencode.api_model_generator import generate as generate_api_model
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
@@ -18,6 +19,7 @@ def generate(
     base_name = pattern_class.__name__.replace("Pattern", "")
 
     model = generate_model(descriptor=pattern, base_name=base_name)
+    api_model = generate_api_model(descriptor=pattern, base_name=base_name)
 
     # Let's make sure that we require the properties for the pattern fields
     properties = ""
@@ -73,6 +75,7 @@ def generate(
     imports = (
         [str(vc), ent_model_import, str(session_getter)]
         + model.imports
+        + api_model.imports
         + query_content.imports
         + gen_edges.imports
         + mutator_content.imports
@@ -85,7 +88,9 @@ def generate(
     imports = sorted(set(imports))  # Remove duplicates
     imports_code = "\n".join(imports)
 
-    type_checking_imports = gen_edges.type_checking_imports
+    type_checking_imports = (
+        api_model.type_checking_imports + gen_edges.type_checking_imports
+    )
     if type_checking_imports:
         imports_code += "\n\nfrom typing import TYPE_CHECKING\n\n"
         imports_code += "if TYPE_CHECKING:\n"
@@ -106,6 +111,8 @@ from typing import Self
 {imports_code}
 
 {model.code}
+
+{api_model.code}
 
 class I{base_name}(Ent):{get_description(pattern)}
     {properties}

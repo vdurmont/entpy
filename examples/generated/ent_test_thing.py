@@ -14,7 +14,9 @@ from collections import defaultdict
 from database import get_session
 from ent_test_thing_pattern import ThingStatus
 from entpy import EntNotFoundError, ExecutionError
+from entpy.model import APIEntity
 from evc import ExampleViewerContext
+from pydantic import Field as APIField
 from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
@@ -27,6 +29,7 @@ from typing import cast
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_test_object5 import EntTestObject5APIModel
     from .ent_test_object5 import EntTestObject5
 
 
@@ -50,6 +53,14 @@ class EntTestThingModel(EntModel):
     thing_status: Mapped[ThingStatus | None] = mapped_column(
         DBEnum(ThingStatus, native_enum=True), nullable=True
     )
+
+
+class EntTestThingAPIModel(APIEntity):
+    a_good_thing: str = APIField(..., examples=["A sunny day"])
+    obj5: "EntTestObject5APIModel" = APIField(...)
+    a_pattern_validated_field: str | None = APIField(None, examples=["vdurmont"])
+    obj5_opt: "EntTestObject5APIModel | None" = APIField(None)
+    thing_status: ThingStatus | None = APIField(None)
 
 
 class IEntTestThing(Ent):

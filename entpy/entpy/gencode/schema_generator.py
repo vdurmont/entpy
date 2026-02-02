@@ -7,6 +7,7 @@ from entpy.framework.fields.core import (
     FieldWithExample,
 )
 from entpy.framework.fields.enum_field import EnumField
+from entpy.gencode.api_model_generator import generate as generate_api_model
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
 from entpy.gencode.introspection_generator import generate as generate_introspection
@@ -38,6 +39,7 @@ def generate(
     _validate_examples(schema)
 
     model_content = generate_model(descriptor=schema, base_name=base_name)
+    api_model_content = generate_api_model(descriptor=schema, base_name=base_name)
     base_content = generate_base(
         schema=schema,
         base_name=base_name,
@@ -67,6 +69,7 @@ def generate(
 
     type_checking_imports = (
         model_content.type_checking_imports
+        + api_model_content.type_checking_imports
         + base_content.type_checking_imports
         + query_content.type_checking_imports
         + mutator_content.type_checking_imports
@@ -76,6 +79,7 @@ def generate(
     imports = (
         ["from .ent_model import EntModel"]
         + model_content.imports
+        + api_model_content.imports
         + base_content.imports
         + query_content.imports
         + mutator_content.imports
@@ -111,6 +115,8 @@ from abc import ABC
 privacy_logger = logging.getLogger("entpy.privacy")
 
 {model_content.code}
+
+{api_model_content.code}
 
 {base_content.code}
 

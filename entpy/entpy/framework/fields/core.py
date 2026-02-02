@@ -17,6 +17,7 @@ class Field(ABC, Generic[T]):
     is_indexed: bool = False
     is_immutable: bool = False
     description: str | None = None
+    is_internal: bool = False
     _validators: list[FieldValidator[T]]
 
     def __init__(self, name: str, actual_name: str | None = None):
@@ -46,6 +47,10 @@ class Field(ABC, Generic[T]):
 
     def immutable(self) -> Self:
         self.is_immutable = True
+        return self
+
+    def internal(self) -> Self:
+        self.is_internal = True
         return self
 
     def validators(self, validators: list[FieldValidator[T]]) -> Self:

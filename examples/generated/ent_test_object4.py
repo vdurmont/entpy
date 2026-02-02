@@ -24,6 +24,8 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.model import APIEntity
+from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -37,6 +39,7 @@ from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_test_object3 import EntTestObject3APIModel
     from .ent_test_object3 import EntTestObject3
 
 privacy_logger = logging.getLogger("entpy.privacy")
@@ -50,6 +53,10 @@ class EntTestObject4Model(EntModel):
         ForeignKey("test_object3.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
+
+
+class EntTestObject4APIModel(APIEntity):
+    other: "EntTestObject3APIModel | None" = APIField(None)
 
 
 class EntTestObject4(Ent[ExampleViewerContext]):
