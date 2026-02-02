@@ -21,9 +21,7 @@ class EntMixedListSchema(Schema):
             StringField("name", 100).not_null().example("Mixed List Entity"),
         ]
 
-    def get_privacy_config(
-        self, action: Action
-    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
+    def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         # Return a mixed list: first check OmniscientViewerContext rule,
         # if it passes, delegate to the parent
         return [

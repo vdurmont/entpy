@@ -10,7 +10,7 @@ class Schema(Descriptor, ABC):
     @abstractmethod
     def get_privacy_config(
         self, action: Action
-    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
+    ) -> list[EdgeDelegate | PrivacyRule]:
         pass
 
     def get_composite_indexes(self) -> list[CompositeIndex]:

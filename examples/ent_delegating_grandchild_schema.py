@@ -18,8 +18,6 @@ class EntDelegatingGrandchildSchema(Schema):
             StringField("name", 100).not_null().example("Delegating Grandchild"),
         ]
 
-    def get_privacy_config(
-        self, action: Action
-    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
+    def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         # Delegate privacy evaluation to the child (which itself delegates to parent)
-        return EdgeDelegate(edge_name="delegating_child")
+        return [EdgeDelegate(edge_name="delegating_child")]

@@ -11,15 +11,13 @@ from rules import AllowIfTestViewerContext
 
 
 class EntSingleRuleSchema(Schema):
-    """Entity that returns a single PrivacyRule (not a list)."""
+    """Entity that returns a list with a single PrivacyRule."""
 
     def get_fields(self) -> list[Field]:
         return [
             StringField("name", 100).not_null().example("Single Rule Entity"),
         ]
 
-    def get_privacy_config(
-        self, action: Action
-    ) -> PrivacyRule | EdgeDelegate | list[PrivacyRule | EdgeDelegate]:
-        # Return a single PrivacyRule, not a list
-        return AllowIfTestViewerContext()
+    def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
+        # Return a single PrivacyRule in a list
+        return [AllowIfTestViewerContext()]
