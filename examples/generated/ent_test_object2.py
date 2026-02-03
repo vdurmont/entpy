@@ -79,54 +79,25 @@ class EntTestObject2APIModel(EntTestThingAPIModel):
 
 
 class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext, EntTestObject2Model]):
-    vc: ExampleViewerContext
-    model: EntTestObject2Model
     m = EntTestObject2Model
 
     def __init__(self, vc: ExampleViewerContext, model: EntTestObject2Model) -> None:
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
-
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-    @property
-    def a_good_thing(self) -> str:
-        return self.model.a_good_thing
-
-    @property
-    def obj5_id(self) -> UUID:
-        return self.model.obj5_id
+    if TYPE_CHECKING:
+        a_good_thing: str
+        obj5_id: UUID
+        a_pattern_validated_field: str | None
+        idempotency_key: UUID | None
+        obj5_opt_id: UUID | None
+        some_field: str | None
+        thing_status: ThingStatus | None
 
     async def gen_obj5(self) -> EntTestObject5:
         from .ent_test_object5 import EntTestObject5
 
         return await EntTestObject5.genx(self.vc, self.model.obj5_id)
-
-    @property
-    def a_pattern_validated_field(self) -> str | None:
-        return self.model.a_pattern_validated_field
-
-    @property
-    def idempotency_key(self) -> UUID | None:
-        return self.model.idempotency_key
-
-    @property
-    def obj5_opt_id(self) -> UUID | None:
-        return self.model.obj5_opt_id
 
     async def gen_obj5_opt(self) -> "EntTestObject5" | None:
         from .ent_test_object5 import EntTestObject5
@@ -134,14 +105,6 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext, EntTestObject2Mode
         if self.model.obj5_opt_id:
             return await EntTestObject5.gen(self.vc, self.model.obj5_opt_id)
         return None
-
-    @property
-    def some_field(self) -> str | None:
-        return self.model.some_field
-
-    @property
-    def thing_status(self) -> ThingStatus | None:
-        return self.model.thing_status
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True

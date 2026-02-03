@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class Database:
-    _session: async_scoped_session | AsyncSession | None
+    _session: async_scoped_session | AsyncSession | None = None
 
     def init_entpy(self, session: async_scoped_session | AsyncSession) -> None:
         self._session = session

@@ -66,33 +66,14 @@ class EntTestObject3APIModel(APIEntity):
 
 
 class EntTestObject3(Ent[ExampleViewerContext, EntTestObject3Model]):
-    vc: ExampleViewerContext
-    model: EntTestObject3Model
     m = EntTestObject3Model
 
     def __init__(self, vc: ExampleViewerContext, model: EntTestObject3Model) -> None:
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
-
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-    @property
-    def other_id(self) -> UUID | None:
-        return self.model.other_id
+    if TYPE_CHECKING:
+        other_id: UUID | None
 
     async def gen_other(self) -> "EntTestObject4" | None:
         from .ent_test_object4 import EntTestObject4

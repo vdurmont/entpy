@@ -1,6 +1,7 @@
-from entpy import Pattern, Schema, TimeField
+from entpy import Pattern, Schema
 from entpy.framework.fields.edge_field import EdgeField
 from entpy.gencode.api_model_generator import generate as generate_api_model
+from entpy.gencode.base_generator import _generate_edge_gens, _generate_fields
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
@@ -19,20 +20,8 @@ def generate(
     model = generate_model(descriptor=pattern, base_name=base_name)
     api_model = generate_api_model(descriptor=pattern, base_name=base_name)
 
-    # Let's make sure that we require the properties for the pattern fields
-    properties = ""
-    time_import_needed = False
-    for field in pattern.get_all_fields():
-        if isinstance(field, TimeField):
-            time_import_needed = True
-        properties += f"""
-    @property
-    @abstractmethod
-    def {field.name}(self) -> {field.get_python_type()}{" | None" if field.nullable else ""}:
-        pass
-"""  # noqa: E501
-
-    gen_edges = _generate_edges(pattern=pattern)
+    fields = _generate_fields(schema=pattern)
+    edge_gens = _generate_edge_gens(schema=pattern)
 
     query_content = generate_query(
         descriptor=pattern,
@@ -73,14 +62,11 @@ def generate(
         [str(vc), "from entpy import db"]
         + model.imports
         + api_model.imports
+        + fields.imports
         + query_content.imports
-        + gen_edges.imports
+        + edge_gens.imports
         + mutator_content.imports
     )
-
-    # Add time import if needed (detected during properties generation)
-    if time_import_needed:
-        imports.append("from datetime import time")
 
     imports = sorted(set(imports))  # Remove duplicates
     imports_code = "\n".join(imports)
@@ -88,7 +74,8 @@ def generate(
     type_checking_imports = (
         model.type_checking_imports
         + api_model.type_checking_imports
-        + gen_edges.type_checking_imports
+        + fields.type_checking_imports
+        + edge_gens.type_checking_imports
         + query_content.type_checking_imports
         + mutator_content.type_checking_imports
     )
@@ -116,9 +103,11 @@ from typing import Self
 {api_model.code}
 
 class I{base_name}(Ent):{get_description(pattern)}
-    {properties}
 
-{gen_edges.code}
+    if TYPE_CHECKING:
+{fields.code or "        pass"}
+
+{edge_gens.code}
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name}:
