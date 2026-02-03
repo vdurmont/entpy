@@ -24,6 +24,8 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.model import APIEntity
+from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
@@ -42,6 +44,10 @@ class EntPassThenDenyModel(EntModel):
     __tablename__ = "pass_then_deny"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+class EntPassThenDenyAPIModel(APIEntity):
+    name: str = APIField(..., examples=["Pass Then Deny Entity"])
 
 
 class EntPassThenDeny(Ent[ExampleViewerContext]):
