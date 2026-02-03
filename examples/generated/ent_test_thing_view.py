@@ -1,5 +1,4 @@
 from sqlalchemy import (
-    Table,
     literal_column,
     select,
     union_all,
@@ -8,6 +7,7 @@ from sqlalchemy import (
 from entpy.framework.view import create_view
 from .ent_test_object import EntTestObjectModel
 from .ent_test_object2 import EntTestObject2Model
+from .ent_test_thing import EntTestThingModel
 
 from database import Base
 
@@ -41,10 +41,9 @@ view_query: Selectable = union_all(
     ),
 )
 
-
-class EntTestThingView(Base):
-    __table__: Table = create_view(
-        "ent_test_thing_view",
-        view_query,
-        metadata=Base.metadata,
-    )
+ent_test_thing_view = create_view(
+    "ent_test_thing_view",
+    view_query,
+    metadata=Base.metadata,
+)
+Base.registry.map_imperatively(EntTestThingModel, ent_test_thing_view)

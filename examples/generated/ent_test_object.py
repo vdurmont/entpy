@@ -627,7 +627,6 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntTestObjectModel)
 
     async def gen(self, for_update: bool = False) -> list[EntTestObject]:

@@ -226,7 +226,6 @@ class EntPrivacyParentQuery(EntQuery[EntPrivacyParent, EntPrivacyParentModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntPrivacyParentModel)
 
     async def gen(self, for_update: bool = False) -> list[EntPrivacyParent]:

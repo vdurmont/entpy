@@ -226,7 +226,6 @@ class EntPassThenDenyQuery(EntQuery[EntPassThenDeny, EntPassThenDenyModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntPassThenDenyModel)
 
     async def gen(self, for_update: bool = False) -> list[EntPassThenDeny]:

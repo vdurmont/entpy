@@ -260,7 +260,6 @@ class EntParentQuery(EntQuery[EntParent, EntParentModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntParentModel)
 
     async def gen(self, for_update: bool = False) -> list[EntParent]:

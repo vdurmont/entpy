@@ -260,7 +260,6 @@ class EntMixedListQuery(EntQuery[EntMixedList, EntMixedListModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntMixedListModel)
 
     async def gen(self, for_update: bool = False) -> list[EntMixedList]:

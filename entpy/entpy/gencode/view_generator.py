@@ -27,7 +27,7 @@ def generate(
     schemas = [s() for s in children_schema_classes]
 
     selects = ""
-    imports = []
+    imports = [f"from .{to_snake_case(base_name)} import {base_name}Model"]
     for schema in schemas:
         schema_base_name = schema.__class__.__name__.replace("Schema", "")
         imports.append(
@@ -64,7 +64,6 @@ from sqlalchemy import (
     DDL,
     Column,
     MetaData,
-    Table,
     event,
     literal_column,
     select,
@@ -81,12 +80,12 @@ view_query: Selectable = union_all(
 {selects}
 )
 
-class {base_name}View(Base):
-    __table__: Table = create_view(
-        "{to_snake_case(base_name)}_view",
-        view_query,
-        metadata=Base.metadata,
-    )
+{to_snake_case(base_name)}_view = create_view(
+    "{to_snake_case(base_name)}_view",
+    view_query,
+    metadata=Base.metadata,
+)
+Base.registry.map_imperatively({base_name}Model, {to_snake_case(base_name)}_view)
 """  # noqa: E501
 
 

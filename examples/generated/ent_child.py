@@ -257,7 +257,6 @@ class EntChildQuery(EntQuery[EntChild, EntChildModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntChildModel)
 
     async def gen(self, for_update: bool = False) -> list[EntChild]:

@@ -95,8 +95,8 @@ def run(
                 "\nfrom ."
                 + descriptor_output_path.stem
                 + "_view import "
-                + descriptor_class.__name__.replace("Pattern", "View")
-                + "  # noqa: F401"
+                + descriptor_output_path.stem
+                + "_view  # noqa: F401"
             )
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")

@@ -264,7 +264,6 @@ class EntDelegatingChildQuery(EntQuery[EntDelegatingChild, EntDelegatingChildMod
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntDelegatingChildModel)
 
     async def gen(self, for_update: bool = False) -> list[EntDelegatingChild]:

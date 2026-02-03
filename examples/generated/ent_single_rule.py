@@ -226,7 +226,6 @@ class EntSingleRuleQuery(EntQuery[EntSingleRule, EntSingleRuleModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntSingleRuleModel)
 
     async def gen(self, for_update: bool = False) -> list[EntSingleRule]:
