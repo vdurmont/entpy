@@ -1,6 +1,7 @@
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
+from entpy import init_entpy
 
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -21,10 +22,7 @@ Base = declarative_base(metadata=metadata)
 
 
 session = SessionLocal()
-
-
-def get_session() -> AsyncSession:
-    return session
+init_entpy(session)
 
 
 async def init_db() -> None:

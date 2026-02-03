@@ -14,7 +14,6 @@ def run(
     schemas_directory: str,
     output_directory: str,
     base_model_import: str,
-    session_getter: ImportedObject,
     vc: ImportedObject,
     prepended_rules: list[PrivacyRuleImport] | None = None,
     threshold_to_stop_loading_ents_for_count: int = 50,
@@ -61,7 +60,6 @@ def run(
             examples_list += f"    {base_name}Example,\n"
             code = generate_schema(
                 schema_class=descriptor_class,
-                session_getter=session_getter,
                 vc=vc,
                 prepended_rules=prepended_rules or [],
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
@@ -73,7 +71,6 @@ def run(
             code = generate_pattern(
                 pattern_class=descriptor_class,
                 children_schema_classes=children,
-                session_getter=session_getter,
                 vc=vc,
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
             )

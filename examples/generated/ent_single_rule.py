@@ -5,6 +5,7 @@
 from __future__ import annotations
 import logging
 from entpy import (
+    db,
     Ent,
     generate_uuid,
     EntNotFoundError,
@@ -16,7 +17,6 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
-from database import get_session
 from .ent_model import EntModel
 from ent_single_rule_schema import EntSingleRuleSchema
 from entpy import EdgeDelegate, PrivacyRule
@@ -82,7 +82,6 @@ class EntSingleRule(Ent[ExampleViewerContext, EntSingleRuleModel]):
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True
     ) -> Decision:
-        session = get_session()
         # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
         if action in [
@@ -104,7 +103,7 @@ class EntSingleRule(Ent[ExampleViewerContext, EntSingleRuleModel]):
         # Evaluate each rule/delegate in order
         for item in all_rules:
             if isinstance(item, PrivacyRule):
-                decision = await item.gen_evaluate_cached(session, vc, self)
+                decision = await item.gen_evaluate_cached(vc, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug(
                         "Privacy rule %s of EntSingleRule with ID %s was denied for %s",
@@ -151,13 +150,12 @@ class EntSingleRule(Ent[ExampleViewerContext, EntSingleRuleModel]):
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntSingleRule | None:
         real_ent_id = validate_ent_id(ent_id)
-        session = get_session()
-        model = await session.get(
+        model = await db.session.get(
             EntSingleRuleModel, real_ent_id, with_for_update=for_update or None
         )
         if model is None:
             return None
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return EntSingleRule(vc=vc, model=model)
 
     @classmethod
@@ -183,14 +181,13 @@ class EntSingleRule(Ent[ExampleViewerContext, EntSingleRuleModel]):
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntSingleRule | None:
         real_ent_id = validate_ent_id(ent_id)
-        session = get_session()
         async with emulate_for_update(
-            session, EntSingleRuleModel, "id", real_ent_id, for_update
+            EntSingleRuleModel, "id", real_ent_id, for_update
         ):
-            model = await session.get(
+            model = await db.session.get(
                 EntSingleRuleModel, real_ent_id, with_for_update=for_update or None
             )
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -229,13 +226,12 @@ class EntSingleRuleQuery(EntQuery[EntSingleRule, EntSingleRuleModel]):
         self.query = select(EntSingleRuleModel)
 
     async def gen(self, for_update: bool = False) -> list[EntSingleRule]:
-        session = get_session()
         query = (
             self._finalize_query().with_for_update()
             if for_update
             else self._finalize_query()
         )
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -255,11 +251,10 @@ class EntSingleRuleQuery(EntQuery[EntSingleRule, EntSingleRuleModel]):
         ]
 
     async def gen_first(self, for_update: bool = False) -> EntSingleRule | None:
-        session = get_session()
         query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(
@@ -275,13 +270,12 @@ class EntSingleRuleQuery(EntQuery[EntSingleRule, EntSingleRuleModel]):
         return ent
 
     async def gen_count_NO_PRIVACY(self) -> int:
-        session = get_session()
         count_query = (
             self._finalize_query()
             .with_only_columns(func.count(), maintain_column_froms=True)
             .order_by(None)
         )
-        result = await session.execute(count_query)
+        result = await db.session.execute(count_query)
         count = result.scalar()
         if count is None:
             raise ExecutionError("Unable to get the count")
@@ -289,7 +283,7 @@ class EntSingleRuleQuery(EntQuery[EntSingleRule, EntSingleRuleModel]):
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await session.execute(fetch_query)
+            result = await db.session.execute(fetch_query)
             ents = await self._gen_ents(result)
             return len(list(filter(None, ents)))
 
@@ -361,22 +355,20 @@ class EntSingleRuleMutatorCreationAction:
         self.name = name
 
     async def gen_savex(self) -> EntSingleRule:
-        session = get_session()
-
         model = EntSingleRuleModel(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
             name=self.name,
         )
-        session.add(model)
+        db.session.add(model)
         ent = EntSingleRule(vc=self.vc, model=model)
         decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to CREATE EntSingleRule with ID {ent.id}"
             )
-        await session.flush()
+        await db.session.flush()
         return await EntSingleRule._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
@@ -392,20 +384,18 @@ class EntSingleRuleMutatorUpdateAction:
         self.name = ent.name
 
     async def gen_savex(self) -> EntSingleRule:
-        session = get_session()
-
         model = self.ent.model
         model.name = self.name
         model.updated_at = datetime.now(tz=UTC)
-        session.add(model)
+        db.session.add(model)
         new_ent = EntSingleRule(vc=self.vc, model=model)
         decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to UPDATE EntSingleRule with ID {new_ent.id}"
             )
-        await session.flush()
-        await session.refresh(model)
+        await db.session.flush()
+        await db.session.refresh(model)
         return await EntSingleRule._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
@@ -421,7 +411,6 @@ class EntSingleRuleMutatorDeletionAction:
         self.is_soft_delete = is_soft_delete
 
     async def gen_save(self) -> None:
-        session = get_session()
         model = self.ent.model
         action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
         decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
@@ -432,10 +421,10 @@ class EntSingleRuleMutatorDeletionAction:
         if self.is_soft_delete:
             model.soft_deleted_at = datetime.now(tz=UTC)
             model.updated_at = datetime.now(tz=UTC)
-            session.add(model)
+            db.session.add(model)
         else:
-            await session.delete(model)
-        await session.flush()
+            await db.session.delete(model)
+        await db.session.flush()
 
 
 class EntSingleRuleExample:

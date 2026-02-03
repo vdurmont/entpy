@@ -19,7 +19,6 @@ from entpy.gencode.utils import ImportedObject, PrivacyRuleImport
 
 def generate(
     schema_class: type[Schema],
-    session_getter: ImportedObject,
     vc: ImportedObject,
     prepended_rules: list[PrivacyRuleImport],
     threshold_to_stop_loading_ents_for_count: int,
@@ -43,21 +42,18 @@ def generate(
     base_content = generate_base(
         schema=schema,
         base_name=base_name,
-        session_getter=session_getter,
         vc=vc,
         prepended_rules=prepended_rules,
     )
     query_content = generate_query(
         descriptor=schema,
         base_name=base_name,
-        session_getter=session_getter,
         vc=vc,
         threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
     )
     mutator_content = generate_mutator(
         schema=schema,
         base_name=base_name,
-        session_getter=session_getter,
         vc=vc,
     )
     example_content = generate_example(
@@ -101,13 +97,12 @@ def generate(
 
 from __future__ import annotations
 import logging
-from entpy import Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision, ValidationError, validate_ent_id
+from entpy import db, Ent, generate_uuid, EntNotFoundError, ExecutionError, Action, Decision, ValidationError, validate_ent_id
 from uuid import UUID
 from datetime import datetime, UTC
 from typing import Self
 from abc import ABC
 {vc}
-{session_getter}
 {imports_code}
 {type_checking_imports_code}
 

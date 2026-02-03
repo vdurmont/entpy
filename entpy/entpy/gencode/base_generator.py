@@ -11,7 +11,6 @@ from entpy.gencode.utils import (
 def generate(
     schema: Schema,
     base_name: str,
-    session_getter: ImportedObject,
     vc: ImportedObject,
     prepended_rules: list[PrivacyRuleImport],
 ) -> GeneratedContent:
@@ -92,7 +91,6 @@ class {base_name}({extends}):{get_description(schema)}
 {accessors.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action, default_to_deny: bool = True) -> Decision:
-        session = {session_getter.name}()
         # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
 {preprended_rules_str}
@@ -102,7 +100,7 @@ class {base_name}({extends}):{get_description(schema)}
         # Evaluate each rule/delegate in order
         for item in all_rules:
             if isinstance(item, PrivacyRule):
-                decision = await item.gen_evaluate_cached(session, vc, self)
+                decision = await item.gen_evaluate_cached(vc, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(item), self.id, str(vc))
             elif isinstance(item, EdgeDelegate):
@@ -127,11 +125,10 @@ class {base_name}({extends}):{get_description(schema)}
     @classmethod
     async def _gen_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name} | None:
         real_ent_id = validate_ent_id(ent_id)
-        session = {session_getter.name}()
-        model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
+        model = await db.session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
         if model is None:
             return None
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return {base_name}(vc=vc, model=model)
 
     @classmethod
@@ -155,10 +152,9 @@ class {base_name}({extends}):{get_description(schema)}
         cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False
     ) -> {base_name} | None:
         real_ent_id = validate_ent_id(ent_id)
-        session = {session_getter.name}()
-        async with emulate_for_update(session, {base_name}Model, "id", real_ent_id, for_update):
-            model = await session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
-        session.info.setdefault("cache", set()).add(model)
+        async with emulate_for_update({base_name}Model, "id", real_ent_id, for_update):
+            model = await db.session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
+        db.session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     {unique_gens}
@@ -258,13 +254,12 @@ def _generate_unique_gens(schema: Schema, base_name: str, vc: ImportedObject) ->
             unique_gens += f"""
     @classmethod
     async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> {base_name} | None:
-        session = get_session()
         query = select({base_name}Model).where({base_name}Model.{field.name} == {field.name})
         query = query.with_for_update()
-        async with emulate_for_update(session, {base_name}Model, "{field.name}", {field.name}, for_update):
-            result = await session.execute(query)
+        async with emulate_for_update({base_name}Model, "{field.name}", {field.name}, for_update):
+            result = await db.session.execute(query)
         model = result.scalar_one_or_none()
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

@@ -5,19 +5,11 @@ from entpy.gencode.utils import ImportedObject
 from entpy.gencode.utils import to_snake_case as _to_snake_case
 
 
-def generate(
-    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
-) -> GeneratedContent:
+def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedContent:
     base = _generate_base(schema=schema, base_name=base_name, vc=vc)
-    creation = _generate_creation(
-        schema=schema, base_name=base_name, session_getter=session_getter, vc=vc
-    )
-    update = _generate_update(
-        schema=schema, base_name=base_name, session_getter=session_getter, vc=vc
-    )
-    deletion = _generate_deletion(
-        schema=schema, base_name=base_name, session_getter=session_getter, vc=vc
-    )
+    creation = _generate_creation(schema=schema, base_name=base_name, vc=vc)
+    update = _generate_update(schema=schema, base_name=base_name, vc=vc)
+    deletion = _generate_deletion(schema=schema, base_name=base_name, vc=vc)
     return GeneratedContent(
         imports=["from entpy import PrivacyError"]
         + base.imports
@@ -92,7 +84,7 @@ class {base_name}Mutator:
 
 
 def _generate_creation(
-    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
+    schema: Schema, base_name: str, vc: ImportedObject
 ) -> GeneratedContent:
     fields = schema.get_all_fields()
 
@@ -138,7 +130,6 @@ class {base_name}MutatorCreationAction:
 {constructor_assignments}
 
     async def gen_savex(self) -> {base_name}:
-        session = {session_getter.name}()
 {validations.code}
         model = {base_name}Model(
             id=self.id,
@@ -146,19 +137,19 @@ class {base_name}MutatorCreationAction:
             created_at=self.created_at,
 {model_assignments}
         )
-        session.add(model)
+        db.session.add(model)
         ent = {base_name}(vc=self.vc, model=model)
         decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(f"Current viewer context is not authorized to CREATE {base_name} with ID {{ent.id}}")
-        await session.flush()
+        await db.session.flush()
         return await {base_name}._genx_from_model(self.vc, model)  # noqa: SLF001
 """,  # noqa: E501
     )
 
 
 def _generate_update(
-    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
+    schema: Schema, base_name: str, vc: ImportedObject
 ) -> GeneratedContent:
     if schema.is_immutable():
         return GeneratedContent("")
@@ -221,25 +212,24 @@ class {base_name}MutatorUpdateAction{inheritance}:
 {local_variables_assignments}
 
     async def gen_savex(self) -> {base_name}:
-        session = {session_getter.name}()
 {validations.code}
         model = self.ent.model
 {model_assignments}
         model.updated_at = datetime.now(tz=UTC)
-        session.add(model)
+        db.session.add(model)
         new_ent = {base_name}(vc=self.vc, model=model)
         decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(f"Current viewer context is not authorized to UPDATE {base_name} with ID {{new_ent.id}}")
-        await session.flush()
-        await session.refresh(model)
+        await db.session.flush()
+        await db.session.refresh(model)
         return await {base_name}._genx_from_model(self.vc, model)  # noqa: SLF001
 """,
     )
 
 
 def _generate_deletion(
-    schema: Schema, base_name: str, session_getter: ImportedObject, vc: ImportedObject
+    schema: Schema, base_name: str, vc: ImportedObject
 ) -> GeneratedContent:
     # Check if the schema has patterns to determine inheritance
     patterns = schema.get_patterns()
@@ -273,7 +263,6 @@ class {base_name}MutatorDeletionAction{inheritance}:
         self.is_soft_delete=is_soft_delete
 
     async def gen_save(self) -> None:
-        session = {session_getter.name}()
         model = self.ent.model
         action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
         decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
@@ -282,10 +271,10 @@ class {base_name}MutatorDeletionAction{inheritance}:
         if self.is_soft_delete:
             model.soft_deleted_at = datetime.now(tz=UTC)
             model.updated_at = datetime.now(tz=UTC)
-            session.add(model)
+            db.session.add(model)
         else:
-            await session.delete(model)
-        await session.flush()
+            await db.session.delete(model)
+        await db.session.flush()
 """,
     )
 

@@ -15,23 +15,38 @@ locks: dict[tuple[type, str, Any], asyncio.Lock] = defaultdict(asyncio.Lock)
 log = logging.getLogger(__name__)
 
 
+class Database:
+    _session: async_scoped_session | AsyncSession | None
+
+    def init_entpy(self, session: async_scoped_session | AsyncSession) -> None:
+        self._session = session
+
+    @property
+    def session(self) -> async_scoped_session | AsyncSession:
+        if self._session is None:
+            raise RuntimeError("EntPy not initialized, please call init_entpy() first")
+        return self._session
+
+
+db = Database()
+
+
 @asynccontextmanager
 async def emulate_for_update(
-    session: async_scoped_session | AsyncSession,
     model: type,
     field: str,
     value: Any,
     for_update: bool = False,
 ) -> AsyncGenerator[None]:
-    if for_update and session.bind.engine.name == "sqlite":
-        session.info.setdefault("for_update", set())
+    if for_update and db.session.bind.engine.name == "sqlite":
+        db.session.info.setdefault("for_update", set())
         lock = locks[(model, field, value)]
-        if lock not in session.info["for_update"]:
+        if lock not in db.session.info["for_update"]:
             log.debug(
                 "Acquiring lock %s for %s.%s = %s", lock, model.__name__, field, value
             )
             await lock.acquire()
-            session.info["for_update"].add(lock)
+            db.session.info["for_update"].add(lock)
 
     yield
 

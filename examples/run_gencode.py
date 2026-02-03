@@ -8,7 +8,6 @@ if __name__ == "__main__":
         schemas_directory=".",
         output_directory="./generated",
         base_model_import="from database import Base",
-        session_getter=ImportedObject(module="database", name="get_session"),
         vc=ImportedObject(module="evc", name="ExampleViewerContext"),
         prepended_rules=[
             PrivacyRuleImport(

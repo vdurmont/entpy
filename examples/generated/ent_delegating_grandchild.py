@@ -5,6 +5,7 @@
 from __future__ import annotations
 import logging
 from entpy import (
+    db,
     Ent,
     generate_uuid,
     EntNotFoundError,
@@ -16,7 +17,6 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
-from database import get_session
 from .ent_model import EntModel
 from ent_delegating_grandchild_schema import EntDelegatingGrandchildSchema
 from entpy import EdgeDelegate, PrivacyRule
@@ -111,7 +111,6 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext, EntDelegatingGrandchildM
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True
     ) -> Decision:
-        session = get_session()
         # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
         if action in [
@@ -133,7 +132,7 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext, EntDelegatingGrandchildM
         # Evaluate each rule/delegate in order
         for item in all_rules:
             if isinstance(item, PrivacyRule):
-                decision = await item.gen_evaluate_cached(session, vc, self)
+                decision = await item.gen_evaluate_cached(vc, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug(
                         "Privacy rule %s of EntDelegatingGrandchild with ID %s was denied for %s",
@@ -187,15 +186,14 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext, EntDelegatingGrandchildM
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntDelegatingGrandchild | None:
         real_ent_id = validate_ent_id(ent_id)
-        session = get_session()
-        model = await session.get(
+        model = await db.session.get(
             EntDelegatingGrandchildModel,
             real_ent_id,
             with_for_update=for_update or None,
         )
         if model is None:
             return None
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return EntDelegatingGrandchild(vc=vc, model=model)
 
     @classmethod
@@ -223,16 +221,15 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext, EntDelegatingGrandchildM
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntDelegatingGrandchild | None:
         real_ent_id = validate_ent_id(ent_id)
-        session = get_session()
         async with emulate_for_update(
-            session, EntDelegatingGrandchildModel, "id", real_ent_id, for_update
+            EntDelegatingGrandchildModel, "id", real_ent_id, for_update
         ):
-            model = await session.get(
+            model = await db.session.get(
                 EntDelegatingGrandchildModel,
                 real_ent_id,
                 with_for_update=for_update or None,
             )
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -275,13 +272,12 @@ class EntDelegatingGrandchildQuery(
         self.query = select(EntDelegatingGrandchildModel)
 
     async def gen(self, for_update: bool = False) -> list[EntDelegatingGrandchild]:
-        session = get_session()
         query = (
             self._finalize_query().with_for_update()
             if for_update
             else self._finalize_query()
         )
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -305,11 +301,10 @@ class EntDelegatingGrandchildQuery(
     async def gen_first(
         self, for_update: bool = False
     ) -> EntDelegatingGrandchild | None:
-        session = get_session()
         query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(
@@ -327,13 +322,12 @@ class EntDelegatingGrandchildQuery(
         return ent
 
     async def gen_count_NO_PRIVACY(self) -> int:
-        session = get_session()
         count_query = (
             self._finalize_query()
             .with_only_columns(func.count(), maintain_column_froms=True)
             .order_by(None)
         )
-        result = await session.execute(count_query)
+        result = await db.session.execute(count_query)
         count = result.scalar()
         if count is None:
             raise ExecutionError("Unable to get the count")
@@ -341,7 +335,7 @@ class EntDelegatingGrandchildQuery(
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await session.execute(fetch_query)
+            result = await db.session.execute(fetch_query)
             ents = await self._gen_ents(result)
             return len(list(filter(None, ents)))
 
@@ -426,8 +420,6 @@ class EntDelegatingGrandchildMutatorCreationAction:
         self.name = name
 
     async def gen_savex(self) -> EntDelegatingGrandchild:
-        session = get_session()
-
         model = EntDelegatingGrandchildModel(
             id=self.id,
             updated_at=self.updated_at,
@@ -435,14 +427,14 @@ class EntDelegatingGrandchildMutatorCreationAction:
             delegating_child_id=self.delegating_child_id,
             name=self.name,
         )
-        session.add(model)
+        db.session.add(model)
         ent = EntDelegatingGrandchild(vc=self.vc, model=model)
         decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to CREATE EntDelegatingGrandchild with ID {ent.id}"
             )
-        await session.flush()
+        await db.session.flush()
         return await EntDelegatingGrandchild._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
@@ -460,21 +452,19 @@ class EntDelegatingGrandchildMutatorUpdateAction:
         self.name = ent.name
 
     async def gen_savex(self) -> EntDelegatingGrandchild:
-        session = get_session()
-
         model = self.ent.model
         model.delegating_child_id = self.delegating_child_id
         model.name = self.name
         model.updated_at = datetime.now(tz=UTC)
-        session.add(model)
+        db.session.add(model)
         new_ent = EntDelegatingGrandchild(vc=self.vc, model=model)
         decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to UPDATE EntDelegatingGrandchild with ID {new_ent.id}"
             )
-        await session.flush()
-        await session.refresh(model)
+        await db.session.flush()
+        await db.session.refresh(model)
         return await EntDelegatingGrandchild._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
@@ -493,7 +483,6 @@ class EntDelegatingGrandchildMutatorDeletionAction:
         self.is_soft_delete = is_soft_delete
 
     async def gen_save(self) -> None:
-        session = get_session()
         model = self.ent.model
         action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
         decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
@@ -504,10 +493,10 @@ class EntDelegatingGrandchildMutatorDeletionAction:
         if self.is_soft_delete:
             model.soft_deleted_at = datetime.now(tz=UTC)
             model.updated_at = datetime.now(tz=UTC)
-            session.add(model)
+            db.session.add(model)
         else:
-            await session.delete(model)
-        await session.flush()
+            await db.session.delete(model)
+        await db.session.flush()
 
 
 class EntDelegatingGrandchildExample:
