@@ -35,8 +35,6 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         common_column_attributes = ", nullable=" + (
             "True" if field.nullable else "False"
         )
-        common_column_attributes += ", unique=True" if field.is_unique else ""
-        common_column_attributes += ", index=True" if field.is_indexed else ""
         if isinstance(field, FieldWithDefault):
             default = field.generate_sql_default()
             if default:
@@ -167,8 +165,17 @@ class {base_name}Model({extends.code}):
 
 def _generate_indexes(schema: Schema, base_name: str) -> GeneratedContent:
     indexes = schema.get_composite_indexes()
+    for field in schema.get_all_fields():
+        if field.is_indexed or field.is_unique:
+            indexes.append(
+                CompositeIndex(
+                    field_names=[field.name],
+                    unique=field.is_unique,
+                )
+            )
+
     return GeneratedContent(
-        imports=["from sqlalchemy import Index"] if indexes else [],
+        imports=["from sqlalchemy import Index, text"] if indexes else [],
         code="\n".join(
             [_generate_index(index=index, base_name=base_name) for index in indexes]
         ),
@@ -177,9 +184,11 @@ def _generate_indexes(schema: Schema, base_name: str) -> GeneratedContent:
 
 def _generate_index(index: CompositeIndex, base_name: str) -> str:
     return f"""Index(
-    "{index.name}",
+    None,
 {"\n".join([f"    {base_name}Model.{field_name}," for field_name in index.field_names])}
-{"    unique = True" if index.unique else ""}
+{"    unique = True," if index.unique else ""}
+{f"    postgresql_where = {index.where}," if index.where else ""}
+{f"    sqlite_where = {index.where}," if index.where else ""}
 )"""
 
 

@@ -1,7 +1,9 @@
 from entpy import Field, Pattern, StringField, EnumField, FieldValidator, EdgeField
+from entpy.framework.fields.uuid_field import UuidField
 from ent_test_object5_schema import EntTestObject5Schema
 from enum import Enum
 import re
+import uuid
 
 
 class ThingStatus(Enum):
@@ -28,6 +30,7 @@ class EntTestThingPattern(Pattern):
             EdgeField("obj5_opt", EntTestObject5Schema),
             StringField("a_good_thing", 100).not_null().example("A sunny day"),
             EnumField("thing_status", ThingStatus),
+            UuidField("idempotency_key").unique().dynamic_example(lambda: uuid.uuid4()),
             StringField("a_pattern_validated_field", 100)
             .example("vdurmont")
             .validators([MyValidator()]),

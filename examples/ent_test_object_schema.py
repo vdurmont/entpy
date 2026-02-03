@@ -25,6 +25,7 @@ from entpy import (
     IntervalField,
     UuidField,
 )
+from entpy.framework.composite_index import CompositeIndex
 
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from ent_test_thing_pattern import EntTestThingPattern
@@ -77,6 +78,16 @@ class EntTestObjectSchema(Schema):
 
     def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         return [AllowAll()]
+
+    def get_composite_indexes(self) -> list[CompositeIndex]:
+        return [
+            CompositeIndex(field_names=["trace_id", "status_code"], unique=True),
+            CompositeIndex(field_names=["status", "sadness"]),
+            CompositeIndex(
+                field_names=["validated_field"],
+                where="EntTestObjectModel.is_it_true.is_(True)",
+            ),
+        ]
 
 
 class CustomValidator(FieldValidator[str | None]):
