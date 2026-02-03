@@ -69,8 +69,6 @@ class EntDelegatingGrandchildAPIModel(APIEntity):
 
 
 class EntDelegatingGrandchild(Ent[ExampleViewerContext, EntDelegatingGrandchildModel]):
-    vc: ExampleViewerContext
-    model: EntDelegatingGrandchildModel
     m = EntDelegatingGrandchildModel
 
     def __init__(
@@ -79,34 +77,14 @@ class EntDelegatingGrandchild(Ent[ExampleViewerContext, EntDelegatingGrandchildM
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
-
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-    @property
-    def delegating_child_id(self) -> UUID:
-        return self.model.delegating_child_id
+    if TYPE_CHECKING:
+        delegating_child_id: UUID
+        name: str
 
     async def gen_delegating_child(self) -> EntDelegatingChild:
         from .ent_delegating_child import EntDelegatingChild
 
         return await EntDelegatingChild.genx(self.vc, self.model.delegating_child_id)
-
-    @property
-    def name(self) -> str:
-        return self.model.name
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True

@@ -69,37 +69,15 @@ class EntMixedListAPIModel(APIEntity):
 
 
 class EntMixedList(Ent[ExampleViewerContext, EntMixedListModel]):
-    vc: ExampleViewerContext
-    model: EntMixedListModel
     m = EntMixedListModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntMixedListModel) -> None:
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
-
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-    @property
-    def name(self) -> str:
-        return self.model.name
-
-    @property
-    def privacy_parent_id(self) -> UUID:
-        return self.model.privacy_parent_id
+    if TYPE_CHECKING:
+        name: str
+        privacy_parent_id: UUID
 
     async def gen_privacy_parent(self) -> EntPrivacyParent:
         from .ent_privacy_parent import EntPrivacyParent

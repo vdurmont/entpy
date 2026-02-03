@@ -24,9 +24,9 @@ from sqlalchemy import UUID as DBUUID
 from sqlalchemy import select, Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
+from typing import TYPE_CHECKING
 from typing import cast
 
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5APIModel
@@ -66,43 +66,25 @@ class EntTestThingAPIModel(APIEntity):
 
 
 class IEntTestThing(Ent):
-    @property
-    @abstractmethod
-    def a_good_thing(self) -> str:
-        pass
+    if TYPE_CHECKING:
+        a_good_thing: str
+        obj5_id: UUID
+        a_pattern_validated_field: str | None
+        idempotency_key: UUID | None
+        obj5_opt_id: UUID | None
+        thing_status: ThingStatus | None
 
-    @property
-    @abstractmethod
-    def obj5_id(self) -> UUID:
-        pass
+    async def gen_obj5(self) -> EntTestObject5:
+        from .ent_test_object5 import EntTestObject5
 
-    @property
-    @abstractmethod
-    def a_pattern_validated_field(self) -> str | None:
-        pass
+        return await EntTestObject5.genx(self.vc, self.model.obj5_id)
 
-    @property
-    @abstractmethod
-    def idempotency_key(self) -> UUID | None:
-        pass
-
-    @property
-    @abstractmethod
-    def obj5_opt_id(self) -> UUID | None:
-        pass
-
-    @property
-    @abstractmethod
-    def thing_status(self) -> ThingStatus | None:
-        pass
-
-    @abstractmethod
-    async def gen_obj5(self) -> "EntTestObject5":
-        pass
-
-    @abstractmethod
     async def gen_obj5_opt(self) -> "EntTestObject5" | None:
-        pass
+        from .ent_test_object5 import EntTestObject5
+
+        if self.model.obj5_opt_id:
+            return await EntTestObject5.gen(self.vc, self.model.obj5_opt_id)
+        return None
 
     @classmethod
     async def _genx_no_privacy_DO_NOT_USE(

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypeVar
 from uuid import UUID
 
 from entpy.framework.action import Action
@@ -17,26 +17,22 @@ if TYPE_CHECKING:
 class Ent[VC, ENTMODEL]:
     model: ENTMODEL
     m: type[ENTMODEL]
+    vc: VC
 
-    @property
-    @abstractmethod
-    def id(self) -> UUID:
-        pass
+    # Model fields are actually returned by __getattr__()
+    if TYPE_CHECKING:
+        id: UUID
+        created_at: datetime
+        updated_at: datetime
+        soft_deleted_at: datetime | None
+    else:
 
-    @property
-    @abstractmethod
-    def created_at(self) -> datetime:
-        pass
-
-    @property
-    @abstractmethod
-    def updated_at(self) -> datetime:
-        pass
-
-    @property
-    @abstractmethod
-    def soft_deleted_at(self) -> datetime | None:
-        pass
+        def __getattr__(self, name: str) -> Any:
+            if not name.startswith("_"):
+                return getattr(self.model, name)
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{name}'"
+            )
 
     @abstractmethod
     async def _gen_evaluate_privacy(

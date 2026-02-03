@@ -224,110 +224,55 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
     This is an object we use to test all the ent framework features!
     """
 
-    vc: ExampleViewerContext
-    model: EntTestObjectModel
     m = EntTestObjectModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntTestObjectModel) -> None:
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
-
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-    @property
-    def a_good_thing(self) -> str:
-        return self.model.a_good_thing
-
-    @property
-    def firstname(self) -> str:
-        return self.model.firstname
-
-    @property
-    def obj5_id(self) -> UUID:
-        return self.model.obj5_id
+    if TYPE_CHECKING:
+        a_good_thing: str
+        firstname: str
+        obj5_id: UUID
+        required_sub_object_id: UUID
+        username: str
+        """
+        This is the username that you will use on the platform.
+        """
+        lastname: str | None
+        sadness: Status | None
+        a_pattern_validated_field: str | None
+        city: str | None
+        context: str | None
+        correlation_id: UUID | None
+        dob: date | None
+        duration: timedelta | None
+        end_time: time | None
+        idempotency_key: UUID | None
+        is_it_true: bool | None
+        obj5_opt_id: UUID | None
+        optional_sub_object_id: UUID | None
+        optional_sub_object_no_ex_id: UUID | None
+        self_id: UUID | None
+        some_json: list[str] | None
+        some_pattern_id: UUID | None
+        start_time: time | None
+        status: Status | None
+        status_code: int | None
+        thing_status: ThingStatus | None
+        trace_id: UUID | None
+        validated_field: str | None
+        when_is_it_cool: datetime | None
 
     async def gen_obj5(self) -> EntTestObject5:
         from .ent_test_object5 import EntTestObject5
 
         return await EntTestObject5.genx(self.vc, self.model.obj5_id)
 
-    @property
-    def required_sub_object_id(self) -> UUID:
-        return self.model.required_sub_object_id
-
     async def gen_required_sub_object(self) -> EntTestSubObject:
         from .ent_test_sub_object import EntTestSubObject
 
         return await EntTestSubObject.genx(self.vc, self.model.required_sub_object_id)
-
-    @property
-    def username(self) -> str:
-        """
-        This is the username that you will use on the platform.
-        """
-        return self.model.username
-
-    @property
-    def lastname(self) -> str | None:
-        return self.model.lastname
-
-    @property
-    def sadness(self) -> Status | None:
-        return self.model.sadness
-
-    @property
-    def a_pattern_validated_field(self) -> str | None:
-        return self.model.a_pattern_validated_field
-
-    @property
-    def city(self) -> str | None:
-        return self.model.city
-
-    @property
-    def context(self) -> str | None:
-        return self.model.context
-
-    @property
-    def correlation_id(self) -> UUID | None:
-        return self.model.correlation_id
-
-    @property
-    def dob(self) -> date | None:
-        return self.model.dob
-
-    @property
-    def duration(self) -> timedelta | None:
-        return self.model.duration
-
-    @property
-    def end_time(self) -> time | None:
-        return self.model.end_time
-
-    @property
-    def idempotency_key(self) -> UUID | None:
-        return self.model.idempotency_key
-
-    @property
-    def is_it_true(self) -> bool | None:
-        return self.model.is_it_true
-
-    @property
-    def obj5_opt_id(self) -> UUID | None:
-        return self.model.obj5_opt_id
 
     async def gen_obj5_opt(self) -> "EntTestObject5" | None:
         from .ent_test_object5 import EntTestObject5
@@ -335,10 +280,6 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
         if self.model.obj5_opt_id:
             return await EntTestObject5.gen(self.vc, self.model.obj5_opt_id)
         return None
-
-    @property
-    def optional_sub_object_id(self) -> UUID | None:
-        return self.model.optional_sub_object_id
 
     async def gen_optional_sub_object(self) -> "EntTestSubObject" | None:
         from .ent_test_sub_object import EntTestSubObject
@@ -349,10 +290,6 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
             )
         return None
 
-    @property
-    def optional_sub_object_no_ex_id(self) -> UUID | None:
-        return self.model.optional_sub_object_no_ex_id
-
     async def gen_optional_sub_object_no_ex(self) -> "EntTestSubObject" | None:
         from .ent_test_sub_object import EntTestSubObject
 
@@ -362,22 +299,10 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
             )
         return None
 
-    @property
-    def self_id(self) -> UUID | None:
-        return self.model.self_id
-
     async def gen_self(self) -> "EntTestObject" | None:
         if self.model.self_id:
             return await EntTestObject.gen(self.vc, self.model.self_id)
         return None
-
-    @property
-    def some_json(self) -> list[str] | None:
-        return self.model.some_json
-
-    @property
-    def some_pattern_id(self) -> UUID | None:
-        return self.model.some_pattern_id
 
     async def gen_some_pattern(self) -> "IEntTestThing" | None:
         from .ent_test_thing import IEntTestThing
@@ -385,34 +310,6 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
         if self.model.some_pattern_id:
             return await IEntTestThing.gen(self.vc, self.model.some_pattern_id)
         return None
-
-    @property
-    def start_time(self) -> time | None:
-        return self.model.start_time
-
-    @property
-    def status(self) -> Status | None:
-        return self.model.status
-
-    @property
-    def status_code(self) -> int | None:
-        return self.model.status_code
-
-    @property
-    def thing_status(self) -> ThingStatus | None:
-        return self.model.thing_status
-
-    @property
-    def trace_id(self) -> UUID | None:
-        return self.model.trace_id
-
-    @property
-    def validated_field(self) -> str | None:
-        return self.model.validated_field
-
-    @property
-    def when_is_it_cool(self) -> datetime | None:
-        return self.model.when_is_it_cool
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True

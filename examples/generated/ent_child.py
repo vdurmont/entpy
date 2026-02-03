@@ -68,37 +68,15 @@ class EntChildAPIModel(APIEntity):
 
 
 class EntChild(Ent[ExampleViewerContext, EntChildModel]):
-    vc: ExampleViewerContext
-    model: EntChildModel
     m = EntChildModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntChildModel) -> None:
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
-
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-    @property
-    def name(self) -> str:
-        return self.model.name
-
-    @property
-    def parent_id(self) -> UUID:
-        return self.model.parent_id
+    if TYPE_CHECKING:
+        name: str
+        parent_id: UUID
 
     async def gen_parent(self) -> EntParent:
         from .ent_parent import EntParent

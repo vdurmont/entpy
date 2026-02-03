@@ -1,4 +1,5 @@
 from entpy import DateField, EdgeField, IntervalField, Schema, TimeField
+from entpy.framework.descriptor import Descriptor
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import (
     ImportedObject,
@@ -22,7 +23,8 @@ def generate(
         + [f"Ent[{vc.name}, {base_name}Model]"]
     )
 
-    accessors = _generate_accessors(schema)
+    fields = _generate_fields(schema)
+    edge_gens = _generate_edge_gens(schema)
 
     unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
 
@@ -60,35 +62,21 @@ def generate(
 """
 
     return GeneratedContent(
-        imports=imports + accessors.imports,
-        type_checking_imports=accessors.type_checking_imports,
+        imports=imports + fields.imports + edge_gens.imports,
+        type_checking_imports=fields.type_checking_imports
+        + edge_gens.type_checking_imports,
         code=f"""
 class {base_name}({extends}):{get_description(schema)}
-    vc: {vc.name}
-    model: {base_name}Model
     m = {base_name}Model
 
     def __init__(self, vc: {vc.name}, model: {base_name}Model) -> None:
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
+    if TYPE_CHECKING:
+{fields.code or "        pass"}
 
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-{accessors.code}
+{edge_gens.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action, default_to_deny: bool = True) -> Decision:
         # Build the complete list: prepended rules + entity's config
@@ -185,11 +173,10 @@ class {base_name}({extends}):{get_description(schema)}
     )
 
 
-def _generate_accessors(schema: Schema) -> GeneratedContent:
+def _generate_fields(schema: Descriptor) -> GeneratedContent:
     fields = schema.get_all_fields()
-    accessors_code = ""
-    imports = []
-    type_checking_imports = []
+    field_code = ""
+    imports = ["from typing import TYPE_CHECKING"]
 
     for field in fields:
         if isinstance(field, DateField):
@@ -199,18 +186,24 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
         if isinstance(field, IntervalField):
             imports.append("from datetime import timedelta")
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
-        description = field.description
-        if description:
-            description = f"""\"\"\"
-        {description}
-        \"\"\"
-        """
-        accessors_code += f"""    @property
-    def {field.name}(self) -> {accessor_type}:
-        {description if description else ""}return self.model.{field.name}
+        field_code += f"        {field.name}: {accessor_type}\n"
+        if field.description:
+            field_code += f"""        \"\"\"
+        {field.description}
+        \"\"\"\n"""
 
-"""
+    return GeneratedContent(
+        imports=imports,
+        code=field_code,
+    )
 
+
+def _generate_edge_gens(schema: Descriptor) -> GeneratedContent:
+    fields = schema.get_all_fields()
+    accessors_code = ""
+    type_checking_imports = []
+
+    for field in fields:
         # If the field is an edge, we want to generate a utility function to
         # load the edge directly
         if isinstance(field, EdgeField):
@@ -241,7 +234,6 @@ def _generate_accessors(schema: Schema) -> GeneratedContent:
 
 """  # noqa: E501
     return GeneratedContent(
-        imports=imports,
         type_checking_imports=type_checking_imports,
         code=accessors_code,
     )

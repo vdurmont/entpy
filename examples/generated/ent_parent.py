@@ -69,42 +69,20 @@ class EntParentAPIModel(APIEntity):
 
 
 class EntParent(Ent[ExampleViewerContext, EntParentModel]):
-    vc: ExampleViewerContext
-    model: EntParentModel
     m = EntParentModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntParentModel) -> None:
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
-
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-    @property
-    def grand_parent_id(self) -> UUID:
-        return self.model.grand_parent_id
+    if TYPE_CHECKING:
+        grand_parent_id: UUID
+        name: str
 
     async def gen_grand_parent(self) -> EntGrandParent:
         from .ent_grand_parent import EntGrandParent
 
         return await EntGrandParent.genx(self.vc, self.model.grand_parent_id)
-
-    @property
-    def name(self) -> str:
-        return self.model.name
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True

@@ -26,6 +26,7 @@ from .framework.fields.validator import FieldValidator  # noqa: F401
 from .framework.id_factory import generate_uuid, validate_ent_id  # noqa: F401
 from .framework.pattern import Pattern  # noqa: F401
 from .framework.privacy_rule import EdgeDelegate, PrivacyRule  # noqa: F401
+from .framework.query import EntQuery  # noqa: F401
 from .framework.rules import AllOf, AllowAll, DenyAll  # noqa: F401
 from .framework.schema import Schema  # noqa: F401
 from .framework.viewer_context import ViewerContext  # noqa: F401

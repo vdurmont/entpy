@@ -35,6 +35,7 @@ from sqlalchemy import select
 from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TypeVar
+from typing import TYPE_CHECKING
 
 
 privacy_logger = logging.getLogger("entpy.privacy")
@@ -51,33 +52,14 @@ class EntTestSubObjectAPIModel(APIEntity):
 
 
 class EntTestSubObject(Ent[ExampleViewerContext, EntTestSubObjectModel]):
-    vc: ExampleViewerContext
-    model: EntTestSubObjectModel
     m = EntTestSubObjectModel
 
     def __init__(self, vc: ExampleViewerContext, model: EntTestSubObjectModel) -> None:
         self.vc = vc
         self.model = model
 
-    @property
-    def id(self) -> UUID:
-        return self.model.id
-
-    @property
-    def created_at(self) -> datetime:
-        return self.model.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self.model.updated_at
-
-    @property
-    def soft_deleted_at(self) -> datetime | None:
-        return self.model.soft_deleted_at
-
-    @property
-    def email(self) -> str:
-        return self.model.email
+    if TYPE_CHECKING:
+        email: str
 
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True
