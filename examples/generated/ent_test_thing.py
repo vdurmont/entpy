@@ -45,6 +45,7 @@ class EntTestThingModel(EntModel):
     a_pattern_validated_field: Mapped[str | None] = mapped_column(
         String(100), nullable=True
     )
+    idempotency_key: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
     obj5_opt_id: Mapped[UUID | None] = mapped_column(
         DBUUID(),
         ForeignKey("test_object5.id", deferrable=True, initially="DEFERRED"),
@@ -59,6 +60,7 @@ class EntTestThingAPIModel(APIEntity):
     a_good_thing: str = APIField(..., examples=["A sunny day"])
     obj5: "EntTestObject5APIModel" = APIField(...)
     a_pattern_validated_field: str | None = APIField(None, examples=["vdurmont"])
+    idempotency_key: UUID | None = APIField(None)
     obj5_opt: "EntTestObject5APIModel | None" = APIField(None)
     thing_status: ThingStatus | None = APIField(None)
 
@@ -77,6 +79,11 @@ class IEntTestThing(Ent):
     @property
     @abstractmethod
     def a_pattern_validated_field(self) -> str | None:
+        pass
+
+    @property
+    @abstractmethod
+    def idempotency_key(self) -> UUID | None:
         pass
 
     @property
@@ -324,6 +331,7 @@ class IEntTestThingMutatorUpdateAction(ABC):
     a_good_thing: str
     obj5_id: UUID
     a_pattern_validated_field: str | None
+    idempotency_key: UUID | None
     obj5_opt_id: UUID | None
     thing_status: ThingStatus | None
 
@@ -350,6 +358,7 @@ class IEntTestThingExample:
         a_good_thing: str | Sentinel = NOTHING,
         obj5_id: UUID | Sentinel = NOTHING,
         a_pattern_validated_field: str | None = None,
+        idempotency_key: UUID | None = None,
         obj5_opt_id: UUID | None = None,
         thing_status: ThingStatus | None = None,
     ) -> IEntTestThing:
@@ -363,6 +372,7 @@ class IEntTestThingExample:
             a_good_thing=a_good_thing,
             obj5_id=obj5_id,
             a_pattern_validated_field=a_pattern_validated_field,
+            idempotency_key=idempotency_key,
             obj5_opt_id=obj5_opt_id,
             thing_status=thing_status,
         )

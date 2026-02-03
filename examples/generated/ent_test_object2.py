@@ -27,7 +27,7 @@ from .ent_test_thing import IEntTestThingMutatorUpdateAction
 from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
 from entpy import EdgeDelegate, PrivacyRule
-from entpy import Field
+from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
 from pydantic import Field as APIField
@@ -35,6 +35,7 @@ from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
+from sqlalchemy import Index, text
 from sqlalchemy import String
 from sqlalchemy import select
 from sqlalchemy import Select, func, Result
@@ -62,6 +63,15 @@ class EntTestObject2Model(EntTestThingModel):
         "EntTestObject5Model",
         primaryjoin="EntTestObject2Model.obj5_opt_id == EntTestObject5Model.id",
     )
+
+
+Index(
+    None,
+    EntTestObject2Model.idempotency_key,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
 
 
 class EntTestObject2APIModel(EntTestThingAPIModel):
@@ -109,6 +119,10 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
     @property
     def a_pattern_validated_field(self) -> str | None:
         return self.model.a_pattern_validated_field
+
+    @property
+    def idempotency_key(self) -> UUID | None:
+        return self.model.idempotency_key
 
     @property
     def obj5_opt_id(self) -> UUID | None:
@@ -249,6 +263,34 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext]):
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
+    async def gen_from_idempotency_key(
+        cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
+    ) -> EntTestObject2 | None:
+        session = get_session()
+        query = select(EntTestObject2Model).where(
+            EntTestObject2Model.idempotency_key == idempotency_key
+        )
+        query = query.with_for_update()
+        async with emulate_for_update(
+            session, EntTestObject2Model, "idempotency_key", idempotency_key, for_update
+        ):
+            result = await session.execute(query)
+        model = result.scalar_one_or_none()
+        session.info.setdefault("cache", set()).add(model)
+        return await cls._gen_from_model(vc, model)  # noqa: SLF001
+
+    @classmethod
+    async def genx_from_idempotency_key(
+        cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
+    ) -> EntTestObject2:
+        result = await cls.gen_from_idempotency_key(vc, idempotency_key, for_update)
+        if not result:
+            raise EntNotFoundError(
+                f"No EntTestObject found for idempotency_key {idempotency_key}"
+            )
+        return result
+
+    @classmethod
     async def _gen_from_model(
         cls, vc: ExampleViewerContext, model: EntTestObject2Model | None
     ) -> EntTestObject2 | None:
@@ -372,6 +414,7 @@ class EntTestObject2Mutator:
         a_good_thing: str,
         obj5_id: UUID,
         a_pattern_validated_field: str | None = None,
+        idempotency_key: UUID | None = None,
         obj5_opt_id: UUID | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
@@ -387,6 +430,7 @@ class EntTestObject2Mutator:
             a_good_thing=a_good_thing,
             obj5_id=obj5_id,
             a_pattern_validated_field=a_pattern_validated_field,
+            idempotency_key=idempotency_key,
             obj5_opt_id=obj5_opt_id,
             some_field=some_field,
             thing_status=thing_status,
@@ -417,6 +461,7 @@ class EntTestObject2MutatorCreationAction:
     a_good_thing: str
     obj5_id: UUID
     a_pattern_validated_field: str | None = None
+    idempotency_key: UUID | None = None
     obj5_opt_id: UUID | None = None
     some_field: str | None = None
     thing_status: ThingStatus | None = None
@@ -430,6 +475,7 @@ class EntTestObject2MutatorCreationAction:
         a_good_thing: str,
         obj5_id: UUID,
         a_pattern_validated_field: str | None,
+        idempotency_key: UUID | None,
         obj5_opt_id: UUID | None,
         some_field: str | None,
         thing_status: ThingStatus | None,
@@ -441,6 +487,7 @@ class EntTestObject2MutatorCreationAction:
         self.a_good_thing = a_good_thing
         self.obj5_id = obj5_id
         self.a_pattern_validated_field = a_pattern_validated_field
+        self.idempotency_key = idempotency_key
         self.obj5_opt_id = obj5_opt_id
         self.some_field = some_field
         self.thing_status = thing_status
@@ -464,6 +511,7 @@ class EntTestObject2MutatorCreationAction:
             a_good_thing=self.a_good_thing,
             obj5_id=self.obj5_id,
             a_pattern_validated_field=self.a_pattern_validated_field,
+            idempotency_key=self.idempotency_key,
             obj5_opt_id=self.obj5_opt_id,
             some_field=self.some_field,
             thing_status=self.thing_status,
@@ -486,6 +534,7 @@ class EntTestObject2MutatorUpdateAction(IEntTestThingMutatorUpdateAction):
     a_good_thing: str
     obj5_id: UUID
     a_pattern_validated_field: str | None = None
+    idempotency_key: UUID | None = None
     obj5_opt_id: UUID | None = None
     some_field: str | None = None
     thing_status: ThingStatus | None = None
@@ -496,6 +545,7 @@ class EntTestObject2MutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         self.a_good_thing = ent.a_good_thing
         self.obj5_id = ent.obj5_id
         self.a_pattern_validated_field = ent.a_pattern_validated_field
+        self.idempotency_key = ent.idempotency_key
         self.obj5_opt_id = ent.obj5_opt_id
         self.some_field = ent.some_field
         self.thing_status = ent.thing_status
@@ -516,6 +566,7 @@ class EntTestObject2MutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         model.a_good_thing = self.a_good_thing
         model.obj5_id = self.obj5_id
         model.a_pattern_validated_field = self.a_pattern_validated_field
+        model.idempotency_key = self.idempotency_key
         model.obj5_opt_id = self.obj5_opt_id
         model.some_field = self.some_field
         model.thing_status = self.thing_status
@@ -570,6 +621,7 @@ class EntTestObject2Example:
         a_good_thing: str | Sentinel = NOTHING,
         obj5_id: UUID | Sentinel = NOTHING,
         a_pattern_validated_field: str | Sentinel = NOTHING,
+        idempotency_key: UUID | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
@@ -591,6 +643,16 @@ class EntTestObject2Example:
             else a_pattern_validated_field
         )
 
+        if isinstance(idempotency_key, Sentinel):
+            field = _get_field("idempotency_key")
+            if not isinstance(field, FieldWithDynamicExample):
+                raise TypeError(
+                    "Internal ent error: Field {field.name} must support dynamic examples."
+                )
+            generator = field.get_example_generator()
+            if generator:
+                idempotency_key = generator()
+
         if isinstance(obj5_opt_id, Sentinel) or obj5_opt_id is None:
             from .ent_test_object5 import EntTestObject5Example
 
@@ -603,6 +665,7 @@ class EntTestObject2Example:
             a_good_thing=a_good_thing,
             obj5_id=obj5_id,
             a_pattern_validated_field=a_pattern_validated_field,
+            idempotency_key=idempotency_key,
             obj5_opt_id=obj5_opt_id,
             some_field=some_field,
             thing_status=thing_status,

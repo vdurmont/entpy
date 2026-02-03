@@ -8,6 +8,7 @@ from entpy import (
     StringField,
     TextField,
     TimeField,
+    UuidField,
 )
 from entpy.framework.fields.core import FieldWithDefault
 from entpy.framework.pattern import Pattern
@@ -131,6 +132,8 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
         elif isinstance(field, TimeField):
             imports.append("from sqlalchemy import Time")
             column_type = "Time()"
+        elif isinstance(field, UuidField):
+            column_type = "DBUUID()"
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
 

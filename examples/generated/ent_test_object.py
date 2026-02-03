@@ -45,6 +45,7 @@ from sqlalchemy import Boolean
 from sqlalchemy import Date
 from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
+from sqlalchemy import Index, text
 from sqlalchemy import Integer
 from sqlalchemy import Interval
 from sqlalchemy import JSON
@@ -75,13 +76,13 @@ privacy_logger = logging.getLogger("entpy.privacy")
 class EntTestObjectModel(EntTestThingModel):
     __tablename__ = "test_object"
 
-    firstname: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    firstname: Mapped[str] = mapped_column(String(100), nullable=False)
     required_sub_object_id: Mapped[UUID] = mapped_column(
         DBUUID(),
         ForeignKey("test_sub_object.id", deferrable=True, initially="DEFERRED"),
         nullable=False,
     )
-    username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    username: Mapped[str] = mapped_column(String(100), nullable=False)
     lastname: Mapped[str | None] = mapped_column(
         String(100), nullable=True, server_default="Doe"
     )
@@ -146,6 +147,49 @@ class EntTestObjectModel(EntTestThingModel):
         "EntTestObjectModel",
         primaryjoin="EntTestObjectModel.self_id == EntTestObjectModel.id",
     )
+
+
+Index(
+    None,
+    EntTestObjectModel.trace_id,
+    EntTestObjectModel.status_code,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
+Index(
+    None,
+    EntTestObjectModel.status,
+    EntTestObjectModel.sadness,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
+Index(
+    None,
+    EntTestObjectModel.validated_field,
+    postgresql_where=EntTestObjectModel.is_it_true.is_(True),
+    sqlite_where=EntTestObjectModel.is_it_true.is_(True),
+)
+Index(
+    None,
+    EntTestObjectModel.firstname,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
+Index(
+    None,
+    EntTestObjectModel.username,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
+Index(
+    None,
+    EntTestObjectModel.idempotency_key,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
 
 
 class EntTestObjectAPIModel(EntTestThingAPIModel):
@@ -272,6 +316,10 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
     @property
     def end_time(self) -> time | None:
         return self.model.end_time
+
+    @property
+    def idempotency_key(self) -> UUID | None:
+        return self.model.idempotency_key
 
     @property
     def is_it_true(self) -> bool | None:
@@ -519,6 +567,34 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext]):
         return result
 
     @classmethod
+    async def gen_from_idempotency_key(
+        cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
+    ) -> EntTestObject | None:
+        session = get_session()
+        query = select(EntTestObjectModel).where(
+            EntTestObjectModel.idempotency_key == idempotency_key
+        )
+        query = query.with_for_update()
+        async with emulate_for_update(
+            session, EntTestObjectModel, "idempotency_key", idempotency_key, for_update
+        ):
+            result = await session.execute(query)
+        model = result.scalar_one_or_none()
+        session.info.setdefault("cache", set()).add(model)
+        return await cls._gen_from_model(vc, model)  # noqa: SLF001
+
+    @classmethod
+    async def genx_from_idempotency_key(
+        cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
+    ) -> EntTestObject:
+        result = await cls.gen_from_idempotency_key(vc, idempotency_key, for_update)
+        if not result:
+            raise EntNotFoundError(
+                f"No EntTestObject found for idempotency_key {idempotency_key}"
+            )
+        return result
+
+    @classmethod
     async def _gen_from_model(
         cls, vc: ExampleViewerContext, model: EntTestObjectModel | None
     ) -> EntTestObject | None:
@@ -653,6 +729,7 @@ class EntTestObjectMutator:
         dob: date | None = None,
         duration: timedelta | None = None,
         end_time: time | None = None,
+        idempotency_key: UUID | None = None,
         is_it_true: bool | None = None,
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
@@ -690,6 +767,7 @@ class EntTestObjectMutator:
             dob=dob,
             duration=duration,
             end_time=end_time,
+            idempotency_key=idempotency_key,
             is_it_true=is_it_true,
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
@@ -742,6 +820,7 @@ class EntTestObjectMutatorCreationAction:
     dob: date | None = None
     duration: timedelta | None = None
     end_time: time | None = None
+    idempotency_key: UUID | None = None
     is_it_true: bool | None = None
     obj5_opt_id: UUID | None = None
     optional_sub_object_id: UUID | None = None
@@ -777,6 +856,7 @@ class EntTestObjectMutatorCreationAction:
         dob: date | None,
         duration: timedelta | None,
         end_time: time | None,
+        idempotency_key: UUID | None,
         is_it_true: bool | None,
         obj5_opt_id: UUID | None,
         optional_sub_object_id: UUID | None,
@@ -810,6 +890,7 @@ class EntTestObjectMutatorCreationAction:
         self.dob = dob
         self.duration = duration
         self.end_time = end_time
+        self.idempotency_key = idempotency_key
         self.is_it_true = is_it_true
         self.obj5_opt_id = obj5_opt_id
         self.optional_sub_object_id = optional_sub_object_id
@@ -860,6 +941,7 @@ class EntTestObjectMutatorCreationAction:
             dob=self.dob,
             duration=self.duration,
             end_time=self.end_time,
+            idempotency_key=self.idempotency_key,
             is_it_true=self.is_it_true,
             obj5_opt_id=self.obj5_opt_id,
             optional_sub_object_id=self.optional_sub_object_id,
@@ -903,6 +985,7 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
     dob: date | None = None
     duration: timedelta | None = None
     end_time: time | None = None
+    idempotency_key: UUID | None = None
     is_it_true: bool | None = None
     obj5_opt_id: UUID | None = None
     optional_sub_object_id: UUID | None = None
@@ -934,6 +1017,7 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         self.dob = ent.dob
         self.duration = ent.duration
         self.end_time = ent.end_time
+        self.idempotency_key = ent.idempotency_key
         self.is_it_true = ent.is_it_true
         self.obj5_opt_id = ent.obj5_opt_id
         self.optional_sub_object_id = ent.optional_sub_object_id
@@ -980,6 +1064,7 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         model.dob = self.dob
         model.duration = self.duration
         model.end_time = self.end_time
+        model.idempotency_key = self.idempotency_key
         model.is_it_true = self.is_it_true
         model.obj5_opt_id = self.obj5_opt_id
         model.optional_sub_object_id = self.optional_sub_object_id
@@ -1056,6 +1141,7 @@ class EntTestObjectExample:
         dob: date | Sentinel = NOTHING,
         duration: timedelta | Sentinel = NOTHING,
         end_time: time | Sentinel = NOTHING,
+        idempotency_key: UUID | Sentinel = NOTHING,
         is_it_true: bool | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
@@ -1136,6 +1222,16 @@ class EntTestObjectExample:
             if generator:
                 end_time = generator()
 
+        if isinstance(idempotency_key, Sentinel):
+            field = _get_field("idempotency_key")
+            if not isinstance(field, FieldWithDynamicExample):
+                raise TypeError(
+                    "Internal ent error: Field {field.name} must support dynamic examples."
+                )
+            generator = field.get_example_generator()
+            if generator:
+                idempotency_key = generator()
+
         is_it_true = False if isinstance(is_it_true, Sentinel) else is_it_true
 
         if isinstance(obj5_opt_id, Sentinel) or obj5_opt_id is None:
@@ -1201,6 +1297,7 @@ class EntTestObjectExample:
             dob=dob,
             duration=duration,
             end_time=end_time,
+            idempotency_key=idempotency_key,
             is_it_true=is_it_true,
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
