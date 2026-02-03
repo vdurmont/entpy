@@ -7,7 +7,6 @@ from entpy.gencode.utils import ImportedObject
 def generate(
     descriptor: Descriptor,
     base_name: str,
-    session_getter: ImportedObject,
     vc: ImportedObject,
     threshold_to_stop_loading_ents_for_count: int,
 ) -> GeneratedContent:
@@ -27,7 +26,6 @@ def generate(
         imports.append("from collections import defaultdict")
 
     gen_count = _generate_gen_count(
-        session_getter=session_getter,
         threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
     )
 
@@ -58,9 +56,8 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
         self.query = select({query_target})
 
     async def gen(self, for_update: bool = False) -> list[{i}{base_name}]:
-        session = {session_getter.name}()
         query = self._finalize_query().with_for_update() if for_update else self._finalize_query()
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -73,11 +70,10 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
 {gen_ents}
 
     async def gen_first(self, for_update: bool = False) -> {i}{base_name} | None:
-        session = {session_getter.name}()
         query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         return await self._gen_ent(result)
 
 {gen_ent}
@@ -194,7 +190,6 @@ def _generate_order_by_methods(is_pattern: bool, base_name: str) -> str:
 
 
 def _generate_gen_count(
-    session_getter: ImportedObject,
     threshold_to_stop_loading_ents_for_count: int,
 ) -> GeneratedContent:
     ent_loader = ""
@@ -204,16 +199,15 @@ def _generate_gen_count(
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await session.execute(fetch_query)
+            result = await db.session.execute(fetch_query)
             ents = await self._gen_ents(result)
             return len(list(filter(None, ents)))
 """
     return GeneratedContent(
         code=f"""
     async def gen_count_NO_PRIVACY(self) -> int:
-        session = {session_getter.name}()
         count_query = self._finalize_query().with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
-        result = await session.execute(count_query)
+        result = await db.session.execute(count_query)
         count = result.scalar()
         if count is None:
             raise ExecutionError("Unable to get the count"){ent_loader}

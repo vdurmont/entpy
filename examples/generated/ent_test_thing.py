@@ -10,9 +10,9 @@ from datetime import datetime
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 from .ent_model import EntModel
 from collections import defaultdict
-from database import get_session
 from ent_test_thing_pattern import ThingStatus
 from entpy import EntNotFoundError, ExecutionError
+from entpy import db
 from entpy.framework.query import EntQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -154,13 +154,12 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         self.query = select(EntTestThingModel.id)
 
     async def gen(self, for_update: bool = False) -> list[IEntTestThing]:
-        session = get_session()
         query = (
             self._finalize_query().with_for_update()
             if for_update
             else self._finalize_query()
         )
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -198,11 +197,10 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         ]
 
     async def gen_first(self, for_update: bool = False) -> IEntTestThing | None:
-        session = get_session()
         query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(self, result: Result[tuple[UUID]]) -> IEntTestThing | None:
@@ -226,13 +224,12 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         return ent
 
     async def gen_count_NO_PRIVACY(self) -> int:
-        session = get_session()
         count_query = (
             self._finalize_query()
             .with_only_columns(func.count(), maintain_column_froms=True)
             .order_by(None)
         )
-        result = await session.execute(count_query)
+        result = await db.session.execute(count_query)
         count = result.scalar()
         if count is None:
             raise ExecutionError("Unable to get the count")
@@ -240,7 +237,7 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await session.execute(fetch_query)
+            result = await db.session.execute(fetch_query)
             ents = await self._gen_ents(result)
             return len(list(filter(None, ents)))
 

@@ -1,5 +1,6 @@
 from .framework.action import Action  # noqa: F401
 from .framework.composite_index import CompositeIndex  # noqa: F401
+from .framework.database import db
 from .framework.decision import Decision  # noqa: F401
 from .framework.ent import Ent  # noqa: F401
 from .framework.errors import (  # noqa: F401
@@ -28,3 +29,5 @@ from .framework.privacy_rule import EdgeDelegate, PrivacyRule  # noqa: F401
 from .framework.rules import AllOf, AllowAll, DenyAll  # noqa: F401
 from .framework.schema import Schema  # noqa: F401
 from .framework.viewer_context import ViewerContext  # noqa: F401
+
+init_entpy = db.init_entpy

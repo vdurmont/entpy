@@ -5,6 +5,7 @@
 from __future__ import annotations
 import logging
 from entpy import (
+    db,
     Ent,
     generate_uuid,
     EntNotFoundError,
@@ -17,7 +18,6 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
-from database import get_session
 from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
@@ -417,7 +417,6 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
     async def _gen_evaluate_privacy(
         self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True
     ) -> Decision:
-        session = get_session()
         # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
         if action in [
@@ -439,7 +438,7 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
         # Evaluate each rule/delegate in order
         for item in all_rules:
             if isinstance(item, PrivacyRule):
-                decision = await item.gen_evaluate_cached(session, vc, self)
+                decision = await item.gen_evaluate_cached(vc, self)
                 if decision == Decision.DENY:
                     privacy_logger.debug(
                         "Privacy rule %s of EntTestObject with ID %s was denied for %s",
@@ -498,13 +497,12 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntTestObject | None:
         real_ent_id = validate_ent_id(ent_id)
-        session = get_session()
-        model = await session.get(
+        model = await db.session.get(
             EntTestObjectModel, real_ent_id, with_for_update=for_update or None
         )
         if model is None:
             return None
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return EntTestObject(vc=vc, model=model)
 
     @classmethod
@@ -530,31 +528,29 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
     ) -> EntTestObject | None:
         real_ent_id = validate_ent_id(ent_id)
-        session = get_session()
         async with emulate_for_update(
-            session, EntTestObjectModel, "id", real_ent_id, for_update
+            EntTestObjectModel, "id", real_ent_id, for_update
         ):
-            model = await session.get(
+            model = await db.session.get(
                 EntTestObjectModel, real_ent_id, with_for_update=for_update or None
             )
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
     async def gen_from_username(
         cls, vc: ExampleViewerContext, username: str, for_update: bool = False
     ) -> EntTestObject | None:
-        session = get_session()
         query = select(EntTestObjectModel).where(
             EntTestObjectModel.username == username
         )
         query = query.with_for_update()
         async with emulate_for_update(
-            session, EntTestObjectModel, "username", username, for_update
+            EntTestObjectModel, "username", username, for_update
         ):
-            result = await session.execute(query)
+            result = await db.session.execute(query)
         model = result.scalar_one_or_none()
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -570,17 +566,16 @@ class EntTestObject(IEntTestThing, Ent[ExampleViewerContext, EntTestObjectModel]
     async def gen_from_idempotency_key(
         cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
     ) -> EntTestObject | None:
-        session = get_session()
         query = select(EntTestObjectModel).where(
             EntTestObjectModel.idempotency_key == idempotency_key
         )
         query = query.with_for_update()
         async with emulate_for_update(
-            session, EntTestObjectModel, "idempotency_key", idempotency_key, for_update
+            EntTestObjectModel, "idempotency_key", idempotency_key, for_update
         ):
-            result = await session.execute(query)
+            result = await db.session.execute(query)
         model = result.scalar_one_or_none()
-        session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -630,13 +625,12 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
         self.query = select(EntTestObjectModel)
 
     async def gen(self, for_update: bool = False) -> list[EntTestObject]:
-        session = get_session()
         query = (
             self._finalize_query().with_for_update()
             if for_update
             else self._finalize_query()
         )
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -656,11 +650,10 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
         ]
 
     async def gen_first(self, for_update: bool = False) -> EntTestObject | None:
-        session = get_session()
         query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
-        result = await session.execute(query)
+        result = await db.session.execute(query)
         return await self._gen_ent(result)
 
     async def _gen_ent(
@@ -676,13 +669,12 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
         return ent
 
     async def gen_count_NO_PRIVACY(self) -> int:
-        session = get_session()
         count_query = (
             self._finalize_query()
             .with_only_columns(func.count(), maintain_column_froms=True)
             .order_by(None)
         )
-        result = await session.execute(count_query)
+        result = await db.session.execute(count_query)
         count = result.scalar()
         if count is None:
             raise ExecutionError("Unable to get the count")
@@ -690,7 +682,7 @@ class EntTestObjectQuery(EntQuery[EntTestObject, EntTestObjectModel]):
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await session.execute(fetch_query)
+            result = await db.session.execute(fetch_query)
             ents = await self._gen_ents(result)
             return len(list(filter(None, ents)))
 
@@ -906,8 +898,6 @@ class EntTestObjectMutatorCreationAction:
         self.when_is_it_cool = when_is_it_cool
 
     async def gen_savex(self) -> EntTestObject:
-        session = get_session()
-
         a_pattern_validated_field_validators = _get_field(
             "a_pattern_validated_field"
         )._validators  # noqa: SLF001
@@ -956,14 +946,14 @@ class EntTestObjectMutatorCreationAction:
             validated_field=self.validated_field,
             when_is_it_cool=self.when_is_it_cool,
         )
-        session.add(model)
+        db.session.add(model)
         ent = EntTestObject(vc=self.vc, model=model)
         decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to CREATE EntTestObject with ID {ent.id}"
             )
-        await session.flush()
+        await db.session.flush()
         return await EntTestObject._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
@@ -1033,8 +1023,6 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         self.when_is_it_cool = ent.when_is_it_cool
 
     async def gen_savex(self) -> EntTestObject:
-        session = get_session()
-
         a_pattern_validated_field_validators = _get_field(
             "a_pattern_validated_field"
         )._validators  # noqa: SLF001
@@ -1079,15 +1067,15 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         model.validated_field = self.validated_field
         model.when_is_it_cool = self.when_is_it_cool
         model.updated_at = datetime.now(tz=UTC)
-        session.add(model)
+        db.session.add(model)
         new_ent = EntTestObject(vc=self.vc, model=model)
         decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to UPDATE EntTestObject with ID {new_ent.id}"
             )
-        await session.flush()
-        await session.refresh(model)
+        await db.session.flush()
+        await db.session.refresh(model)
         return await EntTestObject._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
@@ -1103,7 +1091,6 @@ class EntTestObjectMutatorDeletionAction(IEntTestThingMutatorDeletionAction):
         self.is_soft_delete = is_soft_delete
 
     async def gen_save(self) -> None:
-        session = get_session()
         model = self.ent.model
         action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
         decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
@@ -1114,10 +1101,10 @@ class EntTestObjectMutatorDeletionAction(IEntTestThingMutatorDeletionAction):
         if self.is_soft_delete:
             model.soft_deleted_at = datetime.now(tz=UTC)
             model.updated_at = datetime.now(tz=UTC)
-            session.add(model)
+            db.session.add(model)
         else:
-            await session.delete(model)
-        await session.flush()
+            await db.session.delete(model)
+        await db.session.flush()
 
 
 class EntTestObjectExample:

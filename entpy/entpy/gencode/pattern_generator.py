@@ -10,7 +10,6 @@ from entpy.gencode.utils import ImportedObject, get_description, to_snake_case
 def generate(
     pattern_class: type[Pattern],
     children_schema_classes: list[type[Schema]],
-    session_getter: ImportedObject,
     vc: ImportedObject,
     threshold_to_stop_loading_ents_for_count: int,
 ) -> str:
@@ -38,7 +37,6 @@ def generate(
     query_content = generate_query(
         descriptor=pattern,
         base_name=base_name,
-        session_getter=session_getter,
         vc=vc,
         threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
     )
@@ -72,7 +70,7 @@ def generate(
 
     # Make sure to import all the things!
     imports = (
-        [str(vc), str(session_getter)]
+        [str(vc), "from entpy import db"]
         + model.imports
         + api_model.imports
         + query_content.imports
