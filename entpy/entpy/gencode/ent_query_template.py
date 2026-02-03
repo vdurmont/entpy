@@ -4,6 +4,7 @@ from typing import Generic, Self, TypeVar, Any
 from sqlalchemy import Select, Table
 from entpy.framework.ent import Ent
 from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 from .ent_model import EntModel
 
@@ -40,6 +41,10 @@ class EntQuery[ENT, ENTMODEL](ABC):
 
     def offset(self, offset: int) -> Self:
         self.query = self.query.offset(offset)
+        return self
+
+    def options(self, options: _AbstractLoad) -> Self:
+        self.query = self.query.options(options)
         return self
 
     @abstractmethod
