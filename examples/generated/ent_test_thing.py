@@ -151,9 +151,7 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-        from .ent_test_thing_view import EntTestThingView
-
-        self.query = select(EntTestThingView.id)
+        self.query = select(EntTestThingModel.id)
 
     async def gen(self, for_update: bool = False) -> list[IEntTestThing]:
         session = get_session()
@@ -170,9 +168,7 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         if self.include_soft_deleted:
             return self.query
         else:
-            from .ent_test_thing_view import EntTestThingView
-
-            return self.query.where(EntTestThingView.soft_deleted_at.is_(None))
+            return self.query.where(EntTestThingModel.soft_deleted_at.is_(None))
 
     async def _gen_ents(
         self, result: Result[tuple[UUID]]
@@ -247,15 +243,11 @@ class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
         return count
 
     def order_by_id_asc(self) -> "IEntTestThingQuery":
-        from .ent_test_thing_view import EntTestThingView
-
-        self.query = self.query.order_by(EntTestThingView.id.asc())
+        self.query = self.query.order_by(EntTestThingModel.id.asc())
         return self
 
     def order_by_id_desc(self) -> "IEntTestThingQuery":
-        from .ent_test_thing_view import EntTestThingView
-
-        self.query = self.query.order_by(EntTestThingView.id.desc())
+        self.query = self.query.order_by(EntTestThingModel.id.desc())
         return self
 
     def with_soft_deleted(self) -> "IEntTestThingQuery":

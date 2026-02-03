@@ -226,7 +226,6 @@ class EntGrandParentQuery(EntQuery[EntGrandParent, EntGrandParentModel]):
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntGrandParentModel)
 
     async def gen(self, for_update: bool = False) -> list[EntGrandParent]:

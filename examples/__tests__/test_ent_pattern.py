@@ -9,7 +9,7 @@ from generated.ent_test_object2 import (
 )
 from generated.ent_test_object5 import EntTestObject5Example
 from generated.ent_test_thing import IEntTestThing, IEntTestThingMutator
-from generated.ent_test_thing_view import EntTestThingView
+from generated.ent_test_thing import EntTestThingModel
 
 
 async def test_gen_from_pattern(vc: ExampleViewerContext) -> None:
@@ -37,8 +37,8 @@ async def test_query_across_schemas(vc: ExampleViewerContext) -> None:
 
     ents = (
         await IEntTestThing.query_ent_test_thing(vc)
-        .where(EntTestThingView.a_good_thing.startswith("b"))
-        .order_by(EntTestThingView.id.desc())
+        .where(EntTestThingModel.a_good_thing.startswith("b"))
+        .order_by(EntTestThingModel.id.desc())
         .gen()
     )
 
@@ -49,7 +49,7 @@ async def test_query_across_schemas(vc: ExampleViewerContext) -> None:
 
     ent = (
         await IEntTestThing.query_ent_test_thing(vc)
-        .where(EntTestThingView.a_good_thing.startswith("r"))
+        .where(EntTestThingModel.a_good_thing.startswith("r"))
         .genx_first()
     )
 
@@ -57,21 +57,21 @@ async def test_query_across_schemas(vc: ExampleViewerContext) -> None:
 
     count = (
         await IEntTestThing.query_ent_test_thing(vc)
-        .where(EntTestThingView.a_good_thing.startswith("y"))
+        .where(EntTestThingModel.a_good_thing.startswith("y"))
         .gen_count_NO_PRIVACY()
     )
     assert count == 1
 
     count = (
         await IEntTestThing.query_ent_test_thing(vc)
-        .where(EntTestThingView.a_good_thing.startswith("b"))
+        .where(EntTestThingModel.a_good_thing.startswith("b"))
         .gen_count_NO_PRIVACY()
     )
     assert count == 2
 
     count = (
         await IEntTestThing.query_ent_test_thing(vc)
-        .where(EntTestThingView.a_good_thing.startswith("v"))
+        .where(EntTestThingModel.a_good_thing.startswith("v"))
         .gen_count_NO_PRIVACY()
     )
     assert count == 0

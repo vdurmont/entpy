@@ -33,7 +33,7 @@ from .ent_test_object import EntTestObjectModel  # noqa: F401
 from .ent_test_object import EntTestObject
 from .ent_test_sub_object import EntTestSubObjectModel  # noqa: F401
 from .ent_test_sub_object import EntTestSubObject
-from .ent_test_thing_view import EntTestThingView  # noqa: F401
+from .ent_test_thing_view import ent_test_thing_view  # noqa: F401
 
 UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext]]] = {
     b"\x43\x48": EntChild,

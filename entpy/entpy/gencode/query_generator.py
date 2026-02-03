@@ -1,7 +1,7 @@
 from entpy.framework.descriptor import Descriptor
 from entpy.framework.pattern import Pattern
 from entpy.gencode.generated_content import GeneratedContent
-from entpy.gencode.utils import ImportedObject, to_snake_case
+from entpy.gencode.utils import ImportedObject
 
 
 def generate(
@@ -31,13 +31,7 @@ def generate(
         threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
     )
 
-    # For patterns, we need to import and use the view
-    query_target = f"{base_name}View.id" if is_pattern else f"{base_name}Model"
-    view_import = (
-        f"from .{to_snake_case(base_name)}_view import {base_name}View"
-        if is_pattern
-        else ""
-    )
+    query_target = f"{base_name}Model.id" if is_pattern else f"{base_name}Model"
 
     gen_ents = _generate_gen_ents(is_pattern=is_pattern, base_name=base_name)
     gen_ent = _generate_gen_ent(is_pattern=is_pattern, base_name=base_name)
@@ -48,7 +42,7 @@ def generate(
         is_pattern=is_pattern, base_name=base_name
     )
     generic = "UUID" if is_pattern else f"{base_name}Model"
-    column_holder = f"{base_name}View" if is_pattern else f"{base_name}Model"
+    column_holder = f"{base_name}Model" if is_pattern else f"{base_name}Model"
 
     return GeneratedContent(
         imports=imports + gen_count.imports,
@@ -61,7 +55,6 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
 
     def __init__(self, vc: {vc.name}) -> None:
         self.vc = vc
-        {view_import}
         self.query = select({query_target})
 
     async def gen(self, for_update: bool = False) -> list[{i}{base_name}]:
@@ -75,7 +68,6 @@ class {i}{base_name}Query(EntQuery[{i}{base_name}, {generic}]):
         if self.include_soft_deleted:
             return self.query
         else:
-            {view_import}
             return self.query.where({column_holder}.soft_deleted_at.is_(None))
 
 {gen_ents}
@@ -181,13 +173,11 @@ def _generate_order_by_methods(is_pattern: bool, base_name: str) -> str:
         # For patterns, we order by the id column in the view's table
         return f"""
     def order_by_id_asc(self) -> "{i}{base_name}Query":
-        from .{to_snake_case(base_name)}_view import {base_name}View
-        self.query = self.query.order_by({base_name}View.id.asc())
+        self.query = self.query.order_by({base_name}Model.id.asc())
         return self
 
     def order_by_id_desc(self) -> "{i}{base_name}Query":
-        from .{to_snake_case(base_name)}_view import {base_name}View
-        self.query = self.query.order_by({base_name}View.id.desc())
+        self.query = self.query.order_by({base_name}Model.id.desc())
         return self
 """
     else:

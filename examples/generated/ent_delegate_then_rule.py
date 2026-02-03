@@ -266,7 +266,6 @@ class EntDelegateThenRuleQuery(EntQuery[EntDelegateThenRule, EntDelegateThenRule
 
     def __init__(self, vc: ExampleViewerContext) -> None:
         self.vc = vc
-
         self.query = select(EntDelegateThenRuleModel)
 
     async def gen(self, for_update: bool = False) -> list[EntDelegateThenRule]:
