@@ -23,6 +23,7 @@ from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
+from functools import cache
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -72,10 +73,19 @@ class EntDelegateThenRule(
         name: str
         privacy_parent_id: UUID
 
-    async def gen_privacy_parent(self) -> EntPrivacyParent:
-        from .ent_privacy_parent import EntPrivacyParent
+        async def gen_privacy_parent(self) -> "EntPrivacyParent":
+            pass
 
-        return await EntPrivacyParent.genx(self.vc, self.model.privacy_parent_id)
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        match edge_name:
+            case "privacy_parent":
+                from .ent_privacy_parent import EntPrivacyParent
+
+                return (EntPrivacyParent, False)
+
+        return super()._get_edge_type(edge_name)
 
     async def _gen_evaluate_privacy(
         self,
@@ -114,7 +124,10 @@ class EntDelegateThenRule(
                         str(vc),
                     )
             elif isinstance(item, EdgeDelegate):
-                delegate = await self._gen_load_delegate(vc, item.edge_name)
+                edge_type = self._get_edge_type(item.edge_name)
+                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(
+                    vc, getattr(self, f"{item.edge_name}_id")
+                )
                 decision = await delegate._gen_evaluate_privacy(
                     vc, action, default_to_deny=False
                 )
@@ -142,18 +155,6 @@ class EntDelegateThenRule(
                 )
             return Decision.DENY
         return Decision.PASS
-
-    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
-        if edge_name == "privacy_parent":
-            from .ent_privacy_parent import EntPrivacyParent
-
-            return await EntPrivacyParent._genx_no_privacy_DO_NOT_USE(
-                vc, self.privacy_parent_id
-            )
-
-        raise ExecutionError(
-            f"An invalid privacy configuration was found for EntDelegateThenRule: could not find delegate for {edge_name}"
-        )
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntDelegateThenRuleQuery:

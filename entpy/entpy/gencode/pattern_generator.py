@@ -25,7 +25,7 @@ def generate(
     api_model = generate_api_model(descriptor=pattern, base_name=base_name)
 
     fields = _generate_fields(schema=pattern)
-    edge_gens = _generate_edge_gens(schema=pattern)
+    edge_gens, edge_types = _generate_edge_gens(schema=pattern)
     child_types = _generate_child_types(children_schema_classes=children_schema_classes)
     unique_gens = _generate_unique_gens(schema=pattern, base_name=base_name, vc=vc)
 
@@ -99,14 +99,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
-from typing import Self
+from typing import Self, TYPE_CHECKING
 from uuid import UUID
 
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
-from entpy import Ent, ValidationError, validate_ent_id
 from entpy.framework.ent import EntPatternBase
 {imports_code}
+
+if TYPE_CHECKING:
+    from entpy import Ent
 
 {model.code}
 
@@ -123,7 +125,13 @@ class I{base_name}(EntPatternBase[{vc.name}, {base_name}Model]):{get_description
 
     @classmethod
     @cache
-    def get_child_type(cls, uuid_type: bytes) -> type[I{base_name}]:
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+{edge_types.code}
+        return super()._get_edge_type(edge_name)
+
+    @classmethod
+    @cache
+    def _get_child_type(cls, uuid_type: bytes) -> type[I{base_name}]:
         match uuid_type:
 {child_types.code}
         raise ValueError(f"Unknown UUID type for I{base_name}: {{uuid_type.hex()}}")

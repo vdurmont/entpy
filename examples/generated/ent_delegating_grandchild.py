@@ -23,6 +23,7 @@ from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
+from functools import cache
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -72,10 +73,19 @@ class EntDelegatingGrandchild(
         delegating_child_id: UUID
         name: str
 
-    async def gen_delegating_child(self) -> EntDelegatingChild:
-        from .ent_delegating_child import EntDelegatingChild
+        async def gen_delegating_child(self) -> "EntDelegatingChild":
+            pass
 
-        return await EntDelegatingChild.genx(self.vc, self.model.delegating_child_id)
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        match edge_name:
+            case "delegating_child":
+                from .ent_delegating_child import EntDelegatingChild
+
+                return (EntDelegatingChild, False)
+
+        return super()._get_edge_type(edge_name)
 
     async def _gen_evaluate_privacy(
         self,
@@ -114,7 +124,10 @@ class EntDelegatingGrandchild(
                         str(vc),
                     )
             elif isinstance(item, EdgeDelegate):
-                delegate = await self._gen_load_delegate(vc, item.edge_name)
+                edge_type = self._get_edge_type(item.edge_name)
+                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(
+                    vc, getattr(self, f"{item.edge_name}_id")
+                )
                 decision = await delegate._gen_evaluate_privacy(
                     vc, action, default_to_deny=False
                 )
@@ -142,18 +155,6 @@ class EntDelegatingGrandchild(
                 )
             return Decision.DENY
         return Decision.PASS
-
-    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
-        if edge_name == "delegating_child":
-            from .ent_delegating_child import EntDelegatingChild
-
-            return await EntDelegatingChild._genx_no_privacy_DO_NOT_USE(
-                vc, self.delegating_child_id
-            )
-
-        raise ExecutionError(
-            f"An invalid privacy configuration was found for EntDelegatingGrandchild: could not find delegate for {edge_name}"
-        )
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntDelegatingGrandchildQuery:

@@ -23,6 +23,7 @@ from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
+from functools import cache
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -66,12 +67,19 @@ class EntTestObject4(EntObjectBase[ExampleViewerContext, EntTestObject4Model]):
     if TYPE_CHECKING:
         other_id: UUID | None
 
-    async def gen_other(self) -> "EntTestObject3" | None:
-        from .ent_test_object3 import EntTestObject3
+        async def gen_other(self) -> "EntTestObject3" | None:
+            pass
 
-        if self.model.other_id:
-            return await EntTestObject3.gen(self.vc, self.model.other_id)
-        return None
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        match edge_name:
+            case "other":
+                from .ent_test_object3 import EntTestObject3
+
+                return (EntTestObject3, True)
+
+        return super()._get_edge_type(edge_name)
 
     async def _gen_evaluate_privacy(
         self,
@@ -110,7 +118,10 @@ class EntTestObject4(EntObjectBase[ExampleViewerContext, EntTestObject4Model]):
                         str(vc),
                     )
             elif isinstance(item, EdgeDelegate):
-                delegate = await self._gen_load_delegate(vc, item.edge_name)
+                edge_type = self._get_edge_type(item.edge_name)
+                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(
+                    vc, getattr(self, f"{item.edge_name}_id")
+                )
                 decision = await delegate._gen_evaluate_privacy(
                     vc, action, default_to_deny=False
                 )
@@ -138,11 +149,6 @@ class EntTestObject4(EntObjectBase[ExampleViewerContext, EntTestObject4Model]):
                 )
             return Decision.DENY
         return Decision.PASS
-
-    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
-        raise ExecutionError(
-            f"An invalid privacy configuration was found for EntTestObject4: could not find delegate for {edge_name}"
-        )
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntTestObject4Query:

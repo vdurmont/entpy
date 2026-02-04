@@ -23,6 +23,7 @@ from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
+from functools import cache
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -51,6 +52,11 @@ class EntPrivacyParent(EntObjectBase[ExampleViewerContext, EntPrivacyParentModel
 
     if TYPE_CHECKING:
         name: str
+
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        return super()._get_edge_type(edge_name)
 
     async def _gen_evaluate_privacy(
         self,
@@ -89,7 +95,10 @@ class EntPrivacyParent(EntObjectBase[ExampleViewerContext, EntPrivacyParentModel
                         str(vc),
                     )
             elif isinstance(item, EdgeDelegate):
-                delegate = await self._gen_load_delegate(vc, item.edge_name)
+                edge_type = self._get_edge_type(item.edge_name)
+                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(
+                    vc, getattr(self, f"{item.edge_name}_id")
+                )
                 decision = await delegate._gen_evaluate_privacy(
                     vc, action, default_to_deny=False
                 )
@@ -117,11 +126,6 @@ class EntPrivacyParent(EntObjectBase[ExampleViewerContext, EntPrivacyParentModel
                 )
             return Decision.DENY
         return Decision.PASS
-
-    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
-        raise ExecutionError(
-            f"An invalid privacy configuration was found for EntPrivacyParent: could not find delegate for {edge_name}"
-        )
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntPrivacyParentQuery:

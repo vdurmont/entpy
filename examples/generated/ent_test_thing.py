@@ -6,7 +6,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
-from typing import Self
+from typing import Self, TYPE_CHECKING
 from uuid import UUID
 
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
@@ -23,12 +23,15 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import UUID as DBUUID
 from sqlalchemy.orm import Mapped, mapped_column
-from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5APIModel
     from .ent_test_object5 import EntTestObject5
+
+
+if TYPE_CHECKING:
+    from entpy import Ent
 
 
 class EntTestThingModel(EntModel):
@@ -90,21 +93,30 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
         ) -> Self:
             pass
 
-    async def gen_obj5(self) -> EntTestObject5:
-        from .ent_test_object5 import EntTestObject5
+        async def gen_obj5(self) -> "EntTestObject5":
+            pass
 
-        return await EntTestObject5.genx(self.vc, self.model.obj5_id)
-
-    async def gen_obj5_opt(self) -> "EntTestObject5" | None:
-        from .ent_test_object5 import EntTestObject5
-
-        if self.model.obj5_opt_id:
-            return await EntTestObject5.gen(self.vc, self.model.obj5_opt_id)
-        return None
+        async def gen_obj5_opt(self) -> "EntTestObject5" | None:
+            pass
 
     @classmethod
     @cache
-    def get_child_type(cls, uuid_type: bytes) -> type[IEntTestThing]:
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        match edge_name:
+            case "obj5":
+                from .ent_test_object5 import EntTestObject5
+
+                return (EntTestObject5, False)
+            case "obj5_opt":
+                from .ent_test_object5 import EntTestObject5
+
+                return (EntTestObject5, True)
+
+        return super()._get_edge_type(edge_name)
+
+    @classmethod
+    @cache
+    def _get_child_type(cls, uuid_type: bytes) -> type[IEntTestThing]:
         match uuid_type:
             case b"\x7c\x9a":
                 from .ent_test_object2 import EntTestObject2
