@@ -8,7 +8,6 @@ from entpy import (
     db,
     Ent,
     generate_uuid,
-    EntNotFoundError,
     ExecutionError,
     Action,
     Decision,
@@ -32,7 +31,6 @@ from ent_test_thing_pattern import ThingStatus
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
-from entpy.framework.database import emulate_for_update
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from pydantic import Field as APIField
@@ -42,7 +40,6 @@ from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Index, text
 from sqlalchemy import String
-from sqlalchemy import select
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from typing import TYPE_CHECKING
@@ -184,33 +181,6 @@ class EntTestObject2(
         raise ExecutionError(
             f"An invalid privacy configuration was found for EntTestObject2: could not find delegate for {edge_name}"
         )
-
-    @classmethod
-    async def gen_from_idempotency_key(
-        cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
-    ) -> EntTestObject2 | None:
-        query = select(EntTestObject2Model).where(
-            EntTestObject2Model.idempotency_key == idempotency_key
-        )
-        query = query.with_for_update()
-        async with emulate_for_update(
-            EntTestObject2Model, "idempotency_key", idempotency_key, for_update
-        ):
-            result = await db.session.execute(query)
-        model = result.scalar_one_or_none()
-        db.session.info.setdefault("cache", set()).add(model)
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
-
-    @classmethod
-    async def genx_from_idempotency_key(
-        cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
-    ) -> EntTestObject2:
-        result = await cls.gen_from_idempotency_key(vc, idempotency_key, for_update)
-        if not result:
-            raise EntNotFoundError(
-                f"No EntTestObject found for idempotency_key {idempotency_key}"
-            )
-        return result
 
     @classmethod
     def get_child_type(cls, uuid_type: bytes) -> type[EntTestObject2]:  # type: ignore[override]
