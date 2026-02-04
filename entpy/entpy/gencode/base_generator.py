@@ -24,11 +24,12 @@ def generate(
     )
 
     fields = _generate_fields(schema)
-    edge_gens = _generate_edge_gens(schema)
+    edge_gens, edge_types = _generate_edge_gens(schema)
 
     unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
 
     imports = [
+        "from functools import cache",
         "from entpy import EdgeDelegate, PrivacyRule, Ent",
         "from entpy.framework.ent import EntObjectBase",
         "from entpy.framework.database import emulate_for_update",
@@ -55,20 +56,9 @@ def generate(
     # Make the type checker happy for ents which implement multiple patterns
     if len(schema.get_patterns()) > 1:
         child_types = f"""@classmethod
-    def get_child_type(cls, uuid_type: bytes) -> type[{base_name}]:  # type: ignore[override]
+    def _get_child_type(cls, uuid_type: bytes) -> type[{base_name}]:  # type: ignore[override]
         raise NotImplementedError("get_child_type() should only be called on patterns")
     """
-
-    delegate_loaders = ""
-    for field in schema.get_all_fields():
-        if isinstance(field, EdgeField) and not field.nullable:
-            other_ent = field.get_edge_type()
-            other_module = to_snake_case(other_ent).replace("i_", "")
-            delegate_loaders += f"""
-        if edge_name == "{field.original_name}":
-            from .{other_module} import {other_ent}
-            return await {other_ent}._genx_no_privacy_DO_NOT_USE(vc, self.{field.name})
-"""
 
     return GeneratedContent(
         imports=imports + fields.imports + edge_gens.imports,
@@ -86,6 +76,12 @@ class {base_name}({extends}):{get_description(schema)}
 
 {edge_gens.code}
 
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+{edge_types.code}
+        return super()._get_edge_type(edge_name)
+
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action, default_to_deny: bool = True, log_on_deny: bool = True) -> Decision:
         # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
@@ -100,7 +96,8 @@ class {base_name}({extends}):{get_description(schema)}
                 if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(item), self.id, str(vc))
             elif isinstance(item, EdgeDelegate):
-                delegate = await self._gen_load_delegate(vc, item.edge_name)
+                edge_type = self._get_edge_type(item.edge_name)
+                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(vc, getattr(self, f"{{item.edge_name}}_id"))
                 decision = await delegate._gen_evaluate_privacy(vc, action, default_to_deny=False)
                 if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug("Delegate privacy of {base_name} with ID %s to edge %s was denied for %s", self.id, item.edge_name, str(vc))
@@ -115,11 +112,6 @@ class {base_name}({extends}):{get_description(schema)}
                 privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s", self.id, str(vc))
             return Decision.DENY
         return Decision.PASS
-
-    async def _gen_load_delegate(self, vc: {vc.name}, edge_name: str) -> Ent:{delegate_loaders}
-        raise ExecutionError(f"An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
-
-
 
     {child_types}
 
@@ -155,9 +147,12 @@ def _generate_fields(schema: Descriptor) -> GeneratedContent:
     )
 
 
-def _generate_edge_gens(schema: Descriptor) -> GeneratedContent:
-    fields = schema.get_all_fields()
-    accessors_code = ""
+def _generate_edge_gens(
+    schema: Descriptor,
+) -> tuple[GeneratedContent, GeneratedContent]:
+    fields = schema.get_sorted_fields()
+    type_stubs = ""
+    edge_types = ""
     type_checking_imports = []
 
     for field in fields:
@@ -176,23 +171,26 @@ def _generate_edge_gens(schema: Descriptor) -> GeneratedContent:
                     f"from {module} import {field.get_edge_type()}"
                 )
                 load = f"from {module} import {field.get_edge_type()}\n        "
-            if field.nullable:
-                accessors_code += f"""
-    async def gen_{field.original_name}(self) -> "{field.get_edge_type()}" | None:
-        {load}if self.model.{field.name}:
-            return await {field.get_edge_type()}.gen(self.vc, self.model.{field.name})
-        return None
+            type_stubs += f"""
+        async def gen_{field.original_name}(self) -> "{field.get_edge_type()}"{" | None" if field.nullable else ""}:
+            pass
 
 """  # noqa: E501
-            else:
-                accessors_code += f"""
-    async def gen_{field.original_name}(self) -> {field.get_edge_type()}:
-        {load}return await {field.get_edge_type()}.genx(self.vc, self.model.{field.name})
 
-"""  # noqa: E501
-    return GeneratedContent(
-        type_checking_imports=type_checking_imports,
-        code=accessors_code,
+            edge_types += f'            case "{field.original_name}":\n'
+            edge_types += f"                {load}\n"
+            edge_types += (
+                f"                return ({field.get_edge_type()}, {field.nullable})\n"
+            )
+
+    return (
+        GeneratedContent(
+            type_checking_imports=type_checking_imports,
+            code=type_stubs,
+        ),
+        GeneratedContent(
+            code=f"        match edge_name:\n{edge_types}" if edge_types else "",
+        ),
     )
 
 

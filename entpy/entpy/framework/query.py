@@ -160,7 +160,7 @@ class EntPatternQuery[
 
         all_ents = {}
         for uuid_type, ids in ids_by_type.items():
-            ent_type = self.ent_type.get_child_type(uuid_type)
+            ent_type = self.ent_type._get_child_type(uuid_type)
             for ent in (
                 await ent_type.query(self.vc)
                 .where(ent_type.m.id.in_(ids))
@@ -175,5 +175,5 @@ class EntPatternQuery[
         ent_id = result.scalar_one_or_none()
         if not ent_id:
             return None
-        ent_type = self.ent_type.get_child_type(ent_id.bytes[6:8])
+        ent_type = self.ent_type._get_child_type(ent_id.bytes[6:8])
         return await ent_type.gen(self.vc, ent_id)

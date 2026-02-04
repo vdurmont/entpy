@@ -33,6 +33,7 @@ from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
+from functools import cache
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -46,7 +47,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5Model
-    from .ent_test_object5 import EntTestObject5
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -94,17 +94,10 @@ class EntTestObject2(
         some_field: str | None
         thing_status: ThingStatus | None
 
-    async def gen_obj5(self) -> EntTestObject5:
-        from .ent_test_object5 import EntTestObject5
-
-        return await EntTestObject5.genx(self.vc, self.model.obj5_id)
-
-    async def gen_obj5_opt(self) -> "EntTestObject5" | None:
-        from .ent_test_object5 import EntTestObject5
-
-        if self.model.obj5_opt_id:
-            return await EntTestObject5.gen(self.vc, self.model.obj5_opt_id)
-        return None
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        return super()._get_edge_type(edge_name)
 
     async def _gen_evaluate_privacy(
         self,
@@ -143,7 +136,10 @@ class EntTestObject2(
                         str(vc),
                     )
             elif isinstance(item, EdgeDelegate):
-                delegate = await self._gen_load_delegate(vc, item.edge_name)
+                edge_type = self._get_edge_type(item.edge_name)
+                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(
+                    vc, getattr(self, f"{item.edge_name}_id")
+                )
                 decision = await delegate._gen_evaluate_privacy(
                     vc, action, default_to_deny=False
                 )
@@ -172,18 +168,8 @@ class EntTestObject2(
             return Decision.DENY
         return Decision.PASS
 
-    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
-        if edge_name == "obj5":
-            from .ent_test_object5 import EntTestObject5
-
-            return await EntTestObject5._genx_no_privacy_DO_NOT_USE(vc, self.obj5_id)
-
-        raise ExecutionError(
-            f"An invalid privacy configuration was found for EntTestObject2: could not find delegate for {edge_name}"
-        )
-
     @classmethod
-    def get_child_type(cls, uuid_type: bytes) -> type[EntTestObject2]:  # type: ignore[override]
+    def _get_child_type(cls, uuid_type: bytes) -> type[EntTestObject2]:  # type: ignore[override]
         raise NotImplementedError("get_child_type() should only be called on patterns")
 
     @classmethod

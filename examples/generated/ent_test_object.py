@@ -34,6 +34,7 @@ from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from entpy.types import DateTime
+from functools import cache
 from pydantic import AwareDatetime
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
@@ -62,7 +63,6 @@ if TYPE_CHECKING:
     from .ent_test_sub_object import EntTestSubObjectModel
     from .ent_test_sub_object import EntTestSubObjectAPIModel
     from .ent_test_thing import EntTestThingAPIModel
-    from .ent_test_object5 import EntTestObject5
     from .ent_test_sub_object import EntTestSubObject
     from .ent_test_thing import IEntTestThing
 
@@ -275,52 +275,45 @@ class EntTestObject(
         ) -> Self:
             pass
 
-    async def gen_obj5(self) -> EntTestObject5:
-        from .ent_test_object5 import EntTestObject5
+        async def gen_required_sub_object(self) -> "EntTestSubObject":
+            pass
 
-        return await EntTestObject5.genx(self.vc, self.model.obj5_id)
+        async def gen_optional_sub_object(self) -> "EntTestSubObject" | None:
+            pass
 
-    async def gen_required_sub_object(self) -> EntTestSubObject:
-        from .ent_test_sub_object import EntTestSubObject
+        async def gen_optional_sub_object_no_ex(self) -> "EntTestSubObject" | None:
+            pass
 
-        return await EntTestSubObject.genx(self.vc, self.model.required_sub_object_id)
+        async def gen_self(self) -> "EntTestObject" | None:
+            pass
 
-    async def gen_obj5_opt(self) -> "EntTestObject5" | None:
-        from .ent_test_object5 import EntTestObject5
+        async def gen_some_pattern(self) -> "IEntTestThing" | None:
+            pass
 
-        if self.model.obj5_opt_id:
-            return await EntTestObject5.gen(self.vc, self.model.obj5_opt_id)
-        return None
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        match edge_name:
+            case "required_sub_object":
+                from .ent_test_sub_object import EntTestSubObject
 
-    async def gen_optional_sub_object(self) -> "EntTestSubObject" | None:
-        from .ent_test_sub_object import EntTestSubObject
+                return (EntTestSubObject, False)
+            case "optional_sub_object":
+                from .ent_test_sub_object import EntTestSubObject
 
-        if self.model.optional_sub_object_id:
-            return await EntTestSubObject.gen(
-                self.vc, self.model.optional_sub_object_id
-            )
-        return None
+                return (EntTestSubObject, True)
+            case "optional_sub_object_no_ex":
+                from .ent_test_sub_object import EntTestSubObject
 
-    async def gen_optional_sub_object_no_ex(self) -> "EntTestSubObject" | None:
-        from .ent_test_sub_object import EntTestSubObject
+                return (EntTestSubObject, True)
+            case "self":
+                return (EntTestObject, True)
+            case "some_pattern":
+                from .ent_test_thing import IEntTestThing
 
-        if self.model.optional_sub_object_no_ex_id:
-            return await EntTestSubObject.gen(
-                self.vc, self.model.optional_sub_object_no_ex_id
-            )
-        return None
+                return (IEntTestThing, True)
 
-    async def gen_self(self) -> "EntTestObject" | None:
-        if self.model.self_id:
-            return await EntTestObject.gen(self.vc, self.model.self_id)
-        return None
-
-    async def gen_some_pattern(self) -> "IEntTestThing" | None:
-        from .ent_test_thing import IEntTestThing
-
-        if self.model.some_pattern_id:
-            return await IEntTestThing.gen(self.vc, self.model.some_pattern_id)
-        return None
+        return super()._get_edge_type(edge_name)
 
     async def _gen_evaluate_privacy(
         self,
@@ -359,7 +352,10 @@ class EntTestObject(
                         str(vc),
                     )
             elif isinstance(item, EdgeDelegate):
-                delegate = await self._gen_load_delegate(vc, item.edge_name)
+                edge_type = self._get_edge_type(item.edge_name)
+                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(
+                    vc, getattr(self, f"{item.edge_name}_id")
+                )
                 decision = await delegate._gen_evaluate_privacy(
                     vc, action, default_to_deny=False
                 )
@@ -387,23 +383,6 @@ class EntTestObject(
                 )
             return Decision.DENY
         return Decision.PASS
-
-    async def _gen_load_delegate(self, vc: ExampleViewerContext, edge_name: str) -> Ent:
-        if edge_name == "obj5":
-            from .ent_test_object5 import EntTestObject5
-
-            return await EntTestObject5._genx_no_privacy_DO_NOT_USE(vc, self.obj5_id)
-
-        if edge_name == "required_sub_object":
-            from .ent_test_sub_object import EntTestSubObject
-
-            return await EntTestSubObject._genx_no_privacy_DO_NOT_USE(
-                vc, self.required_sub_object_id
-            )
-
-        raise ExecutionError(
-            f"An invalid privacy configuration was found for EntTestObject: could not find delegate for {edge_name}"
-        )
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntTestObjectQuery:

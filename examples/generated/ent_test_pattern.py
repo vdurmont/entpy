@@ -6,6 +6,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
+from typing import TYPE_CHECKING
 
 
 from entpy.framework.ent import EntPatternBase
@@ -13,7 +14,9 @@ from .ent_model import EntModel
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
-from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from entpy import Ent
 
 
 class EntTestPatternModel(EntModel):
@@ -30,7 +33,12 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
 
     @classmethod
     @cache
-    def get_child_type(cls, uuid_type: bytes) -> type[IEntTestPattern]:
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        return super()._get_edge_type(edge_name)
+
+    @classmethod
+    @cache
+    def _get_child_type(cls, uuid_type: bytes) -> type[IEntTestPattern]:
         match uuid_type:
             case b"\x7c\x9a":
                 from .ent_test_object2 import EntTestObject2
