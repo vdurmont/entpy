@@ -195,7 +195,7 @@ def _generate_gen_count(
     ent_loader = ""
     if threshold_to_stop_loading_ents_for_count > 0:
         ent_loader = f"""
-        if count <= {threshold_to_stop_loading_ents_for_count}:
+        if count <= {threshold_to_stop_loading_ents_for_count} and not force_no_privacy:
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
@@ -205,7 +205,7 @@ def _generate_gen_count(
 """
     return GeneratedContent(
         code=f"""
-    async def gen_count_NO_PRIVACY(self) -> int:
+    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:
         count_query = self._finalize_query().with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
         result = await db.session.execute(count_query)
         count = result.scalar()

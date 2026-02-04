@@ -62,5 +62,5 @@ class EntQuery[ENT, ENTMODEL](ABC):
         pass
 
     @abstractmethod
-    async def gen_count_NO_PRIVACY(self) -> int:  # noqa: N802
+    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:  # noqa: N802
         pass

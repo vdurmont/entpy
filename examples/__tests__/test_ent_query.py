@@ -1,15 +1,17 @@
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
-from datetime import datetime, UTC, timedelta
+
+from evc import ExampleTestViewerContext, ExampleViewerContext
+from generated.ent_child import EntChild, EntChildExample, EntChildModel
 from generated.ent_grand_parent import EntGrandParentExample
 from generated.ent_parent import EntParentExample, EntParentModel
-from generated.ent_child import EntChildExample, EntChild, EntChildModel
+from generated.ent_single_rule import EntSingleRule, EntSingleRuleExample
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
     EntTestObjectModel,
 )
 from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
-from evc import ExampleViewerContext
 
 
 async def test_ent_query(vc: ExampleViewerContext) -> None:
@@ -103,3 +105,30 @@ async def test_ent_query_count(vc: ExampleViewerContext) -> None:
     )
 
     assert results == 3
+
+
+async def test_ent_query_count_force_no_privacy() -> None:
+    # Create a TestViewerContext to create entities (they have privacy rules)
+    test_vc = ExampleTestViewerContext()
+
+    # Create 5 EntSingleRule entities (which have AllowIfTestViewerContext privacy rule)
+    await EntSingleRuleExample.gen_create(test_vc, name="Entity 1")
+    await EntSingleRuleExample.gen_create(test_vc, name="Entity 2")
+    await EntSingleRuleExample.gen_create(test_vc, name="Entity 3")
+    await EntSingleRuleExample.gen_create(test_vc, name="Entity 4")
+    await EntSingleRuleExample.gen_create(test_vc, name="Entity 5")
+
+    # Query with regular ExampleViewerContext (not TestViewerContext)
+    # This means privacy rules will deny access
+    regular_vc = ExampleViewerContext()
+
+    # Without force_no_privacy, count should be 0 because privacy filters them out
+    # (count is <= 50, so it loads entities and applies privacy)
+    count_with_privacy = await EntSingleRule.query(regular_vc).gen_count_NO_PRIVACY()
+    assert count_with_privacy == 0
+
+    # With force_no_privacy=True, count should be 5 (bypasses privacy completely)
+    count_without_privacy = await EntSingleRule.query(regular_vc).gen_count_NO_PRIVACY(
+        force_no_privacy=True
+    )
+    assert count_without_privacy == 5

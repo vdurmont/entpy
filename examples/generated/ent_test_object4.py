@@ -203,7 +203,7 @@ class EntTestObject4Query(EntQuery[EntTestObject4, EntTestObject4Model]):
             raise EntNotFoundError("Expected to find a EntTestObject4, got None.")
         return ent
 
-    async def gen_count_NO_PRIVACY(self) -> int:
+    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:
         count_query = (
             self._finalize_query()
             .with_only_columns(func.count(), maintain_column_froms=True)
@@ -213,7 +213,7 @@ class EntTestObject4Query(EntQuery[EntTestObject4, EntTestObject4Model]):
         count = result.scalar()
         if count is None:
             raise ExecutionError("Unable to get the count")
-        if count <= 50:
+        if count <= 50 and not force_no_privacy:
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
