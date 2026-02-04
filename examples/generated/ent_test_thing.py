@@ -6,6 +6,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
+from typing import Self
 from uuid import UUID
 
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
@@ -70,6 +71,24 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
         idempotency_key: UUID | None
         obj5_opt_id: UUID | None
         thing_status: ThingStatus | None
+
+        @classmethod
+        async def gen_from_idempotency_key(
+            cls,
+            vc: ExampleViewerContext,
+            idempotency_key: UUID,
+            for_update: bool = False,
+        ) -> Self | None:
+            pass
+
+        @classmethod
+        async def genx_from_idempotency_key(
+            cls,
+            vc: ExampleViewerContext,
+            idempotency_key: UUID,
+            for_update: bool = False,
+        ) -> Self:
+            pass
 
     async def gen_obj5(self) -> EntTestObject5:
         from .ent_test_object5 import EntTestObject5

@@ -82,6 +82,8 @@ class {base_name}({extends}):{get_description(schema)}
     if TYPE_CHECKING:
 {fields.code or "        pass"}
 
+{unique_gens}
+
 {edge_gens.code}
 
     async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action, default_to_deny: bool = True, log_on_deny: bool = True) -> Decision:
@@ -118,7 +120,6 @@ class {base_name}({extends}):{get_description(schema)}
         raise ExecutionError(f"An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
 
 
-    {unique_gens}
 
     {child_types}
 
@@ -195,26 +196,19 @@ def _generate_edge_gens(schema: Descriptor) -> GeneratedContent:
     )
 
 
-def _generate_unique_gens(schema: Schema, base_name: str, vc: ImportedObject) -> str:
+def _generate_unique_gens(
+    schema: Descriptor, base_name: str, vc: ImportedObject
+) -> str:
     unique_gens = ""
-    for field in schema.get_all_fields():
+    for field in schema.get_sorted_fields():
         if field.is_unique:
             unique_gens += f"""
-    @classmethod
-    async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> {base_name} | None:
-        query = select({base_name}Model).where({base_name}Model.{field.name} == {field.name})
-        query = query.with_for_update()
-        async with emulate_for_update({base_name}Model, "{field.name}", {field.name}, for_update):
-            result = await db.session.execute(query)
-        model = result.scalar_one_or_none()
-        db.session.info.setdefault("cache", set()).add(model)
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
+        @classmethod
+        async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> Self | None:
+            pass
 
-    @classmethod
-    async def genx_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> {base_name}:
-        result = await cls.gen_from_{field.name}(vc, {field.name}, for_update)
-        if not result:
-            raise EntNotFoundError(f"No EntTestObject found for {field.name} {{{field.name}}}")
-        return result
+        @classmethod
+        async def genx_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> Self:
+            pass
 """  # noqa: E501
     return unique_gens

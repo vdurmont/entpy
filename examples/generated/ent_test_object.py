@@ -8,7 +8,6 @@ from entpy import (
     db,
     Ent,
     generate_uuid,
-    EntNotFoundError,
     ExecutionError,
     Action,
     Decision,
@@ -16,6 +15,7 @@ from entpy import (
 )
 from uuid import UUID
 from datetime import datetime, UTC
+from typing import Self
 from evc import ExampleViewerContext
 from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
@@ -31,7 +31,6 @@ from ent_test_thing_pattern import ThingStatus
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
-from entpy.framework.database import emulate_for_update
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from entpy.types import DateTime
@@ -53,7 +52,6 @@ from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import Time
 from sqlalchemy import UUID as DBUUID
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
@@ -265,6 +263,18 @@ class EntTestObject(
         validated_field: str | None
         when_is_it_cool: datetime | None
 
+        @classmethod
+        async def gen_from_username(
+            cls, vc: ExampleViewerContext, username: str, for_update: bool = False
+        ) -> Self | None:
+            pass
+
+        @classmethod
+        async def genx_from_username(
+            cls, vc: ExampleViewerContext, username: str, for_update: bool = False
+        ) -> Self:
+            pass
+
     async def gen_obj5(self) -> EntTestObject5:
         from .ent_test_object5 import EntTestObject5
 
@@ -394,58 +404,6 @@ class EntTestObject(
         raise ExecutionError(
             f"An invalid privacy configuration was found for EntTestObject: could not find delegate for {edge_name}"
         )
-
-    @classmethod
-    async def gen_from_username(
-        cls, vc: ExampleViewerContext, username: str, for_update: bool = False
-    ) -> EntTestObject | None:
-        query = select(EntTestObjectModel).where(
-            EntTestObjectModel.username == username
-        )
-        query = query.with_for_update()
-        async with emulate_for_update(
-            EntTestObjectModel, "username", username, for_update
-        ):
-            result = await db.session.execute(query)
-        model = result.scalar_one_or_none()
-        db.session.info.setdefault("cache", set()).add(model)
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
-
-    @classmethod
-    async def genx_from_username(
-        cls, vc: ExampleViewerContext, username: str, for_update: bool = False
-    ) -> EntTestObject:
-        result = await cls.gen_from_username(vc, username, for_update)
-        if not result:
-            raise EntNotFoundError(f"No EntTestObject found for username {username}")
-        return result
-
-    @classmethod
-    async def gen_from_idempotency_key(
-        cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
-    ) -> EntTestObject | None:
-        query = select(EntTestObjectModel).where(
-            EntTestObjectModel.idempotency_key == idempotency_key
-        )
-        query = query.with_for_update()
-        async with emulate_for_update(
-            EntTestObjectModel, "idempotency_key", idempotency_key, for_update
-        ):
-            result = await db.session.execute(query)
-        model = result.scalar_one_or_none()
-        db.session.info.setdefault("cache", set()).add(model)
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
-
-    @classmethod
-    async def genx_from_idempotency_key(
-        cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
-    ) -> EntTestObject:
-        result = await cls.gen_from_idempotency_key(vc, idempotency_key, for_update)
-        if not result:
-            raise EntNotFoundError(
-                f"No EntTestObject found for idempotency_key {idempotency_key}"
-            )
-        return result
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntTestObjectQuery:

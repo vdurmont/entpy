@@ -1,7 +1,10 @@
 from abc import abstractmethod
 from datetime import datetime
+from functools import partial
 from typing import TYPE_CHECKING, Any, Self, TypeVar
 from uuid import UUID
+
+from sqlalchemy import select
 
 from entpy.framework.action import Action
 from entpy.framework.database import db, emulate_for_update
@@ -17,7 +20,20 @@ if TYPE_CHECKING:
     from entpy.framework.query import EntQuery
 
 
-class Ent[VC: ViewerContext, ENTMODEL: ModelMixin]:
+class EntMeta(type):
+    if not TYPE_CHECKING:
+        # Hide this from mypy otherwise it thinks any attribute is valid
+        def __getattr__(cls, name: str) -> Any:
+            if name.startswith("gen_from_"):
+                return partial(cls._gen_from_unique, name[9:])
+
+            if name.startswith("genx_from_"):
+                return partial(cls._genx_from_unique, name[10:])
+
+            raise AttributeError(f"'{cls.__name__}' object has no attribute '{name}'")
+
+
+class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
     model: ENTMODEL
     m: type[ENTMODEL]
     vc: VC
@@ -29,7 +45,7 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin]:
         updated_at: datetime
         soft_deleted_at: datetime | None
     else:
-
+        # Hide this from mypy otherwise it thinks any attribute is valid
         def __getattr__(self, name: str) -> Any:
             if not name.startswith("_"):
                 return getattr(self.model, name)
@@ -59,6 +75,22 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin]:
         ent = await cls.gen(vc, ent_id, for_update)
         if not ent:
             raise EntNotFoundError(f"No {cls.__name__} found for ID {{ent_id}}")
+        return ent
+
+    @classmethod
+    @abstractmethod
+    async def _gen_from_unique(
+        cls, name: str, vc: VC, value: Any, for_update: bool = False
+    ) -> Self | None:
+        pass
+
+    @classmethod
+    async def _genx_from_unique(
+        cls, name: str, vc: VC, value: Any, for_update: bool = False
+    ) -> Self | None:
+        ent = await cls._gen_from_unique(name, vc, value, for_update)
+        if not ent:
+            raise EntNotFoundError(f"No {cls.__name__} found for {name} {{value}}")
         return ent
 
     @classmethod
@@ -124,6 +156,19 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         db.session.info.setdefault("cache", set()).add(model)
         return cls(vc=vc, model=model)
 
+    @classmethod
+    async def _gen_from_unique(
+        cls, name: str, vc: VC, value: Any, for_update: bool = False
+    ) -> Self | None:
+        query = select(cls.m).where(getattr(cls.m, name) == value)
+        if for_update:
+            query = query.with_for_update()
+        async with emulate_for_update(cls.m, name, value, for_update):
+            result = await db.session.execute(query)
+        model = result.scalar_one_or_none()
+        db.session.info.setdefault("cache", set()).add(model)
+        return await cls._gen_from_model(vc, model)  # noqa: SLF001
+
 
 class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     @classmethod
@@ -145,4 +190,16 @@ class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL])
     ) -> Self | None:
         real_ent_id = validate_ent_id(ent_id)
         ent_type = cls.get_child_type(real_ent_id.bytes[6:8])
+        return await ent_type.gen(vc, ent_id, for_update)
+
+    @classmethod
+    async def _gen_from_unique(
+        cls, name: str, vc: VC, value: Any, for_update: bool = False
+    ) -> Self | None:
+        query = select(cls.m.id).where(getattr(cls.m, name) == value)
+        result = await db.session.execute(query)
+        ent_id = result.scalar_one_or_none()
+        if ent_id is None:
+            return None
+        ent_type = cls.get_child_type(ent_id.bytes[6:8])
         return await ent_type.gen(vc, ent_id, for_update)

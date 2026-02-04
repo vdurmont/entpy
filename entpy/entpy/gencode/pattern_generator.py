@@ -1,7 +1,11 @@
 from entpy import Pattern, Schema
 from entpy.framework.fields.edge_field import EdgeField
 from entpy.gencode.api_model_generator import generate as generate_api_model
-from entpy.gencode.base_generator import _generate_edge_gens, _generate_fields
+from entpy.gencode.base_generator import (
+    _generate_edge_gens,
+    _generate_fields,
+    _generate_unique_gens,
+)
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
@@ -23,6 +27,7 @@ def generate(
     fields = _generate_fields(schema=pattern)
     edge_gens = _generate_edge_gens(schema=pattern)
     child_types = _generate_child_types(children_schema_classes=children_schema_classes)
+    unique_gens = _generate_unique_gens(schema=pattern, base_name=base_name, vc=vc)
 
     query_content = generate_query(
         descriptor=pattern,
@@ -111,6 +116,8 @@ class I{base_name}(EntPatternBase[{vc.name}, {base_name}Model]):{get_description
 
     if TYPE_CHECKING:
 {fields.code or "        pass"}
+
+{unique_gens}
 
 {edge_gens.code}
 
