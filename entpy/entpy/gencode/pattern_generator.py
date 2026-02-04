@@ -15,13 +15,14 @@ def generate(
     threshold_to_stop_loading_ents_for_count: int,
 ) -> str:
     pattern = pattern_class()
-    base_name = pattern_class.__name__.replace("Pattern", "")
+    base_name = pattern_class.__name__.removesuffix("Pattern")
 
     model = generate_model(descriptor=pattern, base_name=base_name)
     api_model = generate_api_model(descriptor=pattern, base_name=base_name)
 
     fields = _generate_fields(schema=pattern)
     edge_gens = _generate_edge_gens(schema=pattern)
+    child_types = _generate_child_types(children_schema_classes=children_schema_classes)
 
     query_content = generate_query(
         descriptor=pattern,
@@ -45,7 +46,7 @@ def generate(
         example_base_name = schema_class_name
     else:
         schema_class = children_schema_classes[0]
-        example_base_name = schema_class.__name__.replace("Schema", "")
+        example_base_name = schema_class.__name__.removesuffix("Schema")
 
     # Generate the arguments for the gen_create function of the example
     example_arguments_definition = ""
@@ -91,18 +92,22 @@ def generate(
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from uuid import UUID
-from entpy import Ent, ValidationError, validate_ent_id
 from datetime import datetime
-from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
+from functools import cache
 from typing import Self
+from uuid import UUID
+
+from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
+
+from entpy import Ent, ValidationError, validate_ent_id
+from entpy.framework.ent import EntPatternBase
 {imports_code}
 
 {model.code}
 
 {api_model.code}
 
-class I{base_name}(Ent):{get_description(pattern)}
+class I{base_name}(EntPatternBase[{vc.name}, {base_name}Model]):{get_description(pattern)}
 
     if TYPE_CHECKING:
 {fields.code or "        pass"}
@@ -110,20 +115,11 @@ class I{base_name}(Ent):{get_description(pattern)}
 {edge_gens.code}
 
     @classmethod
-    async def _gen_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name} | None:
-        from .all_models import UUID_TO_ENT
-        real_ent_id = validate_ent_id(ent_id)
-        ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
-        # Casting is ok here, the id always inherits I{base_name}
-        return await cast(type[I{base_name}], ent_type)._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
-
-    @classmethod
-    async def gen(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name} | None:
-        from .all_models import UUID_TO_ENT
-        real_ent_id = validate_ent_id(ent_id)
-        ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
-        # Casting is ok here, the id always inherits I{base_name}
-        return await cast(type[I{base_name}], ent_type).gen(vc, ent_id, for_update)
+    @cache
+    def get_child_type(cls, uuid_type: bytes) -> type[I{base_name}]:
+        match uuid_type:
+{child_types.code}
+        raise ValueError(f"Unknown UUID type for I{base_name}: {{uuid_type.hex()}}")
 
     @classmethod
     def query_{to_snake_case(base_name)}(cls, vc: {vc.name}) -> I{base_name}Query:
@@ -154,8 +150,8 @@ def _generate_edges(pattern: Pattern) -> GeneratedContent:
             or_not = " | None" if field.nullable else ""
             if field.edge_class != pattern.__class__:
                 module = "." + to_snake_case(
-                    field.edge_class.__name__.replace("Schema", "").replace(
-                        "Pattern", ""
+                    field.edge_class.__name__.removesuffix("Schema").removesuffix(
+                        "Pattern"
                     )
                 )
                 type_checking_imports.append(
@@ -172,6 +168,24 @@ def _generate_edges(pattern: Pattern) -> GeneratedContent:
         code=code,
         type_checking_imports=type_checking_imports,
     )
+
+
+def _generate_child_types(
+    children_schema_classes: list[type[Schema]],
+) -> GeneratedContent:
+    # Generate update method
+    child_types = ""
+    for schema_class in children_schema_classes:
+        schema_base_name = schema_class.__name__.removesuffix("Schema")
+        lower_schema = to_snake_case(schema_base_name)
+        uuid_hex = "".join(f"\\x{b:02x}" for b in schema_class.get_uuid_type())
+        child_types += f'            case b"{uuid_hex}":\n'
+        child_types += (
+            f"                from .{lower_schema} import {schema_base_name}\n"
+        )
+        child_types += f"                return {schema_base_name}\n"
+
+    return GeneratedContent(code=child_types)
 
 
 def _generate_mutator(
@@ -208,7 +222,7 @@ def _generate_delete_checks(
 ) -> str:
     delete_checks = ""
     for schema_class in children_schema_classes:
-        schema_base_name = schema_class.__name__.replace("Schema", "")
+        schema_base_name = schema_class.__name__.removesuffix("Schema")
         lower_schema = to_snake_case(schema_base_name)
         delete_checks += f"""
         from .{lower_schema} import {schema_base_name}
@@ -225,7 +239,7 @@ def _generate_mutator_methods(
     # Generate update method
     update_checks = ""
     for schema_class in children_schema_classes:
-        schema_base_name = schema_class.__name__.replace("Schema", "")
+        schema_base_name = schema_class.__name__.removesuffix("Schema")
         lower_schema = to_snake_case(schema_base_name)
         update_checks += f"""
         from .{lower_schema} import {schema_base_name}

@@ -65,9 +65,9 @@ def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedCon
                 )
 
         if isinstance(field, EdgeField) and field.should_generate_example:
-            edge_base_name = field.edge_class.__name__.replace("Schema", "").replace(
-                "Pattern", ""
-            )
+            edge_base_name = field.edge_class.__name__.removesuffix(
+                "Schema"
+            ).removesuffix("Pattern")
             i = "I" if field.edge_class.__name__.endswith("Pattern") else ""
             # We skip examples for edges that point to the same schema or a pattern
             # implemented by the current Ent to avoid recursive creations. The

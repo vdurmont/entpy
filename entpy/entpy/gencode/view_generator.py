@@ -23,13 +23,13 @@ def generate(
     base_import: str,
 ) -> str:
     pattern = pattern_class()
-    base_name = pattern_class.__name__.replace("Pattern", "")
+    base_name = pattern_class.__name__.removesuffix("Pattern")
     schemas = [s() for s in children_schema_classes]
 
     selects = ""
     imports = [f"from .{to_snake_case(base_name)} import {base_name}Model"]
     for schema in schemas:
-        schema_base_name = schema.__class__.__name__.replace("Schema", "")
+        schema_base_name = schema.__class__.__name__.removesuffix("Schema")
         imports.append(
             f"from .{to_snake_case(schema_base_name)} import {schema_base_name}Model"
         )

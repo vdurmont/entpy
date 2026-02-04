@@ -1,6 +1,7 @@
 import pytest
 from database import Base, engine
 from evc import ExampleViewerContext
+import generated.all_models  # noqa: F401
 
 
 @pytest.fixture

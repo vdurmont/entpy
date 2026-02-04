@@ -24,7 +24,7 @@ def generate(
     threshold_to_stop_loading_ents_for_count: int,
 ) -> str:
     schema = schema_class()
-    base_name = schema_class.__name__.replace("Schema", "")
+    base_name = schema_class.__name__.removesuffix("Schema")
 
     # Validate that the schema has at least one field
     _validate_has_fields(schema)

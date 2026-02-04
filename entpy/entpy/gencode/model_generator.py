@@ -101,9 +101,9 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += f"mapped_column(DBUUID(){common_column_attributes})\n"
         elif isinstance(field, EdgeField):
             types_imports.append("from sqlalchemy import ForeignKey")
-            edge_base_name = field.edge_class.__name__.replace("Schema", "").replace(
-                "Pattern", ""
-            )
+            edge_base_name = field.edge_class.__name__.removesuffix(
+                "Schema"
+            ).removesuffix("Pattern")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += "mapped_column(DBUUID()"
             if not field.edge_class.__name__.endswith("Pattern"):
@@ -117,7 +117,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         for field in descriptor.get_all_fields():
             if isinstance(field, EdgeField) and issubclass(field.edge_class, Schema):
                 types_imports.append("from sqlalchemy.orm import relationship")
-                edge_base_name = field.edge_class.__name__.replace("Schema", "")
+                edge_base_name = field.edge_class.__name__.removesuffix("Schema")
                 module = "." + to_snake_case(edge_base_name)
                 if base_name != edge_base_name:
                     type_checking_imports.append(
@@ -209,11 +209,11 @@ def _get_table_name(base_name: str) -> str:
 def _generate_extends(descriptor: Descriptor) -> GeneratedContent:
     patterns = descriptor.get_patterns()
     code = ", ".join(
-        [p.__class__.__name__.replace("Pattern", "") + "Model" for p in patterns]
+        [p.__class__.__name__.removesuffix("Pattern") + "Model" for p in patterns]
     )
 
     def get_import(pattern: Pattern) -> str:
-        base_name = pattern.__class__.__name__.replace("Pattern", "")
+        base_name = pattern.__class__.__name__.removesuffix("Pattern")
         return f"from .{to_snake_case(base_name)} import {base_name}Model"
 
     imports = [get_import(p) for p in patterns]

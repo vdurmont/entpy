@@ -39,8 +39,8 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             types_imports.append("from pydantic import AwareDatetime")
             python_type = "AwareDatetime"
         elif isinstance(field, EdgeField):
-            edge_base = field.edge_class.__name__.replace("Schema", "").replace(
-                "Pattern", ""
+            edge_base = field.edge_class.__name__.removesuffix("Schema").removesuffix(
+                "Pattern"
             )
             if edge_base != base_name:
                 type_checking_imports.append(
@@ -79,11 +79,11 @@ class {base_name}APIModel({extends.code}):
 def _generate_extends(descriptor: Descriptor) -> GeneratedContent:
     patterns = descriptor.get_patterns()
     code = ", ".join(
-        [p.__class__.__name__.replace("Pattern", "") + "APIModel" for p in patterns]
+        [p.__class__.__name__.removesuffix("Pattern") + "APIModel" for p in patterns]
     )
 
     def get_import(pattern: Pattern) -> str:
-        base_name = pattern.__class__.__name__.replace("Pattern", "")
+        base_name = pattern.__class__.__name__.removesuffix("Pattern")
         return f"from .{to_snake_case(base_name)} import {base_name}APIModel"
 
     imports = [get_import(p) for p in patterns]

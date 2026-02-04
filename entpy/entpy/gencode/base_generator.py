@@ -18,7 +18,7 @@ def generate(
     extends = ",".join(
         [f"EntObjectBase[{vc.name}, {base_name}Model]"]
         + [
-            f"I{pattern.__class__.__name__.replace("Pattern", "")}"
+            f"I{pattern.__class__.__name__.removesuffix("Pattern")}"
             for pattern in schema.get_patterns()
         ]
     )
@@ -46,10 +46,18 @@ def generate(
     imports += ["from sqlalchemy import select"]
 
     for pattern in schema.get_patterns():
-        pattern_base_name = pattern.__class__.__name__.replace("Pattern", "")
+        pattern_base_name = pattern.__class__.__name__.removesuffix("Pattern")
         class_name = f"I{pattern_base_name}"
         module_name = "." + to_snake_case(pattern_base_name)
         imports.append(f"from {module_name} import {class_name}")
+
+    child_types = ""
+    # Make the type checker happy for ents which implement multiple patterns
+    if len(schema.get_patterns()) > 1:
+        child_types = f"""@classmethod
+    def get_child_type(cls, uuid_type: bytes) -> type[{base_name}]:  # type: ignore[override]
+        raise NotImplementedError("get_child_type() should only be called on patterns")
+    """
 
     delegate_loaders = ""
     for field in schema.get_all_fields():
@@ -111,6 +119,8 @@ class {base_name}({extends}):{get_description(schema)}
 
     {unique_gens}
 
+    {child_types}
+
     @classmethod
     def query(cls, vc: {vc.name}) -> {base_name}Query:
         return {base_name}Query(vc=vc)
@@ -155,8 +165,8 @@ def _generate_edge_gens(schema: Descriptor) -> GeneratedContent:
             load = ""
             if field.edge_class != schema.__class__:
                 module = "." + to_snake_case(
-                    field.edge_class.__name__.replace("Schema", "").replace(
-                        "Pattern", ""
+                    field.edge_class.__name__.removesuffix("Schema").removesuffix(
+                        "Pattern"
                     )
                 )
                 # We import the edge type locally to avoid circular imports

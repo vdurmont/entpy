@@ -1,4 +1,5 @@
 from ent_test_thing_pattern import EntTestThingPattern
+from ent_test_pattern_pattern import EntTestPatternPattern
 from entpy import (
     Action,
     AllowAll,
@@ -13,7 +14,7 @@ from entpy import (
 
 class EntTestObject2Schema(Schema):
     def get_patterns(self) -> list[Pattern]:
-        return [EntTestThingPattern()]
+        return [EntTestThingPattern(), EntTestPatternPattern()]
 
     def get_fields(self) -> list[Field]:
         return [StringField("some_field", 100)]
