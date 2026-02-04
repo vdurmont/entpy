@@ -17,6 +17,11 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime, UTC
 from evc import ExampleViewerContext
+from .ent_test_pattern import EntTestPatternAPIModel
+from .ent_test_pattern import EntTestPatternModel
+from .ent_test_pattern import IEntTestPattern
+from .ent_test_pattern import IEntTestPatternMutatorDeletionAction
+from .ent_test_pattern import IEntTestPatternMutatorUpdateAction
 from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
@@ -51,7 +56,7 @@ if TYPE_CHECKING:
 privacy_logger = logging.getLogger("entpy.privacy")
 
 
-class EntTestObject2Model(EntTestThingModel):
+class EntTestObject2Model(EntTestThingModel, EntTestPatternModel):
     __tablename__ = "test_object2"
 
     some_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -74,12 +79,14 @@ Index(
 )
 
 
-class EntTestObject2APIModel(EntTestThingAPIModel):
+class EntTestObject2APIModel(EntTestThingAPIModel, EntTestPatternAPIModel):
     some_field: str | None = APIField(None)
 
 
 class EntTestObject2(
-    EntObjectBase[ExampleViewerContext, EntTestObject2Model], IEntTestThing
+    EntObjectBase[ExampleViewerContext, EntTestObject2Model],
+    IEntTestThing,
+    IEntTestPattern,
 ):
     m = EntTestObject2Model
 
@@ -201,6 +208,10 @@ class EntTestObject2(
                 f"No EntTestObject found for idempotency_key {idempotency_key}"
             )
         return result
+
+    @classmethod
+    def get_child_type(cls, uuid_type: bytes) -> type[EntTestObject2]:  # type: ignore[override]
+        raise NotImplementedError("get_child_type() should only be called on patterns")
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntTestObject2Query:
@@ -414,7 +425,9 @@ class EntTestObject2MutatorCreationAction:
         return await EntTestObject2._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntTestObject2MutatorUpdateAction(IEntTestThingMutatorUpdateAction):
+class EntTestObject2MutatorUpdateAction(
+    IEntTestThingMutatorUpdateAction, IEntTestPatternMutatorUpdateAction
+):
     vc: ExampleViewerContext
     ent: EntTestObject2
     id: UUID
@@ -468,7 +481,9 @@ class EntTestObject2MutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         return await EntTestObject2._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntTestObject2MutatorDeletionAction(IEntTestThingMutatorDeletionAction):
+class EntTestObject2MutatorDeletionAction(
+    IEntTestThingMutatorDeletionAction, IEntTestPatternMutatorDeletionAction
+):
     vc: ExampleViewerContext
     ent: EntTestObject2
 

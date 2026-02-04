@@ -185,7 +185,7 @@ def _generate_update(
         pattern_base_classes = []
         pattern_imports = []
         for pattern in patterns:
-            pattern_base_name = pattern.__class__.__name__.replace("Pattern", "")
+            pattern_base_name = pattern.__class__.__name__.removesuffix("Pattern")
             pattern_base_classes.append(f"I{pattern_base_name}MutatorUpdateAction")
             pattern_imports.append(
                 f"from .{_to_snake_case(pattern_base_name)} "
@@ -238,7 +238,7 @@ def _generate_deletion(
         pattern_base_classes = []
         pattern_imports = []
         for pattern in patterns:
-            pattern_base_name = pattern.__class__.__name__.replace("Pattern", "")
+            pattern_base_name = pattern.__class__.__name__.removesuffix("Pattern")
             pattern_base_classes.append(f"I{pattern_base_name}MutatorDeletionAction")
             pattern_imports.append(
                 f"from .{_to_snake_case(pattern_base_name)} "

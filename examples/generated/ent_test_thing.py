@@ -4,10 +4,13 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from uuid import UUID
-from entpy import Ent, validate_ent_id
 from datetime import datetime
+from functools import cache
+from uuid import UUID
+
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
+
+from entpy.framework.ent import EntPatternBase
 from .ent_model import EntModel
 from collections import defaultdict
 from ent_test_thing_pattern import ThingStatus
@@ -65,7 +68,7 @@ class EntTestThingAPIModel(APIEntity):
     thing_status: ThingStatus | None = APIField(None)
 
 
-class IEntTestThing(Ent):
+class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
     if TYPE_CHECKING:
         a_good_thing: str
         obj5_id: UUID
@@ -87,28 +90,19 @@ class IEntTestThing(Ent):
         return None
 
     @classmethod
-    async def _gen_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> IEntTestThing | None:
-        from .all_models import UUID_TO_ENT
+    @cache
+    def get_child_type(cls, uuid_type: bytes) -> type[IEntTestThing]:
+        match uuid_type:
+            case b"\x7c\x9a":
+                from .ent_test_object2 import EntTestObject2
 
-        real_ent_id = validate_ent_id(ent_id)
-        ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
-        # Casting is ok here, the id always inherits IEntTestThing
-        return await cast(type[IEntTestThing], ent_type)._gen_no_privacy_DO_NOT_USE(
-            vc, ent_id, for_update
-        )
+                return EntTestObject2
+            case b"\x23\x1c":
+                from .ent_test_object import EntTestObject
 
-    @classmethod
-    async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> IEntTestThing | None:
-        from .all_models import UUID_TO_ENT
+                return EntTestObject
 
-        real_ent_id = validate_ent_id(ent_id)
-        ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
-        # Casting is ok here, the id always inherits IEntTestThing
-        return await cast(type[IEntTestThing], ent_type).gen(vc, ent_id, for_update)
+        raise ValueError(f"Unknown UUID type for IEntTestThing: {uuid_type.hex()}")
 
     @classmethod
     def query_ent_test_thing(cls, vc: ExampleViewerContext) -> IEntTestThingQuery:

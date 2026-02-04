@@ -123,3 +123,26 @@ class EntObjectBase(Ent[VC, ENTMODEL]):
             return None
         db.session.info.setdefault("cache", set()).add(model)
         return cls(vc=vc, model=model)
+
+
+class EntPatternBase(Ent[VC, ENTMODEL]):
+    @classmethod
+    @abstractmethod
+    def get_child_type(cls, uuid_type: bytes) -> type[Self]:
+        pass
+
+    @classmethod
+    async def _gen_no_privacy_DO_NOT_USE(  # noqa: N802
+        cls, vc: VC, ent_id: UUID | str, for_update: bool = False
+    ) -> Self | None:
+        real_ent_id = validate_ent_id(ent_id)
+        ent_type = cls.get_child_type(real_ent_id.bytes[6:8])
+        return await ent_type._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
+
+    @classmethod
+    async def gen(
+        cls, vc: VC, ent_id: UUID | str, for_update: bool = False
+    ) -> Self | None:
+        real_ent_id = validate_ent_id(ent_id)
+        ent_type = cls.get_child_type(real_ent_id.bytes[6:8])
+        return await ent_type.gen(vc, ent_id, for_update)

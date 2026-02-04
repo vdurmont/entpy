@@ -46,7 +46,7 @@ def run(
         descriptor_output_path = config[1]
         print(f"Processing: {descriptor_class.__name__}")
         if issubclass(descriptor_class, Schema):
-            base_name = descriptor_class.__name__.replace("Schema", "")
+            base_name = descriptor_class.__name__.removesuffix("Schema")
             uuid_type = descriptor_class.get_uuid_type()
             uuid_hex = "".join(f"\\x{b:02x}" for b in uuid_type)
             models_list_mapping += f'\n    b"{uuid_hex}": {base_name},'
@@ -165,7 +165,7 @@ def _load_descriptors_configs(
             (
                 matching_descriptors[0],
                 output_path
-                / f"{descriptor_file.stem.replace('_schema', '').replace('_pattern', '')}.py",  # noqa: E501
+                / f"{descriptor_file.stem.removesuffix('_schema').removesuffix('_pattern')}.py",  # noqa: E501
             )
         )
 

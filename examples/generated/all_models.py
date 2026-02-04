@@ -33,6 +33,7 @@ from .ent_test_object5 import EntTestObject5Model  # noqa: F401
 from .ent_test_object5 import EntTestObject5
 from .ent_test_object import EntTestObjectModel  # noqa: F401
 from .ent_test_object import EntTestObject
+from .ent_test_pattern_view import ent_test_pattern_view  # noqa: F401
 from .ent_test_sub_object import EntTestSubObjectModel  # noqa: F401
 from .ent_test_sub_object import EntTestSubObject
 from .ent_test_thing_view import ent_test_thing_view  # noqa: F401

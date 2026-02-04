@@ -20,8 +20,8 @@ class EdgeField(Field):
     def get_edge_type(self) -> str:
         classname = self.edge_class.__name__
         if classname.endswith("Pattern"):
-            return "I" + classname.replace("Pattern", "")
-        return classname.replace("Schema", "")
+            return "I" + classname.removesuffix("Pattern")
+        return classname.removesuffix("Schema")
 
     def no_example(self) -> Self:
         self.should_generate_example = False

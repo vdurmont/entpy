@@ -19,5 +19,5 @@ class Schema(Descriptor, ABC):
 
     @classmethod
     def get_uuid_type(cls) -> bytes:
-        base_name = cls.__name__.replace("Schema", "")
+        base_name = cls.__name__.removesuffix("Schema")
         return sha256(base_name.encode()).digest()[:2]
