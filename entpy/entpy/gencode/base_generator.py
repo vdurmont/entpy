@@ -16,11 +16,11 @@ def generate(
     prepended_rules: list[PrivacyRuleImport],
 ) -> GeneratedContent:
     extends = ",".join(
-        [
+        [f"EntObjectBase[{vc.name}, {base_name}Model]"]
+        + [
             f"I{pattern.__class__.__name__.replace("Pattern", "")}"
             for pattern in schema.get_patterns()
         ]
-        + [f"Ent[{vc.name}, {base_name}Model]"]
     )
 
     fields = _generate_fields(schema)
@@ -30,6 +30,7 @@ def generate(
 
     imports = [
         "from entpy import EdgeDelegate, PrivacyRule, Ent",
+        "from entpy.framework.ent import EntObjectBase",
         "from entpy.framework.database import emulate_for_update",
     ]
 
@@ -69,9 +70,6 @@ def generate(
 class {base_name}({extends}):{get_description(schema)}
     m = {base_name}Model
 
-    def __init__(self, vc: {vc.name}, model: {base_name}Model) -> None:
-        self.vc = vc
-        self.model = model
 
     if TYPE_CHECKING:
 {fields.code or "        pass"}
@@ -110,61 +108,8 @@ class {base_name}({extends}):{get_description(schema)}
     async def _gen_load_delegate(self, vc: {vc.name}, edge_name: str) -> Ent:{delegate_loaders}
         raise ExecutionError(f"An invalid privacy configuration was found for {base_name}: could not find delegate for {{edge_name}}")
 
-    @classmethod
-    async def _gen_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name} | None:
-        real_ent_id = validate_ent_id(ent_id)
-        model = await db.session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
-        if model is None:
-            return None
-        db.session.info.setdefault("cache", set()).add(model)
-        return {base_name}(vc=vc, model=model)
-
-    @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> {base_name}:
-        ent = await {base_name}._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
-        if ent is None:
-            raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
-        return ent
-
-    @classmethod
-    async def genx(
-        cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False
-    ) -> {base_name}:
-        ent = await cls.gen(vc, ent_id, for_update)
-        if not ent:
-            raise EntNotFoundError(f"No {base_name} found for ID {{ent_id}}")
-        return ent
-
-    @classmethod
-    async def gen(
-        cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False
-    ) -> {base_name} | None:
-        real_ent_id = validate_ent_id(ent_id)
-        async with emulate_for_update({base_name}Model, "id", real_ent_id, for_update):
-            model = await db.session.get({base_name}Model, real_ent_id, with_for_update=for_update or None)
-        db.session.info.setdefault("cache", set()).add(model)
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     {unique_gens}
-
-    @classmethod
-    async def _gen_from_model(
-        cls, vc: {vc.name}, model: {base_name}Model | None
-    ) -> {base_name} | None:
-        if not model:
-            return None
-        ent = {base_name}(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        return ent if decision == Decision.ALLOW else None
-
-    @classmethod
-    async def _genx_from_model(
-        cls, vc: {vc.name}, model: {base_name}Model
-    ) -> {base_name}:
-        ent = await {base_name}._gen_from_model(vc=vc, model=model)
-        if not ent:
-            raise EntNotFoundError(f"No {base_name} found for ID {{model.id}}")
-        return ent
 
     @classmethod
     def query(cls, vc: {vc.name}) -> {base_name}Query:

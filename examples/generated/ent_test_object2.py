@@ -13,7 +13,6 @@ from entpy import (
     Action,
     Decision,
     ValidationError,
-    validate_ent_id,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -29,6 +28,7 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
+from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntQuery
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
@@ -78,12 +78,10 @@ class EntTestObject2APIModel(EntTestThingAPIModel):
     some_field: str | None = APIField(None)
 
 
-class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext, EntTestObject2Model]):
+class EntTestObject2(
+    EntObjectBase[ExampleViewerContext, EntTestObject2Model], IEntTestThing
+):
     m = EntTestObject2Model
-
-    def __init__(self, vc: ExampleViewerContext, model: EntTestObject2Model) -> None:
-        self.vc = vc
-        self.model = model
 
     if TYPE_CHECKING:
         a_good_thing: str
@@ -178,51 +176,6 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext, EntTestObject2Mode
         )
 
     @classmethod
-    async def _gen_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntTestObject2 | None:
-        real_ent_id = validate_ent_id(ent_id)
-        model = await db.session.get(
-            EntTestObject2Model, real_ent_id, with_for_update=for_update or None
-        )
-        if model is None:
-            return None
-        db.session.info.setdefault("cache", set()).add(model)
-        return EntTestObject2(vc=vc, model=model)
-
-    @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntTestObject2:
-        ent = await EntTestObject2._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
-        if ent is None:
-            raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
-        return ent
-
-    @classmethod
-    async def genx(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntTestObject2:
-        ent = await cls.gen(vc, ent_id, for_update)
-        if not ent:
-            raise EntNotFoundError(f"No EntTestObject2 found for ID {ent_id}")
-        return ent
-
-    @classmethod
-    async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntTestObject2 | None:
-        real_ent_id = validate_ent_id(ent_id)
-        async with emulate_for_update(
-            EntTestObject2Model, "id", real_ent_id, for_update
-        ):
-            model = await db.session.get(
-                EntTestObject2Model, real_ent_id, with_for_update=for_update or None
-            )
-        db.session.info.setdefault("cache", set()).add(model)
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
-
-    @classmethod
     async def gen_from_idempotency_key(
         cls, vc: ExampleViewerContext, idempotency_key: UUID, for_update: bool = False
     ) -> EntTestObject2 | None:
@@ -248,25 +201,6 @@ class EntTestObject2(IEntTestThing, Ent[ExampleViewerContext, EntTestObject2Mode
                 f"No EntTestObject found for idempotency_key {idempotency_key}"
             )
         return result
-
-    @classmethod
-    async def _gen_from_model(
-        cls, vc: ExampleViewerContext, model: EntTestObject2Model | None
-    ) -> EntTestObject2 | None:
-        if not model:
-            return None
-        ent = EntTestObject2(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        return ent if decision == Decision.ALLOW else None
-
-    @classmethod
-    async def _genx_from_model(
-        cls, vc: ExampleViewerContext, model: EntTestObject2Model
-    ) -> EntTestObject2:
-        ent = await EntTestObject2._gen_from_model(vc=vc, model=model)
-        if not ent:
-            raise EntNotFoundError(f"No EntTestObject2 found for ID {model.id}")
-        return ent
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntTestObject2Query:
