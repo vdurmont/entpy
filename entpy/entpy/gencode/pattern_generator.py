@@ -110,12 +110,12 @@ class I{base_name}(Ent):{get_description(pattern)}
 {edge_gens.code}
 
     @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name}:
+    async def _gen_no_privacy_DO_NOT_USE(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name} | None:
         from .all_models import UUID_TO_ENT
         real_ent_id = validate_ent_id(ent_id)
         ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
         # Casting is ok here, the id always inherits I{base_name}
-        return await cast(type[I{base_name}], ent_type)._genx_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
+        return await cast(type[I{base_name}], ent_type)._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
 
     @classmethod
     async def gen(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name} | None:
@@ -124,13 +124,6 @@ class I{base_name}(Ent):{get_description(pattern)}
         ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
         # Casting is ok here, the id always inherits I{base_name}
         return await cast(type[I{base_name}], ent_type).gen(vc, ent_id, for_update)
-
-    @classmethod
-    async def genx(cls, vc: {vc.name}, ent_id: UUID | str, for_update: bool = False) -> I{base_name}:
-        ent = await cls.gen(vc, ent_id, for_update)
-        if not ent:
-            raise EntNotFoundError(f"No I{base_name} found for ID {{ent_id}}")
-        return ent
 
     @classmethod
     def query_{to_snake_case(base_name)}(cls, vc: {vc.name}) -> I{base_name}Query:

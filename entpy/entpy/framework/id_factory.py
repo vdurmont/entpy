@@ -3,14 +3,17 @@ from datetime import datetime
 from hashlib import sha256
 from secrets import token_bytes
 from time import time
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from entpy.framework.ent import Ent
 from entpy.framework.errors import ValidationError
+
+if TYPE_CHECKING:
+    from entpy.framework.ent import Ent
 
 
 def generate_uuid(
-    entity_type: type[Ent], uuid_datetime: datetime | None = None
+    entity_type: type["Ent"], uuid_datetime: datetime | None = None
 ) -> UUID:
     """
     Our UUIDs are composed of the following:

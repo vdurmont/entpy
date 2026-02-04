@@ -32,4 +32,4 @@ class ModelMixin:
         return mapped_column(DateTime(), nullable=True)
 
     def __repr__(self) -> str:
-        return "<{self.__class__.__name__}({self.id})>"
+        return f"<{self.__class__.__name__}({self.id})>"

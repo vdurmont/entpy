@@ -12,7 +12,6 @@ from entpy import (
     ExecutionError,
     Action,
     Decision,
-    validate_ent_id,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -22,7 +21,7 @@ from ent_delegating_child_schema import EntDelegatingChildSchema
 from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
-from entpy.framework.database import emulate_for_update
+from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntQuery
 from entpy.model import APIEntity
 from pydantic import Field as APIField
@@ -68,14 +67,8 @@ class EntDelegatingChildAPIModel(APIEntity):
     privacy_parent: "EntPrivacyParentAPIModel" = APIField(...)
 
 
-class EntDelegatingChild(Ent[ExampleViewerContext, EntDelegatingChildModel]):
+class EntDelegatingChild(EntObjectBase[ExampleViewerContext, EntDelegatingChildModel]):
     m = EntDelegatingChildModel
-
-    def __init__(
-        self, vc: ExampleViewerContext, model: EntDelegatingChildModel
-    ) -> None:
-        self.vc = vc
-        self.model = model
 
     if TYPE_CHECKING:
         name: str
@@ -158,72 +151,6 @@ class EntDelegatingChild(Ent[ExampleViewerContext, EntDelegatingChildModel]):
         raise ExecutionError(
             f"An invalid privacy configuration was found for EntDelegatingChild: could not find delegate for {edge_name}"
         )
-
-    @classmethod
-    async def _gen_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntDelegatingChild | None:
-        real_ent_id = validate_ent_id(ent_id)
-        model = await db.session.get(
-            EntDelegatingChildModel, real_ent_id, with_for_update=for_update or None
-        )
-        if model is None:
-            return None
-        db.session.info.setdefault("cache", set()).add(model)
-        return EntDelegatingChild(vc=vc, model=model)
-
-    @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntDelegatingChild:
-        ent = await EntDelegatingChild._gen_no_privacy_DO_NOT_USE(
-            vc, ent_id, for_update
-        )
-        if ent is None:
-            raise EntNotFoundError(f"No EntDelegatingChild found for ID {ent_id}")
-        return ent
-
-    @classmethod
-    async def genx(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntDelegatingChild:
-        ent = await cls.gen(vc, ent_id, for_update)
-        if not ent:
-            raise EntNotFoundError(f"No EntDelegatingChild found for ID {ent_id}")
-        return ent
-
-    @classmethod
-    async def gen(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> EntDelegatingChild | None:
-        real_ent_id = validate_ent_id(ent_id)
-        async with emulate_for_update(
-            EntDelegatingChildModel, "id", real_ent_id, for_update
-        ):
-            model = await db.session.get(
-                EntDelegatingChildModel, real_ent_id, with_for_update=for_update or None
-            )
-        db.session.info.setdefault("cache", set()).add(model)
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
-
-    @classmethod
-    async def _gen_from_model(
-        cls, vc: ExampleViewerContext, model: EntDelegatingChildModel | None
-    ) -> EntDelegatingChild | None:
-        if not model:
-            return None
-        ent = EntDelegatingChild(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        return ent if decision == Decision.ALLOW else None
-
-    @classmethod
-    async def _genx_from_model(
-        cls, vc: ExampleViewerContext, model: EntDelegatingChildModel
-    ) -> EntDelegatingChild:
-        ent = await EntDelegatingChild._gen_from_model(vc=vc, model=model)
-        if not ent:
-            raise EntNotFoundError(f"No EntDelegatingChild found for ID {model.id}")
-        return ent
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntDelegatingChildQuery:

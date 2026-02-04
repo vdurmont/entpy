@@ -87,15 +87,15 @@ class IEntTestThing(Ent):
         return None
 
     @classmethod
-    async def _genx_no_privacy_DO_NOT_USE(
+    async def _gen_no_privacy_DO_NOT_USE(
         cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> IEntTestThing:
+    ) -> IEntTestThing | None:
         from .all_models import UUID_TO_ENT
 
         real_ent_id = validate_ent_id(ent_id)
         ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
         # Casting is ok here, the id always inherits IEntTestThing
-        return await cast(type[IEntTestThing], ent_type)._genx_no_privacy_DO_NOT_USE(
+        return await cast(type[IEntTestThing], ent_type)._gen_no_privacy_DO_NOT_USE(
             vc, ent_id, for_update
         )
 
@@ -109,15 +109,6 @@ class IEntTestThing(Ent):
         ent_type = UUID_TO_ENT[real_ent_id.bytes[6:8]]
         # Casting is ok here, the id always inherits IEntTestThing
         return await cast(type[IEntTestThing], ent_type).gen(vc, ent_id, for_update)
-
-    @classmethod
-    async def genx(
-        cls, vc: ExampleViewerContext, ent_id: UUID | str, for_update: bool = False
-    ) -> IEntTestThing:
-        ent = await cls.gen(vc, ent_id, for_update)
-        if not ent:
-            raise EntNotFoundError(f"No IEntTestThing found for ID {ent_id}")
-        return ent
 
     @classmethod
     def query_ent_test_thing(cls, vc: ExampleViewerContext) -> IEntTestThingQuery:
