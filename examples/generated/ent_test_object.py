@@ -86,6 +86,9 @@ class EntTestObjectModel(EntTestThingModel):
     lastname: Mapped[str | None] = mapped_column(
         String(100), nullable=True, server_default="Doe"
     )
+    retry_count: Mapped[int | None] = mapped_column(
+        Integer(), nullable=True, server_default="0"
+    )
     sadness: Mapped[Status | None] = mapped_column(
         DBEnum(Status, native_enum=True), nullable=True, server_default=Status.SAD.value
     )
@@ -199,6 +202,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
         ..., description="This is the username that you will use on the platform."
     )
     lastname: str | None = APIField("Doe")
+    retry_count: int | None = APIField(0)
     sadness: Status | None = APIField(Status.SAD)
     context: str | None = APIField(None, examples=["This is some good context."])
     correlation_id: UUID | None = APIField(None)
@@ -238,6 +242,7 @@ class EntTestObject(
         This is the username that you will use on the platform.
         """
         lastname: str | None
+        retry_count: int | None
         sadness: Status | None
         a_pattern_validated_field: str | None
         city: str | None
@@ -543,6 +548,7 @@ class EntTestObjectMutator:
         required_sub_object_id: UUID,
         username: str,
         lastname: str | None = None,
+        retry_count: int | None = None,
         sadness: Status | None = None,
         a_pattern_validated_field: str | None = None,
         city: str | None = None,
@@ -581,6 +587,7 @@ class EntTestObjectMutator:
             required_sub_object_id=required_sub_object_id,
             username=username,
             lastname=lastname,
+            retry_count=retry_count,
             sadness=sadness,
             a_pattern_validated_field=a_pattern_validated_field,
             city=city,
@@ -634,6 +641,7 @@ class EntTestObjectMutatorCreationAction:
     required_sub_object_id: UUID
     username: str
     lastname: str | None = None
+    retry_count: int | None = None
     sadness: Status | None = None
     a_pattern_validated_field: str | None = None
     city: str | None = None
@@ -670,6 +678,7 @@ class EntTestObjectMutatorCreationAction:
         required_sub_object_id: UUID,
         username: str,
         lastname: str | None,
+        retry_count: int | None,
         sadness: Status | None,
         a_pattern_validated_field: str | None,
         city: str | None,
@@ -704,6 +713,7 @@ class EntTestObjectMutatorCreationAction:
         self.required_sub_object_id = required_sub_object_id
         self.username = username
         self.lastname = lastname
+        self.retry_count = retry_count
         self.sadness = sadness
         self.a_pattern_validated_field = a_pattern_validated_field
         self.city = city
@@ -753,6 +763,7 @@ class EntTestObjectMutatorCreationAction:
             required_sub_object_id=self.required_sub_object_id,
             username=self.username,
             lastname=self.lastname,
+            retry_count=self.retry_count,
             sadness=self.sadness,
             a_pattern_validated_field=self.a_pattern_validated_field,
             city=self.city,
@@ -798,6 +809,7 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
     required_sub_object_id: UUID
     username: str
     lastname: str | None = None
+    retry_count: int | None = None
     sadness: Status | None = None
     a_pattern_validated_field: str | None = None
     city: str | None = None
@@ -830,6 +842,7 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         self.required_sub_object_id = ent.required_sub_object_id
         self.username = ent.username
         self.lastname = ent.lastname
+        self.retry_count = ent.retry_count
         self.sadness = ent.sadness
         self.a_pattern_validated_field = ent.a_pattern_validated_field
         self.city = ent.city
@@ -875,6 +888,7 @@ class EntTestObjectMutatorUpdateAction(IEntTestThingMutatorUpdateAction):
         model.required_sub_object_id = self.required_sub_object_id
         model.username = self.username
         model.lastname = self.lastname
+        model.retry_count = self.retry_count
         model.sadness = self.sadness
         model.a_pattern_validated_field = self.a_pattern_validated_field
         model.city = self.city
@@ -950,6 +964,7 @@ class EntTestObjectExample:
         required_sub_object_id: UUID | Sentinel = NOTHING,
         username: str | Sentinel = NOTHING,
         lastname: str | None = None,
+        retry_count: int | None = None,
         sadness: Status | None = None,
         a_pattern_validated_field: str | Sentinel = NOTHING,
         city: str | Sentinel = NOTHING,
@@ -1008,6 +1023,8 @@ class EntTestObjectExample:
                 username = generator()
 
         lastname = "Doe" if isinstance(lastname, Sentinel) else lastname
+
+        retry_count = 0 if isinstance(retry_count, Sentinel) else retry_count
 
         sadness = Status.SAD if isinstance(sadness, Sentinel) else sadness
 
@@ -1106,6 +1123,7 @@ class EntTestObjectExample:
             required_sub_object_id=required_sub_object_id,
             username=username,
             lastname=lastname,
+            retry_count=retry_count,
             sadness=sadness,
             a_pattern_validated_field=a_pattern_validated_field,
             city=city,

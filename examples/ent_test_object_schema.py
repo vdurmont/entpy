@@ -14,6 +14,7 @@ from entpy import (
     EnumField,
     Field,
     FieldValidator,
+    IntervalField,
     IntField,
     JsonField,
     Pattern,
@@ -22,7 +23,6 @@ from entpy import (
     StringField,
     TextField,
     TimeField,
-    IntervalField,
     UuidField,
 )
 from entpy.framework.composite_index import CompositeIndex
@@ -65,6 +65,7 @@ class EntTestObjectSchema(Schema):
                 lambda: datetime.now(tz=UTC)
             ),
             IntField("status_code").example(404),
+            IntField("retry_count").default(0),
             JsonField("some_json", "list[str]").example(["hello", "world"]),
             StringField("validated_field", 100).validators([CustomValidator()]),
             BoolField("is_it_true").example(False),
