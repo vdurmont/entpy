@@ -11,13 +11,13 @@ from entpy.framework.id_factory import validate_ent_id
 from entpy.framework.model import ModelMixin
 from entpy.framework.viewer_context import ViewerContext
 
-VC = TypeVar("VC", bound=ViewerContext)
-ENTMODEL = TypeVar("ENTMODEL", bound=ModelMixin)
+VC = TypeVar("VC")
+ENTMODEL = TypeVar("ENTMODEL")
 if TYPE_CHECKING:
     from entpy.framework.query import EntQuery
 
 
-class Ent[VC, ENTMODEL]:
+class Ent[VC: ViewerContext, ENTMODEL: ModelMixin]:
     model: ENTMODEL
     m: type[ENTMODEL]
     vc: VC
@@ -94,11 +94,11 @@ class Ent[VC, ENTMODEL]:
 
     @classmethod
     @abstractmethod
-    def query(cls, vc: VC) -> "EntQuery[Self, ENTMODEL]":
+    def query(cls, vc: VC) -> "EntQuery[VC, Self, ENTMODEL]":
         pass
 
 
-class EntObjectBase(Ent[VC, ENTMODEL]):
+class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     @classmethod
     async def gen(
         cls, vc: VC, ent_id: UUID | str, for_update: bool = False
@@ -125,7 +125,7 @@ class EntObjectBase(Ent[VC, ENTMODEL]):
         return cls(vc=vc, model=model)
 
 
-class EntPatternBase(Ent[VC, ENTMODEL]):
+class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     @classmethod
     @abstractmethod
     def get_child_type(cls, uuid_type: bytes) -> type[Self]:

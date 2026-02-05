@@ -8,7 +8,6 @@ from entpy import (
     db,
     Ent,
     generate_uuid,
-    EntNotFoundError,
     ExecutionError,
     Action,
     Decision,
@@ -22,7 +21,7 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
-from entpy.framework.query import EntQuery
+from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
@@ -32,11 +31,8 @@ from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import UUID as DBUUID
-from sqlalchemy import select
-from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
-from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -162,92 +158,11 @@ class EntDelegatingChild(EntObjectBase[ExampleViewerContext, EntDelegatingChildM
         return EntDelegatingChildQuery(vc=vc)
 
 
-T = TypeVar("T")
-
-
-class EntDelegatingChildQuery(EntQuery[EntDelegatingChild, EntDelegatingChildModel]):
-    vc: ExampleViewerContext
-    include_soft_deleted: bool = False
-
-    def __init__(self, vc: ExampleViewerContext) -> None:
-        self.vc = vc
-        self.query = select(EntDelegatingChildModel)
-
-    async def gen(self, for_update: bool = False) -> list[EntDelegatingChild]:
-        query = (
-            self._finalize_query().with_for_update()
-            if for_update
-            else self._finalize_query()
-        )
-        result = await db.session.execute(query)
-        ents = await self._gen_ents(result)
-        return list(filter(None, ents))
-
-    def _finalize_query(self) -> Select:
-        if self.include_soft_deleted:
-            return self.query
-        else:
-            return self.query.where(EntDelegatingChildModel.soft_deleted_at.is_(None))
-
-    async def _gen_ents(
-        self, result: Result[tuple[EntDelegatingChildModel]]
-    ) -> list[EntDelegatingChild | None]:
-        models = result.scalars().all()
-        return [
-            await EntDelegatingChild._gen_from_model(self.vc, model)  # noqa: SLF001
-            for model in models
-        ]
-
-    async def gen_first(self, for_update: bool = False) -> EntDelegatingChild | None:
-        query = self._finalize_query().limit(1)
-        if for_update:
-            query = query.with_for_update()
-        result = await db.session.execute(query)
-        return await self._gen_ent(result)
-
-    async def _gen_ent(
-        self, result: Result[tuple[EntDelegatingChildModel]]
-    ) -> EntDelegatingChild | None:
-        model = result.scalar_one_or_none()
-        return await EntDelegatingChild._gen_from_model(self.vc, model)  # noqa: SLF001
-
-    async def genx_first(self, for_update: bool = False) -> EntDelegatingChild:
-        ent = await self.gen_first(for_update)
-        if not ent:
-            raise EntNotFoundError("Expected to find a EntDelegatingChild, got None.")
-        return ent
-
-    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:
-        count_query = (
-            self._finalize_query()
-            .with_only_columns(func.count(), maintain_column_froms=True)
-            .order_by(None)
-        )
-        result = await db.session.execute(count_query)
-        count = result.scalar()
-        if count is None:
-            raise ExecutionError("Unable to get the count")
-        if count <= 50 and not force_no_privacy:
-            # We have just a few ents, let's load them and check privacy
-            # to make sure our count is more accurate.
-            fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await db.session.execute(fetch_query)
-            ents = await self._gen_ents(result)
-            return len(list(filter(None, ents)))
-
-        return count
-
-    def order_by_id_asc(self) -> "EntDelegatingChildQuery":
-        self.query = self.query.order_by(EntDelegatingChildModel.id.asc())
-        return self
-
-    def order_by_id_desc(self) -> "EntDelegatingChildQuery":
-        self.query = self.query.order_by(EntDelegatingChildModel.id.desc())
-        return self
-
-    def with_soft_deleted(self) -> "EntDelegatingChildQuery":
-        self.include_soft_deleted = True
-        return self
+class EntDelegatingChildQuery(
+    EntObjectQuery[ExampleViewerContext, EntDelegatingChild, EntDelegatingChildModel]
+):
+    ent_type = EntDelegatingChild
+    model_type = EntDelegatingChildModel
 
 
 class EntDelegatingChildMutator:
