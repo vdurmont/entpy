@@ -1,7 +1,6 @@
 from generated.ent_test_sub_object import EntTestSubObject  # noqa: F401
 from evc import ExampleViewerContext
 from generated.ent_model import EntModel
-from uuid import UUID
 from collections.abc import Callable
 from typing import Any, TypeVar, Coroutine
 from generated.ent_test_object import (
@@ -14,12 +13,12 @@ from entpy.framework.query import EntQuery
 
 
 ENTTYPE = TypeVar("ENTTYPE", bound=Ent)
-ENTMODEL = TypeVar("ENTMODEL", bound=EntModel | UUID)
+ENTMODEL = TypeVar("ENTMODEL", bound=EntModel)
 
 
 async def gen_connection(
     vc: ExampleViewerContext,
-    query: EntQuery[ENTTYPE, ENTMODEL],
+    query: EntQuery[ExampleViewerContext, ENTTYPE, ENTMODEL],
     serializer: Callable[[ENTTYPE], Coroutine[Any, Any, dict[str, Any]]],
     limit: int,
     offset: int,

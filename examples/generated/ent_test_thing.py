@@ -12,11 +12,8 @@ from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
 from entpy.framework.ent import EntPatternBase
 from .ent_model import EntModel
-from collections import defaultdict
 from ent_test_thing_pattern import ThingStatus
-from entpy import EntNotFoundError, ExecutionError
-from entpy import db
-from entpy.framework.query import EntQuery
+from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
 from pydantic import Field as APIField
@@ -24,11 +21,8 @@ from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import UUID as DBUUID
-from sqlalchemy import select, Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
-from typing import TypeVar
 from typing import TYPE_CHECKING
-from typing import cast
 
 
 if TYPE_CHECKING:
@@ -109,118 +103,11 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
         return IEntTestThingQuery(vc=vc)
 
 
-T = TypeVar("T")
-
-
-class IEntTestThingQuery(EntQuery[IEntTestThing, UUID]):
-    vc: ExampleViewerContext
-    include_soft_deleted: bool = False
-
-    def __init__(self, vc: ExampleViewerContext) -> None:
-        self.vc = vc
-        self.query = select(EntTestThingModel.id)
-
-    async def gen(self, for_update: bool = False) -> list[IEntTestThing]:
-        query = (
-            self._finalize_query().with_for_update()
-            if for_update
-            else self._finalize_query()
-        )
-        result = await db.session.execute(query)
-        ents = await self._gen_ents(result)
-        return list(filter(None, ents))
-
-    def _finalize_query(self) -> Select:
-        if self.include_soft_deleted:
-            return self.query
-        else:
-            return self.query.where(EntTestThingModel.soft_deleted_at.is_(None))
-
-    async def _gen_ents(
-        self, result: Result[tuple[UUID]]
-    ) -> list[IEntTestThing | None]:
-        from .all_models import UUID_TO_ENT
-
-        ent_ids = result.scalars().all()
-        ids_by_type = defaultdict(list)
-        for ent_id in ent_ids:
-            ids_by_type[ent_id.bytes[6:8]].append(ent_id)
-
-        all_ents = {}
-        for uuid_type, ids in ids_by_type.items():
-            ent_type = UUID_TO_ENT[uuid_type]
-            for ent in (
-                await ent_type.query(self.vc)
-                .where(ent_type.m.id.in_(ids))
-                .limit(None)
-                .gen()
-            ):
-                all_ents[ent.id] = ent
-
-        return [
-            cast(IEntTestThing, all_ents[ent_id])
-            for ent_id in ent_ids
-            if ent_id in all_ents
-        ]
-
-    async def gen_first(self, for_update: bool = False) -> IEntTestThing | None:
-        query = self._finalize_query().limit(1)
-        if for_update:
-            query = query.with_for_update()
-        result = await db.session.execute(query)
-        return await self._gen_ent(result)
-
-    async def _gen_ent(self, result: Result[tuple[UUID]]) -> IEntTestThing | None:
-        ent_id = result.scalar_one_or_none()
-        if not ent_id:
-            return None
-        return await self._gen_single_ent(ent_id)
-
-    async def _gen_single_ent(self, ent_id: UUID) -> IEntTestThing | None:
-        from .all_models import UUID_TO_ENT
-
-        uuid_type = ent_id.bytes[6:8]
-        ent_type = UUID_TO_ENT[uuid_type]
-        # Casting is ok here, the id always inherits IEntTestThing
-        return await cast(type[IEntTestThing], ent_type).gen(self.vc, ent_id)
-
-    async def genx_first(self, for_update: bool = False) -> IEntTestThing:
-        ent = await self.gen_first(for_update)
-        if not ent:
-            raise EntNotFoundError("Expected to find a EntTestThing, got None.")
-        return ent
-
-    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:
-        count_query = (
-            self._finalize_query()
-            .with_only_columns(func.count(), maintain_column_froms=True)
-            .order_by(None)
-        )
-        result = await db.session.execute(count_query)
-        count = result.scalar()
-        if count is None:
-            raise ExecutionError("Unable to get the count")
-        if count <= 50 and not force_no_privacy:
-            # We have just a few ents, let's load them and check privacy
-            # to make sure our count is more accurate.
-            fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await db.session.execute(fetch_query)
-            ents = await self._gen_ents(result)
-            return len(list(filter(None, ents)))
-
-        return count
-
-    def order_by_id_asc(self) -> "IEntTestThingQuery":
-        self.query = self.query.order_by(EntTestThingModel.id.asc())
-        return self
-
-    def order_by_id_desc(self) -> "IEntTestThingQuery":
-        self.query = self.query.order_by(EntTestThingModel.id.desc())
-        return self
-
-    def with_soft_deleted(self) -> "IEntTestThingQuery":
-        self.include_soft_deleted = True
-        return self
+class IEntTestThingQuery(
+    EntPatternQuery[ExampleViewerContext, IEntTestThing, EntTestThingModel]
+):
+    ent_type = IEntTestThing
+    model_type = EntTestThingModel
 
 
 class IEntTestThingMutator:

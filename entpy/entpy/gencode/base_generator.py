@@ -132,7 +132,7 @@ class {base_name}({extends}):{get_description(schema)}
 def _generate_fields(schema: Descriptor) -> GeneratedContent:
     fields = schema.get_all_fields()
     field_code = ""
-    imports = ["from typing import TYPE_CHECKING"]
+    imports = ["from typing import Any, TYPE_CHECKING"]
 
     for field in fields:
         if isinstance(field, DateField):

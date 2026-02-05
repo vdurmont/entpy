@@ -8,7 +8,6 @@ from entpy import (
     db,
     Ent,
     generate_uuid,
-    EntNotFoundError,
     ExecutionError,
     Action,
     Decision,
@@ -22,7 +21,7 @@ from entpy import EdgeDelegate, PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
-from entpy.framework.query import EntQuery
+from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
@@ -30,10 +29,7 @@ from rules import AllowIfTestViewerContext
 from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
-from sqlalchemy import select
-from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
-from typing import TypeVar
 from typing import TYPE_CHECKING
 
 
@@ -132,92 +128,11 @@ class EntSingleRule(EntObjectBase[ExampleViewerContext, EntSingleRuleModel]):
         return EntSingleRuleQuery(vc=vc)
 
 
-T = TypeVar("T")
-
-
-class EntSingleRuleQuery(EntQuery[EntSingleRule, EntSingleRuleModel]):
-    vc: ExampleViewerContext
-    include_soft_deleted: bool = False
-
-    def __init__(self, vc: ExampleViewerContext) -> None:
-        self.vc = vc
-        self.query = select(EntSingleRuleModel)
-
-    async def gen(self, for_update: bool = False) -> list[EntSingleRule]:
-        query = (
-            self._finalize_query().with_for_update()
-            if for_update
-            else self._finalize_query()
-        )
-        result = await db.session.execute(query)
-        ents = await self._gen_ents(result)
-        return list(filter(None, ents))
-
-    def _finalize_query(self) -> Select:
-        if self.include_soft_deleted:
-            return self.query
-        else:
-            return self.query.where(EntSingleRuleModel.soft_deleted_at.is_(None))
-
-    async def _gen_ents(
-        self, result: Result[tuple[EntSingleRuleModel]]
-    ) -> list[EntSingleRule | None]:
-        models = result.scalars().all()
-        return [
-            await EntSingleRule._gen_from_model(self.vc, model)  # noqa: SLF001
-            for model in models
-        ]
-
-    async def gen_first(self, for_update: bool = False) -> EntSingleRule | None:
-        query = self._finalize_query().limit(1)
-        if for_update:
-            query = query.with_for_update()
-        result = await db.session.execute(query)
-        return await self._gen_ent(result)
-
-    async def _gen_ent(
-        self, result: Result[tuple[EntSingleRuleModel]]
-    ) -> EntSingleRule | None:
-        model = result.scalar_one_or_none()
-        return await EntSingleRule._gen_from_model(self.vc, model)  # noqa: SLF001
-
-    async def genx_first(self, for_update: bool = False) -> EntSingleRule:
-        ent = await self.gen_first(for_update)
-        if not ent:
-            raise EntNotFoundError("Expected to find a EntSingleRule, got None.")
-        return ent
-
-    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:
-        count_query = (
-            self._finalize_query()
-            .with_only_columns(func.count(), maintain_column_froms=True)
-            .order_by(None)
-        )
-        result = await db.session.execute(count_query)
-        count = result.scalar()
-        if count is None:
-            raise ExecutionError("Unable to get the count")
-        if count <= 50 and not force_no_privacy:
-            # We have just a few ents, let's load them and check privacy
-            # to make sure our count is more accurate.
-            fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await db.session.execute(fetch_query)
-            ents = await self._gen_ents(result)
-            return len(list(filter(None, ents)))
-
-        return count
-
-    def order_by_id_asc(self) -> "EntSingleRuleQuery":
-        self.query = self.query.order_by(EntSingleRuleModel.id.asc())
-        return self
-
-    def order_by_id_desc(self) -> "EntSingleRuleQuery":
-        self.query = self.query.order_by(EntSingleRuleModel.id.desc())
-        return self
-
-    def with_soft_deleted(self) -> "EntSingleRuleQuery":
-        self.include_soft_deleted = True
-        return self
+class EntSingleRuleQuery(
+    EntObjectQuery[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
+):
+    ent_type = EntSingleRule
+    model_type = EntSingleRuleModel
 
 
 class EntSingleRuleMutator:

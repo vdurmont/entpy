@@ -34,7 +34,7 @@ from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.database import emulate_for_update
 from entpy.framework.ent import EntObjectBase
-from entpy.framework.query import EntQuery
+from entpy.framework.query import EntObjectQuery
 from pydantic import Field as APIField
 from rules import AllowIfOmniscientViewerContext
 from rules import AllowIfTestViewerContext
@@ -43,10 +43,8 @@ from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Index, text
 from sqlalchemy import String
 from sqlalchemy import select
-from sqlalchemy import Select, func, Result
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
-from typing import TypeVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -223,92 +221,11 @@ class EntTestObject2(
         return EntTestObject2Query(vc=vc)
 
 
-T = TypeVar("T")
-
-
-class EntTestObject2Query(EntQuery[EntTestObject2, EntTestObject2Model]):
-    vc: ExampleViewerContext
-    include_soft_deleted: bool = False
-
-    def __init__(self, vc: ExampleViewerContext) -> None:
-        self.vc = vc
-        self.query = select(EntTestObject2Model)
-
-    async def gen(self, for_update: bool = False) -> list[EntTestObject2]:
-        query = (
-            self._finalize_query().with_for_update()
-            if for_update
-            else self._finalize_query()
-        )
-        result = await db.session.execute(query)
-        ents = await self._gen_ents(result)
-        return list(filter(None, ents))
-
-    def _finalize_query(self) -> Select:
-        if self.include_soft_deleted:
-            return self.query
-        else:
-            return self.query.where(EntTestObject2Model.soft_deleted_at.is_(None))
-
-    async def _gen_ents(
-        self, result: Result[tuple[EntTestObject2Model]]
-    ) -> list[EntTestObject2 | None]:
-        models = result.scalars().all()
-        return [
-            await EntTestObject2._gen_from_model(self.vc, model)  # noqa: SLF001
-            for model in models
-        ]
-
-    async def gen_first(self, for_update: bool = False) -> EntTestObject2 | None:
-        query = self._finalize_query().limit(1)
-        if for_update:
-            query = query.with_for_update()
-        result = await db.session.execute(query)
-        return await self._gen_ent(result)
-
-    async def _gen_ent(
-        self, result: Result[tuple[EntTestObject2Model]]
-    ) -> EntTestObject2 | None:
-        model = result.scalar_one_or_none()
-        return await EntTestObject2._gen_from_model(self.vc, model)  # noqa: SLF001
-
-    async def genx_first(self, for_update: bool = False) -> EntTestObject2:
-        ent = await self.gen_first(for_update)
-        if not ent:
-            raise EntNotFoundError("Expected to find a EntTestObject2, got None.")
-        return ent
-
-    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:
-        count_query = (
-            self._finalize_query()
-            .with_only_columns(func.count(), maintain_column_froms=True)
-            .order_by(None)
-        )
-        result = await db.session.execute(count_query)
-        count = result.scalar()
-        if count is None:
-            raise ExecutionError("Unable to get the count")
-        if count <= 50 and not force_no_privacy:
-            # We have just a few ents, let's load them and check privacy
-            # to make sure our count is more accurate.
-            fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await db.session.execute(fetch_query)
-            ents = await self._gen_ents(result)
-            return len(list(filter(None, ents)))
-
-        return count
-
-    def order_by_id_asc(self) -> "EntTestObject2Query":
-        self.query = self.query.order_by(EntTestObject2Model.id.asc())
-        return self
-
-    def order_by_id_desc(self) -> "EntTestObject2Query":
-        self.query = self.query.order_by(EntTestObject2Model.id.desc())
-        return self
-
-    def with_soft_deleted(self) -> "EntTestObject2Query":
-        self.include_soft_deleted = True
-        return self
+class EntTestObject2Query(
+    EntObjectQuery[ExampleViewerContext, EntTestObject2, EntTestObject2Model]
+):
+    ent_type = EntTestObject2
+    model_type = EntTestObject2Model
 
 
 class EntTestObject2Mutator:

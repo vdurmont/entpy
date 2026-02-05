@@ -6,21 +6,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
-from uuid import UUID
 
 
 from entpy.framework.ent import EntPatternBase
 from .ent_model import EntModel
-from collections import defaultdict
-from entpy import EntNotFoundError, ExecutionError
-from entpy import db
-from entpy.framework.query import EntQuery
+from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
-from sqlalchemy import select, Select, func, Result
-from typing import TypeVar
 from typing import TYPE_CHECKING
-from typing import cast
 
 
 class EntTestPatternModel(EntModel):
@@ -51,118 +44,11 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
         return IEntTestPatternQuery(vc=vc)
 
 
-T = TypeVar("T")
-
-
-class IEntTestPatternQuery(EntQuery[IEntTestPattern, UUID]):
-    vc: ExampleViewerContext
-    include_soft_deleted: bool = False
-
-    def __init__(self, vc: ExampleViewerContext) -> None:
-        self.vc = vc
-        self.query = select(EntTestPatternModel.id)
-
-    async def gen(self, for_update: bool = False) -> list[IEntTestPattern]:
-        query = (
-            self._finalize_query().with_for_update()
-            if for_update
-            else self._finalize_query()
-        )
-        result = await db.session.execute(query)
-        ents = await self._gen_ents(result)
-        return list(filter(None, ents))
-
-    def _finalize_query(self) -> Select:
-        if self.include_soft_deleted:
-            return self.query
-        else:
-            return self.query.where(EntTestPatternModel.soft_deleted_at.is_(None))
-
-    async def _gen_ents(
-        self, result: Result[tuple[UUID]]
-    ) -> list[IEntTestPattern | None]:
-        from .all_models import UUID_TO_ENT
-
-        ent_ids = result.scalars().all()
-        ids_by_type = defaultdict(list)
-        for ent_id in ent_ids:
-            ids_by_type[ent_id.bytes[6:8]].append(ent_id)
-
-        all_ents = {}
-        for uuid_type, ids in ids_by_type.items():
-            ent_type = UUID_TO_ENT[uuid_type]
-            for ent in (
-                await ent_type.query(self.vc)
-                .where(ent_type.m.id.in_(ids))
-                .limit(None)
-                .gen()
-            ):
-                all_ents[ent.id] = ent
-
-        return [
-            cast(IEntTestPattern, all_ents[ent_id])
-            for ent_id in ent_ids
-            if ent_id in all_ents
-        ]
-
-    async def gen_first(self, for_update: bool = False) -> IEntTestPattern | None:
-        query = self._finalize_query().limit(1)
-        if for_update:
-            query = query.with_for_update()
-        result = await db.session.execute(query)
-        return await self._gen_ent(result)
-
-    async def _gen_ent(self, result: Result[tuple[UUID]]) -> IEntTestPattern | None:
-        ent_id = result.scalar_one_or_none()
-        if not ent_id:
-            return None
-        return await self._gen_single_ent(ent_id)
-
-    async def _gen_single_ent(self, ent_id: UUID) -> IEntTestPattern | None:
-        from .all_models import UUID_TO_ENT
-
-        uuid_type = ent_id.bytes[6:8]
-        ent_type = UUID_TO_ENT[uuid_type]
-        # Casting is ok here, the id always inherits IEntTestPattern
-        return await cast(type[IEntTestPattern], ent_type).gen(self.vc, ent_id)
-
-    async def genx_first(self, for_update: bool = False) -> IEntTestPattern:
-        ent = await self.gen_first(for_update)
-        if not ent:
-            raise EntNotFoundError("Expected to find a EntTestPattern, got None.")
-        return ent
-
-    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:
-        count_query = (
-            self._finalize_query()
-            .with_only_columns(func.count(), maintain_column_froms=True)
-            .order_by(None)
-        )
-        result = await db.session.execute(count_query)
-        count = result.scalar()
-        if count is None:
-            raise ExecutionError("Unable to get the count")
-        if count <= 50 and not force_no_privacy:
-            # We have just a few ents, let's load them and check privacy
-            # to make sure our count is more accurate.
-            fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await db.session.execute(fetch_query)
-            ents = await self._gen_ents(result)
-            return len(list(filter(None, ents)))
-
-        return count
-
-    def order_by_id_asc(self) -> "IEntTestPatternQuery":
-        self.query = self.query.order_by(EntTestPatternModel.id.asc())
-        return self
-
-    def order_by_id_desc(self) -> "IEntTestPatternQuery":
-        self.query = self.query.order_by(EntTestPatternModel.id.desc())
-        return self
-
-    def with_soft_deleted(self) -> "IEntTestPatternQuery":
-        self.include_soft_deleted = True
-        return self
+class IEntTestPatternQuery(
+    EntPatternQuery[ExampleViewerContext, IEntTestPattern, EntTestPatternModel]
+):
+    ent_type = IEntTestPattern
+    model_type = EntTestPatternModel
 
 
 class IEntTestPatternMutator:
