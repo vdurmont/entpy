@@ -57,7 +57,11 @@ class EntTestSubObject(EntObjectBase[ExampleViewerContext, EntTestSubObjectModel
         email: str
 
     async def _gen_evaluate_privacy(
-        self, vc: ExampleViewerContext, action: Action, default_to_deny: bool = True
+        self,
+        vc: ExampleViewerContext,
+        action: Action,
+        default_to_deny: bool = True,
+        log_on_deny: bool = True,
     ) -> Decision:
         # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
@@ -81,7 +85,7 @@ class EntTestSubObject(EntObjectBase[ExampleViewerContext, EntTestSubObjectModel
         for item in all_rules:
             if isinstance(item, PrivacyRule):
                 decision = await item.gen_evaluate_cached(vc, self)
-                if decision == Decision.DENY:
+                if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug(
                         "Privacy rule %s of EntTestSubObject with ID %s was denied for %s",
                         type(item),
@@ -93,7 +97,7 @@ class EntTestSubObject(EntObjectBase[ExampleViewerContext, EntTestSubObjectModel
                 decision = await delegate._gen_evaluate_privacy(
                     vc, action, default_to_deny=False
                 )
-                if decision == Decision.DENY:
+                if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug(
                         "Delegate privacy of EntTestSubObject with ID %s to edge %s was denied for %s",
                         self.id,
@@ -109,11 +113,12 @@ class EntTestSubObject(EntObjectBase[ExampleViewerContext, EntTestSubObjectModel
                 return decision
         # Return based on default behavior
         if default_to_deny:
-            privacy_logger.debug(
-                "Defaulting to denying access to EntTestSubObject with ID %s after exhausting all privacy rules for %s",
-                self.id,
-                str(vc),
-            )
+            if log_on_deny:
+                privacy_logger.debug(
+                    "Defaulting to denying access to EntTestSubObject with ID %s after exhausting all privacy rules for %s",
+                    self.id,
+                    str(vc),
+                )
             return Decision.DENY
         return Decision.PASS
 

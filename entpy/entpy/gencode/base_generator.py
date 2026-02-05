@@ -84,7 +84,7 @@ class {base_name}({extends}):{get_description(schema)}
 
 {edge_gens.code}
 
-    async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action, default_to_deny: bool = True) -> Decision:
+    async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action, default_to_deny: bool = True, log_on_deny: bool = True) -> Decision:
         # Build the complete list: prepended rules + entity's config
         prepended_rules: list[PrivacyRule] = []
 {preprended_rules_str}
@@ -95,12 +95,12 @@ class {base_name}({extends}):{get_description(schema)}
         for item in all_rules:
             if isinstance(item, PrivacyRule):
                 decision = await item.gen_evaluate_cached(vc, self)
-                if decision == Decision.DENY:
+                if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(item), self.id, str(vc))
             elif isinstance(item, EdgeDelegate):
                 delegate = await self._gen_load_delegate(vc, item.edge_name)
                 decision = await delegate._gen_evaluate_privacy(vc, action, default_to_deny=False)
-                if decision == Decision.DENY:
+                if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug("Delegate privacy of {base_name} with ID %s to edge %s was denied for %s", self.id, item.edge_name, str(vc))
             else:
                 raise ExecutionError("An invalid privacy configuration was found for {base_name}: invalid item type in list")
@@ -109,7 +109,8 @@ class {base_name}({extends}):{get_description(schema)}
                 return decision
         # Return based on default behavior
         if default_to_deny:
-            privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s", self.id, str(vc))
+            if log_on_deny:
+                privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s", self.id, str(vc))
             return Decision.DENY
         return Decision.PASS
 
