@@ -141,11 +141,6 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
         else:
             return None
 
-    @classmethod
-    @abstractmethod
-    def query(cls, vc: VC) -> "EntQuery[VC, Self, ENTMODEL]":
-        pass
-
 
 class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     schema: "Schema"
@@ -265,6 +260,11 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
             return Decision.DENY
         return Decision.PASS
 
+    @classmethod
+    @abstractmethod
+    def query(cls, vc: VC) -> "EntQuery[VC, Self, ENTMODEL, ENTMODEL]":
+        pass
+
 
 class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     @classmethod
@@ -299,3 +299,8 @@ class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL])
             return None
         ent_type = cls._get_child_type(ent_id.bytes[6:8])
         return await ent_type.gen(vc, ent_id, for_update)
+
+    @classmethod
+    @abstractmethod
+    def query(cls, vc: VC) -> "EntQuery[VC, Self, ENTMODEL, UUID]":
+        pass

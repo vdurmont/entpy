@@ -48,7 +48,7 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
         raise ValueError(f"Unknown UUID type for IEntTestPattern: {uuid_type.hex()}")
 
     @classmethod
-    def query_ent_test_pattern(cls, vc: ExampleViewerContext) -> IEntTestPatternQuery:
+    def query(cls, vc: ExampleViewerContext) -> IEntTestPatternQuery:
         return IEntTestPatternQuery(vc=vc)
 
 

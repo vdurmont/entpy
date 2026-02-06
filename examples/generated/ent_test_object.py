@@ -335,7 +335,7 @@ class EntTestObject(
         return prepended_rules
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestObjectQuery:
+    def query(cls, vc: ExampleViewerContext) -> EntTestObjectQuery:  # type: ignore[override]
         return EntTestObjectQuery(vc=vc)
 
 
