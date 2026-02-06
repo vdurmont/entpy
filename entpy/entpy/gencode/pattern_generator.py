@@ -137,7 +137,7 @@ class I{base_name}(EntPatternBase[{vc.name}, {base_name}Model]):{get_description
         raise ValueError(f"Unknown UUID type for I{base_name}: {{uuid_type.hex()}}")
 
     @classmethod
-    def query_{to_snake_case(base_name)}(cls, vc: {vc.name}) -> I{base_name}Query:
+    def query(cls, vc: {vc.name}) -> I{base_name}Query:
         return I{base_name}Query(vc=vc)
 
 {query_content.code}

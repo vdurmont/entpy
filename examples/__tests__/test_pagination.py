@@ -18,7 +18,7 @@ ENTMODEL = TypeVar("ENTMODEL", bound=EntModel)
 
 async def gen_connection(
     vc: ExampleViewerContext,
-    query: EntQuery[ExampleViewerContext, ENTTYPE, ENTMODEL],
+    query: EntQuery[ExampleViewerContext, ENTTYPE, ENTMODEL, ENTMODEL],
     serializer: Callable[[ENTTYPE], Coroutine[Any, Any, dict[str, Any]]],
     limit: int,
     offset: int,

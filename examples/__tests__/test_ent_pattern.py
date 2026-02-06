@@ -36,7 +36,7 @@ async def test_query_across_schemas(vc: ExampleViewerContext) -> None:
     _yellow = await EntTestObject2Example.gen_create(vc=vc, a_good_thing="yellow")
 
     ents = (
-        await IEntTestThing.query_ent_test_thing(vc)
+        await IEntTestThing.query(vc)
         .where(EntTestThingModel.a_good_thing.startswith("b"))
         .order_by(EntTestThingModel.id.desc())
         .gen()
@@ -48,7 +48,7 @@ async def test_query_across_schemas(vc: ExampleViewerContext) -> None:
     assert ids[1] == blue.id
 
     ent = (
-        await IEntTestThing.query_ent_test_thing(vc)
+        await IEntTestThing.query(vc)
         .where(EntTestThingModel.a_good_thing.startswith("r"))
         .genx_first()
     )
@@ -56,21 +56,21 @@ async def test_query_across_schemas(vc: ExampleViewerContext) -> None:
     assert ent.id == red.id
 
     count = (
-        await IEntTestThing.query_ent_test_thing(vc)
+        await IEntTestThing.query(vc)
         .where(EntTestThingModel.a_good_thing.startswith("y"))
         .gen_count_NO_PRIVACY()
     )
     assert count == 1
 
     count = (
-        await IEntTestThing.query_ent_test_thing(vc)
+        await IEntTestThing.query(vc)
         .where(EntTestThingModel.a_good_thing.startswith("b"))
         .gen_count_NO_PRIVACY()
     )
     assert count == 2
 
     count = (
-        await IEntTestThing.query_ent_test_thing(vc)
+        await IEntTestThing.query(vc)
         .where(EntTestThingModel.a_good_thing.startswith("v"))
         .gen_count_NO_PRIVACY()
     )

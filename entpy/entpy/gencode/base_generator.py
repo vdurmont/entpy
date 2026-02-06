@@ -93,7 +93,7 @@ class {base_name}({extends}):{get_description(schema)}
     {child_types}
 
     @classmethod
-    def query(cls, vc: {vc.name}) -> {base_name}Query:
+    def query(cls, vc: {vc.name}) -> {base_name}Query:  {"# type: ignore[override]" if schema.get_patterns() else ""}
         return {base_name}Query(vc=vc)
 """,
     )

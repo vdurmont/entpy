@@ -16,20 +16,26 @@ from entpy.framework.viewer_context import ViewerContext
 VC = TypeVar("VC")
 ENT = TypeVar("ENT")
 ENTMODEL = TypeVar("ENTMODEL")
+TARGET = TypeVar("TARGET")
 
 
-class EntQuery[VC: ViewerContext, ENT: Ent, ENTMODEL: ModelMixin](ABC):
+class EntQuery[
+    VC: ViewerContext,
+    ENT: Ent,
+    ENTMODEL: ModelMixin,
+    TARGET: ModelMixin | UUID,
+](ABC):
     ent_type: ClassVar[type[ENT]]
     model_type: ClassVar[type[ENTMODEL]]
     include_soft_deleted: bool = False
-    query: Select[tuple[ENTMODEL]]
+    query: Select[tuple[TARGET]]
     vc: VC
 
     @abstractmethod
     def __init__(
         self,
         vc: VC,
-        query: Select[tuple[ENTMODEL]] | None = None,
+        query: Select[tuple[TARGET]] | None = None,
         include_soft_deleted: bool = False,
     ) -> None:
         pass
@@ -71,18 +77,18 @@ class EntQuery[VC: ViewerContext, ENT: Ent, ENTMODEL: ModelMixin](ABC):
     def with_soft_deleted(self) -> Self:
         return self.__class__(self.vc, self.query, include_soft_deleted=True)
 
-    def _finalize_query(self) -> Select[tuple[ENTMODEL]]:
+    def _finalize_query(self) -> Select[tuple[TARGET]]:
         if self.include_soft_deleted:
             return self.query
         else:
             return self.query.where(self.model_type.soft_deleted_at.is_(None))
 
     @abstractmethod
-    async def _gen_ents(self, result: Result[tuple[ENTMODEL]]) -> list[ENT | None]:
+    async def _gen_ents(self, result: Result[tuple[TARGET]]) -> list[ENT | None]:
         pass
 
     @abstractmethod
-    async def _gen_ent(self, result: Result[tuple[ENTMODEL]]) -> ENT | None:
+    async def _gen_ent(self, result: Result[tuple[TARGET]]) -> ENT | None:
         pass
 
     async def gen(self, for_update: bool = False) -> list[ENT]:
@@ -133,7 +139,7 @@ class EntQuery[VC: ViewerContext, ENT: Ent, ENTMODEL: ModelMixin](ABC):
 
 
 class EntObjectQuery[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMixin](
-    EntQuery[VC, ENT, ENTMODEL]
+    EntQuery[VC, ENT, ENTMODEL, ENTMODEL]
 ):
     def __init__(
         self,
@@ -161,18 +167,18 @@ class EntPatternQuery[
     VC: ViewerContext,
     ENT: EntPatternBase,
     ENTMODEL: ModelMixin,
-](EntQuery[VC, ENT, ENTMODEL]):
+](EntQuery[VC, ENT, ENTMODEL, UUID]):
     def __init__(
         self,
         vc: VC,
-        query: Select[tuple[ENTMODEL]] | None = None,
+        query: Select[tuple[UUID]] | None = None,
         include_soft_deleted: bool = False,
     ) -> None:
         self.vc = vc
         self.query = select(self.model_type.id) if query is None else query
         self.include_soft_deleted = include_soft_deleted
 
-    async def _gen_ents(self, result: Result[tuple[UUID]]) -> list[ENT | None]:  # type: ignore[override]
+    async def _gen_ents(self, result: Result[tuple[UUID]]) -> list[ENT | None]:
         ent_ids = result.scalars().all()
         ids_by_type = defaultdict(list)
         for ent_id in ent_ids:
@@ -191,7 +197,7 @@ class EntPatternQuery[
 
         return [all_ents[ent_id] for ent_id in ent_ids if ent_id in all_ents]
 
-    async def _gen_ent(self, result: Result[tuple[UUID]]) -> ENT | None:  # type: ignore[override]
+    async def _gen_ent(self, result: Result[tuple[UUID]]) -> ENT | None:
         ent_id = result.scalar_one_or_none()
         if not ent_id:
             return None
