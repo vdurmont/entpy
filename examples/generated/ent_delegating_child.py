@@ -8,7 +8,6 @@ from entpy import (
     db,
     Ent,
     generate_uuid,
-    ExecutionError,
     Action,
     Decision,
 )
@@ -17,7 +16,7 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_delegating_child_schema import EntDelegatingChildSchema
-from entpy import EdgeDelegate, PrivacyRule
+from entpy import PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
@@ -66,6 +65,7 @@ class EntDelegatingChildAPIModel(APIEntity):
 
 class EntDelegatingChild(EntObjectBase[ExampleViewerContext, EntDelegatingChildModel]):
     m = EntDelegatingChildModel
+    schema = EntDelegatingChildSchema()
 
     if TYPE_CHECKING:
         name: str
@@ -85,14 +85,9 @@ class EntDelegatingChild(EntObjectBase[ExampleViewerContext, EntDelegatingChildM
 
         return super()._get_edge_type(edge_name)
 
-    async def _gen_evaluate_privacy(
-        self,
-        vc: ExampleViewerContext,
-        action: Action,
-        default_to_deny: bool = True,
-        log_on_deny: bool = True,
-    ) -> Decision:
-        # Build the complete list: prepended rules + entity's config
+    @classmethod
+    @cache
+    def _get_prepended_rules(cls, action: Action) -> list[PrivacyRule]:
         prepended_rules: list[PrivacyRule] = []
         if action in [
             Action.READ,
@@ -107,52 +102,7 @@ class EntDelegatingChild(EntObjectBase[ExampleViewerContext, EntDelegatingChildM
         if action in [Action.READ]:
             prepended_rules.append(DenyIfSoftDeleted())
 
-        config = EntDelegatingChildSchema().get_privacy_config(action)
-        all_rules = prepended_rules + config
-
-        # Evaluate each rule/delegate in order
-        for item in all_rules:
-            if isinstance(item, PrivacyRule):
-                decision = await item.gen_evaluate_cached(vc, self)
-                if decision == Decision.DENY and log_on_deny:
-                    privacy_logger.debug(
-                        "Privacy rule %s of EntDelegatingChild with ID %s was denied for %s",
-                        type(item),
-                        self.id,
-                        str(vc),
-                    )
-            elif isinstance(item, EdgeDelegate):
-                edge_type = self._get_edge_type(item.edge_name)
-                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(
-                    vc, getattr(self, f"{item.edge_name}_id")
-                )
-                decision = await delegate._gen_evaluate_privacy(
-                    vc, action, default_to_deny=False
-                )
-                if decision == Decision.DENY and log_on_deny:
-                    privacy_logger.debug(
-                        "Delegate privacy of EntDelegatingChild with ID %s to edge %s was denied for %s",
-                        self.id,
-                        item.edge_name,
-                        str(vc),
-                    )
-            else:
-                raise ExecutionError(
-                    "An invalid privacy configuration was found for EntDelegatingChild: invalid item type in list"
-                )
-            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
-            if decision != Decision.PASS:
-                return decision
-        # Return based on default behavior
-        if default_to_deny:
-            if log_on_deny:
-                privacy_logger.debug(
-                    "Defaulting to denying access to EntDelegatingChild with ID %s after exhausting all privacy rules for %s",
-                    self.id,
-                    str(vc),
-                )
-            return Decision.DENY
-        return Decision.PASS
+        return prepended_rules
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntDelegatingChildQuery:
@@ -241,7 +191,7 @@ class EntDelegatingChildMutatorCreationAction:
         )
         db.session.add(model)
         ent = EntDelegatingChild(vc=self.vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
+        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to CREATE EntDelegatingChild with ID {ent.id}"
@@ -270,7 +220,7 @@ class EntDelegatingChildMutatorUpdateAction:
         model.updated_at = datetime.now(tz=UTC)
         db.session.add(model)
         new_ent = EntDelegatingChild(vc=self.vc, model=model)
-        decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
+        decision = await new_ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to UPDATE EntDelegatingChild with ID {new_ent.id}"
@@ -294,7 +244,7 @@ class EntDelegatingChildMutatorDeletionAction:
     async def gen_save(self) -> None:
         model = self.ent.model
         action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
+        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to {action} EntDelegatingChild with ID {self.ent.id}"

@@ -1,3 +1,4 @@
+import logging
 from abc import abstractmethod
 from datetime import datetime
 from functools import partial
@@ -9,15 +10,19 @@ from sqlalchemy import select
 from entpy.framework.action import Action
 from entpy.framework.database import db, emulate_for_update
 from entpy.framework.decision import Decision
-from entpy.framework.errors import EntNotFoundError
+from entpy.framework.errors import EntNotFoundError, ExecutionError
 from entpy.framework.id_factory import validate_ent_id
 from entpy.framework.model import ModelMixin
+from entpy.framework.privacy_rule import EdgeDelegate, PrivacyRule
 from entpy.framework.viewer_context import ViewerContext
 
 VC = TypeVar("VC")
 ENTMODEL = TypeVar("ENTMODEL")
 if TYPE_CHECKING:
     from entpy.framework.query import EntQuery
+    from entpy.framework.schema import Schema
+
+privacy_logger = logging.getLogger("entpy.privacy")
 
 
 class EntMeta(type):
@@ -69,8 +74,12 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
         raise ValueError(f"Unknown edge for {cls.__name__}: {edge_name}")
 
     @abstractmethod
-    async def _gen_evaluate_privacy(
-        self, vc: VC, action: Action, default_to_deny: bool = True
+    async def gen_evaluate_privacy(
+        self,
+        vc: VC,
+        action: Action,
+        default_to_deny: bool = True,
+        log_on_deny: bool = True,
     ) -> Decision:
         pass
 
@@ -120,21 +129,6 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
             raise EntNotFoundError(f"No {cls.__name__} found for ID {{ent_id}}")
         return ent
 
-    @classmethod
-    async def _gen_from_model(cls, vc: VC, model: ENTMODEL | None) -> Self | None:
-        if not model:
-            return None
-        ent = cls(vc=vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=vc, action=Action.READ)
-        return ent if decision == Decision.ALLOW else None
-
-    @classmethod
-    async def _genx_from_model(cls, vc: VC, model: ENTMODEL) -> Self:
-        ent = await cls._gen_from_model(vc=vc, model=model)
-        if not ent:
-            raise EntNotFoundError(f"No {cls.__name__} found for ID {{model.id}}")
-        return ent
-
     async def _gen_edge(
         self, edge_name: str
     ) -> "Ent[ViewerContext, ModelMixin] | None":
@@ -154,6 +148,8 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
 
 
 class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
+    schema: "Schema"
+
     @classmethod
     async def gen(
         cls, vc: VC, ent_id: UUID | str, for_update: bool = False
@@ -180,6 +176,21 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         return cls(vc=vc, model=model)
 
     @classmethod
+    async def _gen_from_model(cls, vc: VC, model: ENTMODEL | None) -> Self | None:
+        if not model:
+            return None
+        ent = cls(vc=vc, model=model)
+        decision = await ent.gen_evaluate_privacy(vc=vc, action=Action.READ)
+        return ent if decision == Decision.ALLOW else None
+
+    @classmethod
+    async def _genx_from_model(cls, vc: VC, model: ENTMODEL) -> Self:
+        ent = await cls._gen_from_model(vc=vc, model=model)
+        if not ent:
+            raise EntNotFoundError(f"No {cls.__name__} found for ID {{model.id}}")
+        return ent
+
+    @classmethod
     async def _gen_from_unique(
         cls, name: str, vc: VC, value: Any, for_update: bool = False
     ) -> Self | None:
@@ -191,6 +202,68 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         model = result.scalar_one_or_none()
         db.session.info.setdefault("cache", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
+
+    @classmethod
+    @abstractmethod
+    def _get_prepended_rules(cls, action: Action) -> list[PrivacyRule]:
+        pass
+
+    async def gen_evaluate_privacy(
+        self,
+        vc: VC,
+        action: Action,
+        default_to_deny: bool = True,
+        log_on_deny: bool = True,
+    ) -> Decision:
+        # Build the complete list: prepended rules + entity's config
+        all_rules = self._get_prepended_rules(action) + self.schema.get_privacy_config(
+            action
+        )
+
+        # Evaluate each rule/delegate in order
+        for item in all_rules:
+            if isinstance(item, PrivacyRule):
+                decision = await item.gen_evaluate_cached(vc, self)
+                if decision == Decision.DENY and log_on_deny:
+                    privacy_logger.debug(
+                        "Privacy rule %s of {base_name} with ID %s was denied for %s",
+                        type(item),
+                        self.id,
+                        str(vc),
+                    )
+            elif isinstance(item, EdgeDelegate):
+                edge_type = self._get_edge_type(item.edge_name)[0]
+                delegate = await edge_type._genx_no_privacy_DO_NOT_USE(
+                    vc, getattr(self, f"{item.edge_name}_id")
+                )
+                decision = await delegate.gen_evaluate_privacy(
+                    vc, action, default_to_deny=False
+                )
+                if decision == Decision.DENY and log_on_deny:
+                    privacy_logger.debug(
+                        "Delegate privacy of {base_name} with ID %s to edge %s was denied for %s",
+                        self.id,
+                        item.edge_name,
+                        str(vc),
+                    )
+            else:
+                raise ExecutionError(
+                    "An invalid privacy configuration was found for {base_name}: invalid item type in list"
+                )
+            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
+            if decision != Decision.PASS:
+                return decision
+
+        # Return based on default behavior
+        if default_to_deny:
+            if log_on_deny:
+                privacy_logger.debug(
+                    "Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s",
+                    self.id,
+                    str(vc),
+                )
+            return Decision.DENY
+        return Decision.PASS
 
 
 class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):

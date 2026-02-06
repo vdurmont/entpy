@@ -35,6 +35,7 @@ def generate(
         "from entpy.framework.database import emulate_for_update",
     ]
 
+    # TODO: Move this into a generated base class
     preprended_rules_str = ""
     for rule in prepended_rules:
         imports.append(str(rule.rule))
@@ -67,7 +68,7 @@ def generate(
         code=f"""
 class {base_name}({extends}):{get_description(schema)}
     m = {base_name}Model
-
+    schema = {base_name}Schema()
 
     if TYPE_CHECKING:
 {fields.code or "        pass"}
@@ -82,36 +83,12 @@ class {base_name}({extends}):{get_description(schema)}
 {edge_types.code}
         return super()._get_edge_type(edge_name)
 
-    async def _gen_evaluate_privacy(self, vc: {vc.name}, action: Action, default_to_deny: bool = True, log_on_deny: bool = True) -> Decision:
-        # Build the complete list: prepended rules + entity's config
+    @classmethod
+    @cache
+    def _get_prepended_rules(cls, action: Action) -> list[PrivacyRule]:
         prepended_rules: list[PrivacyRule] = []
 {preprended_rules_str}
-        config = {base_name}Schema().get_privacy_config(action)
-        all_rules = prepended_rules + config
-
-        # Evaluate each rule/delegate in order
-        for item in all_rules:
-            if isinstance(item, PrivacyRule):
-                decision = await item.gen_evaluate_cached(vc, self)
-                if decision == Decision.DENY and log_on_deny:
-                    privacy_logger.debug("Privacy rule %s of {base_name} with ID %s was denied for %s", type(item), self.id, str(vc))
-            elif isinstance(item, EdgeDelegate):
-                edge_type = self._get_edge_type(item.edge_name)
-                delegate = await edge_type[0]._genx_no_privacy_DO_NOT_USE(vc, getattr(self, f"{{item.edge_name}}_id"))
-                decision = await delegate._gen_evaluate_privacy(vc, action, default_to_deny=False)
-                if decision == Decision.DENY and log_on_deny:
-                    privacy_logger.debug("Delegate privacy of {base_name} with ID %s to edge %s was denied for %s", self.id, item.edge_name, str(vc))
-            else:
-                raise ExecutionError("An invalid privacy configuration was found for {base_name}: invalid item type in list")
-            # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
-            if decision != Decision.PASS:
-                return decision
-        # Return based on default behavior
-        if default_to_deny:
-            if log_on_deny:
-                privacy_logger.debug("Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s", self.id, str(vc))
-            return Decision.DENY
-        return Decision.PASS
+        return prepended_rules
 
     {child_types}
 

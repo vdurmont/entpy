@@ -139,7 +139,7 @@ class {base_name}MutatorCreationAction:
         )
         db.session.add(model)
         ent = {base_name}(vc=self.vc, model=model)
-        decision = await ent._gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
+        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(f"Current viewer context is not authorized to CREATE {base_name} with ID {{ent.id}}")
         await db.session.flush()
@@ -218,7 +218,7 @@ class {base_name}MutatorUpdateAction{inheritance}:
         model.updated_at = datetime.now(tz=UTC)
         db.session.add(model)
         new_ent = {base_name}(vc=self.vc, model=model)
-        decision = await new_ent._gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
+        decision = await new_ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(f"Current viewer context is not authorized to UPDATE {base_name} with ID {{new_ent.id}}")
         await db.session.flush()
@@ -265,7 +265,7 @@ class {base_name}MutatorDeletionAction{inheritance}:
     async def gen_save(self) -> None:
         model = self.ent.model
         action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent._gen_evaluate_privacy(vc=self.vc, action=action)
+        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
         if decision != Decision.ALLOW:
             raise PrivacyError(f"Current viewer context is not authorized to {{action}} {base_name} with ID {{self.ent.id}}")
         if self.is_soft_delete:
