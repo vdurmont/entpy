@@ -1,17 +1,19 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from entpy.framework.database import db
 from entpy.framework.decision import Decision
-from entpy.framework.ent import Ent
-from entpy.framework.viewer_context import ViewerContext
 
-VC = TypeVar("VC", bound=ViewerContext)
-T = TypeVar("T", bound=Ent)
+if TYPE_CHECKING:
+    from entpy.framework.ent import Ent
+    from entpy.framework.viewer_context import ViewerContext
+
+VC = TypeVar("VC")
+T = TypeVar("T")
 
 
-class PrivacyRule(ABC, Generic[VC, T]):
+class PrivacyRule[VC: ViewerContext, T: Ent](ABC):
     @abstractmethod
     async def gen_evaluate(self, vc: VC, ent: T) -> Decision:
         pass
