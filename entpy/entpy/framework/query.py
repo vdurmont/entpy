@@ -25,43 +25,51 @@ class EntQuery[VC: ViewerContext, ENT: Ent, ENTMODEL: ModelMixin](ABC):
     query: Select[tuple[ENTMODEL]]
     vc: VC
 
+    @abstractmethod
+    def __init__(
+        self,
+        vc: VC,
+        query: Select[tuple[ENTMODEL]] | None = None,
+        include_soft_deleted: bool = False,
+    ) -> None:
+        pass
+
     def join(
         self, model_class: type[ModelMixin] | Table, predicate: ColumnElement[bool]
     ) -> Self:
-        self.query = self.query.join(model_class, predicate)
-        return self
+        query = self.query.join(model_class, predicate)
+        return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def where(self, predicate: ColumnElement[bool]) -> Self:
-        self.query = self.query.where(predicate)
-        return self
+        query = self.query.where(predicate)
+        return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def order_by(self, predicate: ColumnElement[Any]) -> Self:
-        self.query = self.query.order_by(predicate)
-        return self
+        query = self.query.order_by(predicate)
+        return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def order_by_id_asc(self) -> Self:
-        self.query = self.query.order_by(self.model_type.id.asc())
-        return self
+        query = self.query.order_by(self.model_type.id.asc())
+        return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def order_by_id_desc(self) -> Self:
-        self.query = self.query.order_by(self.model_type.id.desc())
-        return self
+        query = self.query.order_by(self.model_type.id.desc())
+        return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def limit(self, limit: int | None) -> Self:
-        self.query = self.query.limit(limit)
-        return self
+        query = self.query.limit(limit)
+        return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def offset(self, offset: int) -> Self:
-        self.query = self.query.offset(offset)
-        return self
+        query = self.query.offset(offset)
+        return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def options(self, options: _AbstractLoad) -> Self:
-        self.query = self.query.options(options)
-        return self
+        query = self.query.options(options)
+        return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def with_soft_deleted(self) -> Self:
-        self.include_soft_deleted = True
-        return self
+        return self.__class__(self.vc, self.query, include_soft_deleted=True)
 
     def _finalize_query(self) -> Select[tuple[ENTMODEL]]:
         if self.include_soft_deleted:
@@ -127,9 +135,15 @@ class EntQuery[VC: ViewerContext, ENT: Ent, ENTMODEL: ModelMixin](ABC):
 class EntObjectQuery[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMixin](
     EntQuery[VC, ENT, ENTMODEL]
 ):
-    def __init__(self, vc: VC) -> None:
+    def __init__(
+        self,
+        vc: VC,
+        query: Select[tuple[ENTMODEL]] | None = None,
+        include_soft_deleted: bool = False,
+    ) -> None:
         self.vc = vc
-        self.query = select(self.model_type)
+        self.query = select(self.model_type) if query is None else query
+        self.include_soft_deleted = include_soft_deleted
 
     async def _gen_ents(self, result: Result[tuple[ENTMODEL]]) -> list[ENT | None]:
         models = result.scalars().all()
@@ -148,9 +162,15 @@ class EntPatternQuery[
     ENT: EntPatternBase,
     ENTMODEL: ModelMixin,
 ](EntQuery[VC, ENT, ENTMODEL]):
-    def __init__(self, vc: VC) -> None:
+    def __init__(
+        self,
+        vc: VC,
+        query: Select[tuple[ENTMODEL]] | None = None,
+        include_soft_deleted: bool = False,
+    ) -> None:
         self.vc = vc
-        self.query = select(self.model_type.id)
+        self.query = select(self.model_type.id) if query is None else query
+        self.include_soft_deleted = include_soft_deleted
 
     async def _gen_ents(self, result: Result[tuple[UUID]]) -> list[ENT | None]:  # type: ignore[override]
         ent_ids = result.scalars().all()
