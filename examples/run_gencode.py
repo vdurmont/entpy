@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-from entpy import Action
-from entpy.gencode.generator import ImportedObject, PrivacyRuleImport, run
+from entpy.gencode.generator import ImportedObject, run
 
 if __name__ == "__main__":
     run(
@@ -9,20 +8,5 @@ if __name__ == "__main__":
         output_directory="./generated",
         base_model_import="from database import Base",
         vc=ImportedObject(module="evc", name="ExampleViewerContext"),
-        prepended_rules=[
-            PrivacyRuleImport(
-                rule=ImportedObject(module="rules", name="AllowIfTestViewerContext"),
-                actions=list(Action),
-            ),
-            PrivacyRuleImport(
-                rule=ImportedObject(
-                    module="rules", name="AllowIfOmniscientViewerContext"
-                ),
-                actions=[Action.READ],
-            ),
-            PrivacyRuleImport(
-                rule=ImportedObject(module="rules", name="DenyIfSoftDeleted"),
-                actions=[Action.READ],
-            ),
-        ],
+        privacy_mixin=ImportedObject(module="privacy", name="PrivacyMixin"),
     )

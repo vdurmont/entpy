@@ -14,14 +14,14 @@ from entpy.gencode.introspection_generator import generate as generate_introspec
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.mutator_generator import generate as generate_mutator
 from entpy.gencode.query_generator import generate as generate_query
-from entpy.gencode.utils import ImportedObject, PrivacyRuleImport
+from entpy.gencode.utils import ImportedObject
 
 
 def generate(
     schema_class: type[Schema],
     vc: ImportedObject,
-    prepended_rules: list[PrivacyRuleImport],
     threshold_to_stop_loading_ents_for_count: int,
+    privacy_mixin: ImportedObject | None = None,
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.removesuffix("Schema")
@@ -43,7 +43,7 @@ def generate(
         schema=schema,
         base_name=base_name,
         vc=vc,
-        prepended_rules=prepended_rules,
+        privacy_mixin=privacy_mixin,
     )
     query_content = generate_query(
         descriptor=schema,

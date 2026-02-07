@@ -3,7 +3,6 @@ from entpy.framework.descriptor import Descriptor
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import (
     ImportedObject,
-    PrivacyRuleImport,
     get_description,
     to_snake_case,
 )
@@ -13,10 +12,11 @@ def generate(
     schema: Schema,
     base_name: str,
     vc: ImportedObject,
-    prepended_rules: list[PrivacyRuleImport],
+    privacy_mixin: ImportedObject | None = None,
 ) -> GeneratedContent:
     extends = ",".join(
-        [f"EntObjectBase[{vc.name}, {base_name}Model]"]
+        ([privacy_mixin.name] if privacy_mixin else [])
+        + [f"EntObjectBase[{vc.name}, {base_name}Model]"]
         + [
             f"I{pattern.__class__.__name__.removesuffix("Pattern")}"
             for pattern in schema.get_patterns()
@@ -30,22 +30,11 @@ def generate(
 
     imports = [
         "from functools import cache",
-        "from entpy import EdgeDelegate, PrivacyRule, Ent",
+        "from entpy import Ent",
         "from entpy.framework.ent import EntObjectBase",
-        "from entpy.framework.database import emulate_for_update",
     ]
-
-    # TODO: Move this into a generated base class
-    preprended_rules_str = ""
-    for rule in prepended_rules:
-        imports.append(str(rule.rule))
-        actions = ", ".join([str(a) for a in rule.actions])
-        preprended_rules_str += f"        if action in [{actions}]:\n"
-        preprended_rules_str += (
-            f"            prepended_rules.append({rule.rule.name}())\n"
-        )
-
-    imports += ["from sqlalchemy import select"]
+    if privacy_mixin:
+        imports.append(str(privacy_mixin))
 
     for pattern in schema.get_patterns():
         pattern_base_name = pattern.__class__.__name__.removesuffix("Pattern")
@@ -82,13 +71,6 @@ class {base_name}({extends}):{get_description(schema)}
     def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
 {edge_types.code}
         return super()._get_edge_type(edge_name)
-
-    @classmethod
-    @cache
-    def _get_prepended_rules(cls, action: Action) -> list[PrivacyRule]:
-        prepended_rules: list[PrivacyRule] = []
-{preprended_rules_str}
-        return prepended_rules
 
     {child_types}
 

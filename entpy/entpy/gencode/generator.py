@@ -6,7 +6,7 @@ from entpy import Pattern, Schema
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
-from entpy.gencode.utils import ImportedObject, PrivacyRuleImport
+from entpy.gencode.utils import ImportedObject
 from entpy.gencode.view_generator import generate as generate_view
 
 
@@ -15,7 +15,7 @@ def run(
     output_directory: str,
     base_model_import: str,
     vc: ImportedObject,
-    prepended_rules: list[PrivacyRuleImport] | None = None,
+    privacy_mixin: ImportedObject | None = None,
     threshold_to_stop_loading_ents_for_count: int = 50,
 ) -> None:
     print("EntGenerator is running...")
@@ -61,8 +61,8 @@ def run(
             code = generate_schema(
                 schema_class=descriptor_class,
                 vc=vc,
-                prepended_rules=prepended_rules or [],
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
+                privacy_mixin=privacy_mixin,
             )
         elif issubclass(descriptor_class, Pattern):
             children = get_children_schema_classes(

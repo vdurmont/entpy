@@ -27,16 +27,13 @@ from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
 from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
-from entpy import PrivacyRule
 from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from functools import cache
+from privacy import PrivacyMixin
 from pydantic import Field as APIField
-from rules import AllowIfOmniscientViewerContext
-from rules import AllowIfTestViewerContext
-from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Index, text
 from sqlalchemy import String
@@ -78,6 +75,7 @@ class EntTestObject2APIModel(EntTestThingAPIModel, EntTestPatternAPIModel):
 
 
 class EntTestObject2(
+    PrivacyMixin,
     EntObjectBase[ExampleViewerContext, EntTestObject2Model],
     IEntTestThing,
     IEntTestPattern,
@@ -98,25 +96,6 @@ class EntTestObject2(
     @cache
     def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
         return super()._get_edge_type(edge_name)
-
-    @classmethod
-    @cache
-    def _get_prepended_rules(cls, action: Action) -> list[PrivacyRule]:
-        prepended_rules: list[PrivacyRule] = []
-        if action in [
-            Action.READ,
-            Action.CREATE,
-            Action.UPDATE,
-            Action.HARD_DELETE,
-            Action.SOFT_DELETE,
-        ]:
-            prepended_rules.append(AllowIfTestViewerContext())
-        if action in [Action.READ]:
-            prepended_rules.append(AllowIfOmniscientViewerContext())
-        if action in [Action.READ]:
-            prepended_rules.append(DenyIfSoftDeleted())
-
-        return prepended_rules
 
     @classmethod
     def _get_child_type(cls, uuid_type: bytes) -> type[EntTestObject2]:  # type: ignore[override]
