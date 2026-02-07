@@ -16,17 +16,14 @@ from datetime import datetime, UTC
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_child_schema import EntChildSchema
-from entpy import PrivacyRule
 from entpy import Field
 from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
 from functools import cache
+from privacy import PrivacyMixin
 from pydantic import Field as APIField
-from rules import AllowIfOmniscientViewerContext
-from rules import AllowIfTestViewerContext
-from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
@@ -62,7 +59,7 @@ class EntChildAPIModel(APIEntity):
     parent: "EntParentAPIModel" = APIField(...)
 
 
-class EntChild(EntObjectBase[ExampleViewerContext, EntChildModel]):
+class EntChild(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntChildModel]):
     m = EntChildModel
     schema = EntChildSchema()
 
@@ -83,25 +80,6 @@ class EntChild(EntObjectBase[ExampleViewerContext, EntChildModel]):
                 return (EntParent, False)
 
         return super()._get_edge_type(edge_name)
-
-    @classmethod
-    @cache
-    def _get_prepended_rules(cls, action: Action) -> list[PrivacyRule]:
-        prepended_rules: list[PrivacyRule] = []
-        if action in [
-            Action.READ,
-            Action.CREATE,
-            Action.UPDATE,
-            Action.HARD_DELETE,
-            Action.SOFT_DELETE,
-        ]:
-            prepended_rules.append(AllowIfTestViewerContext())
-        if action in [Action.READ]:
-            prepended_rules.append(AllowIfOmniscientViewerContext())
-        if action in [Action.READ]:
-            prepended_rules.append(DenyIfSoftDeleted())
-
-        return prepended_rules
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntChildQuery:

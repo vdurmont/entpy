@@ -27,18 +27,15 @@ from datetime import timedelta
 from ent_test_object_schema import EntTestObjectSchema
 from ent_test_object_schema import Status
 from ent_test_thing_pattern import ThingStatus
-from entpy import PrivacyRule
 from entpy import Field, FieldWithDynamicExample
 from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.query import EntObjectQuery
 from entpy.types import DateTime
 from functools import cache
+from privacy import PrivacyMixin
 from pydantic import AwareDatetime
 from pydantic import Field as APIField
-from rules import AllowIfOmniscientViewerContext
-from rules import AllowIfTestViewerContext
-from rules import DenyIfSoftDeleted
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Boolean
 from sqlalchemy import Date
@@ -219,7 +216,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
 
 
 class EntTestObject(
-    EntObjectBase[ExampleViewerContext, EntTestObjectModel], IEntTestThing
+    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntTestObjectModel], IEntTestThing
 ):
     """
     This is an object we use to test all the ent framework features!
@@ -314,25 +311,6 @@ class EntTestObject(
                 return (IEntTestThing, True)
 
         return super()._get_edge_type(edge_name)
-
-    @classmethod
-    @cache
-    def _get_prepended_rules(cls, action: Action) -> list[PrivacyRule]:
-        prepended_rules: list[PrivacyRule] = []
-        if action in [
-            Action.READ,
-            Action.CREATE,
-            Action.UPDATE,
-            Action.HARD_DELETE,
-            Action.SOFT_DELETE,
-        ]:
-            prepended_rules.append(AllowIfTestViewerContext())
-        if action in [Action.READ]:
-            prepended_rules.append(AllowIfOmniscientViewerContext())
-        if action in [Action.READ]:
-            prepended_rules.append(DenyIfSoftDeleted())
-
-        return prepended_rules
 
     @classmethod
     def query(cls, vc: ExampleViewerContext) -> EntTestObjectQuery:  # type: ignore[override]

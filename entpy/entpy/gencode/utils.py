@@ -1,7 +1,6 @@
 import re
 from dataclasses import dataclass
 
-from entpy.framework.action import Action
 from entpy.framework.descriptor import Descriptor
 
 
@@ -23,9 +22,3 @@ class ImportedObject:
 
     def __str__(self) -> str:
         return f"from {self.module} import {self.name}"
-
-
-@dataclass
-class PrivacyRuleImport:
-    rule: ImportedObject
-    actions: list[Action]
