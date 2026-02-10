@@ -2,7 +2,8 @@ from entpy import ViewerContext
 
 
 class ExampleViewerContext(ViewerContext):
-    pass
+    def __repr__(self) -> str:
+        return self.__class__.__name__
 
 
 class ExampleTestViewerContext(ExampleViewerContext):
