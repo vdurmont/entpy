@@ -223,10 +223,10 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
                     privacy_logger.debug(
                         "Rule %s denied %s of %s %s for %s",
                         item.__class__.__name__,
-                        str(action),
+                        action.value,
                         self.__class__.__name__,
                         self.id,
-                        str(vc),
+                        vc,
                     )
             elif isinstance(item, EdgeDelegate):
                 edge_type = self._get_edge_type(item.edge_name)[0]
@@ -240,10 +240,10 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
                     privacy_logger.debug(
                         "Delegate %s denied %s of %s %s for %s",
                         item.edge_name,
-                        str(action),
+                        action.value,
                         self.__class__.__name__,
                         self.id,
-                        str(vc),
+                        vc,
                     )
             else:
                 raise ExecutionError(
@@ -258,10 +258,10 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
             if log_on_deny:
                 privacy_logger.debug(
                     "Default denied %s of %s %s for %s",
-                    str(action),
+                    action.value,
                     self.__class__.__name__,
                     self.id,
-                    str(vc),
+                    vc,
                 )
             return Decision.DENY
         return Decision.PASS
