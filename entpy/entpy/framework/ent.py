@@ -221,8 +221,10 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
                 decision = await item.gen_evaluate_cached(vc, self)
                 if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug(
-                        "Privacy rule %s of {base_name} with ID %s was denied for %s",
-                        type(item),
+                        "Rule %s denied %s of %s %s for %s",
+                        item.__class__.__name__,
+                        str(action),
+                        self.__class__.__name__,
                         self.id,
                         str(vc),
                     )
@@ -236,14 +238,16 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
                 )
                 if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug(
-                        "Delegate privacy of {base_name} with ID %s to edge %s was denied for %s",
-                        self.id,
+                        "Delegate %s denied %s of %s %s for %s",
                         item.edge_name,
+                        str(action),
+                        self.__class__.__name__,
+                        self.id,
                         str(vc),
                     )
             else:
                 raise ExecutionError(
-                    "An invalid privacy configuration was found for {base_name}: invalid item type in list"
+                    f"An invalid privacy configuration was found for {self.__class__.__name__}: invalid item type in list",
                 )
             # If we get an ALLOW or DENY, we return instantly. Else, we keep going.
             if decision != Decision.PASS:
@@ -253,7 +257,9 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         if default_to_deny:
             if log_on_deny:
                 privacy_logger.debug(
-                    "Defaulting to denying access to {base_name} with ID %s after exhausting all privacy rules for %s",
+                    "Default denied %s of %s %s for %s",
+                    str(action),
+                    self.__class__.__name__,
                     self.id,
                     str(vc),
                 )
