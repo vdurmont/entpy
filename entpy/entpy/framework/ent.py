@@ -94,7 +94,7 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
     async def genx(cls, vc: VC, ent_id: UUID | str, for_update: bool = False) -> Self:
         ent = await cls.gen(vc, ent_id, for_update)
         if not ent:
-            raise EntNotFoundError(f"No {cls.__name__} found for ID {{ent_id}}")
+            raise EntNotFoundError(f"No {cls.__name__} found for ID {ent_id}")
         return ent
 
     @classmethod
@@ -110,7 +110,7 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
     ) -> Self | None:
         ent = await cls._gen_from_unique(name, vc, value, for_update)
         if not ent:
-            raise EntNotFoundError(f"No {cls.__name__} found for {name} {{value}}")
+            raise EntNotFoundError(f"No {cls.__name__} found for {name} {value}")
         return ent
 
     @classmethod
@@ -126,7 +126,7 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
     ) -> Self:
         ent = await cls._gen_no_privacy_DO_NOT_USE(vc, ent_id, for_update)
         if ent is None:
-            raise EntNotFoundError(f"No {cls.__name__} found for ID {{ent_id}}")
+            raise EntNotFoundError(f"No {cls.__name__} found for ID {ent_id}")
         return ent
 
     async def _gen_edge(
@@ -182,7 +182,7 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     async def _genx_from_model(cls, vc: VC, model: ENTMODEL) -> Self:
         ent = await cls._gen_from_model(vc=vc, model=model)
         if not ent:
-            raise EntNotFoundError(f"No {cls.__name__} found for ID {{model.id}}")
+            raise EntNotFoundError(f"No {cls.__name__} found for ID {model.id}")
         return ent
 
     @classmethod
