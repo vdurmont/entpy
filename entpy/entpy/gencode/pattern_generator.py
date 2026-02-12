@@ -1,15 +1,11 @@
 from entpy import Pattern, Schema
 from entpy.framework.fields.edge_field import EdgeField
 from entpy.gencode.api_model_generator import generate as generate_api_model
-from entpy.gencode.base_generator import (
-    _generate_edge_gens,
-    _generate_fields,
-    _generate_unique_gens,
-)
+from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
-from entpy.gencode.utils import ImportedObject, get_description, to_snake_case
+from entpy.gencode.utils import ImportedObject, to_snake_case
 
 
 def generate(
@@ -24,11 +20,13 @@ def generate(
     model = generate_model(descriptor=pattern, base_name=base_name)
     api_model = generate_api_model(descriptor=pattern, base_name=base_name)
 
-    fields = _generate_fields(schema=pattern)
-    edge_gens, edge_types = _generate_edge_gens(schema=pattern)
     child_types = _generate_child_types(children_schema_classes=children_schema_classes)
-    unique_gens = _generate_unique_gens(schema=pattern, base_name=base_name, vc=vc)
 
+    base_content = generate_base(
+        descriptor=pattern,
+        base_name=base_name,
+        vc=vc,
+    )
     query_content = generate_query(
         descriptor=pattern,
         base_name=base_name,
@@ -68,9 +66,8 @@ def generate(
         [str(vc), "from entpy import db"]
         + model.imports
         + api_model.imports
-        + fields.imports
+        + base_content.imports
         + query_content.imports
-        + edge_gens.imports
         + mutator_content.imports
     )
 
@@ -80,8 +77,7 @@ def generate(
     type_checking_imports = (
         model.type_checking_imports
         + api_model.type_checking_imports
-        + fields.type_checking_imports
-        + edge_gens.type_checking_imports
+        + base_content.type_checking_imports
         + query_content.type_checking_imports
         + mutator_content.type_checking_imports
     )
@@ -104,7 +100,6 @@ from uuid import UUID
 
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
-from entpy.framework.ent import EntPatternBase
 {imports_code}
 
 if TYPE_CHECKING:
@@ -114,20 +109,7 @@ if TYPE_CHECKING:
 
 {api_model.code}
 
-class I{base_name}(EntPatternBase[{vc.name}, {base_name}Model]):{get_description(pattern)}
-
-    if TYPE_CHECKING:
-{fields.code or "        pass"}
-
-{unique_gens}
-
-{edge_gens.code}
-
-    @classmethod
-    @cache
-    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
-{edge_types.code}
-        return super()._get_edge_type(edge_name)
+{base_content.code}
 
     @classmethod
     @cache
@@ -135,10 +117,6 @@ class I{base_name}(EntPatternBase[{vc.name}, {base_name}Model]):{get_description
         match uuid_type:
 {child_types.code}
         raise ValueError(f"Unknown UUID type for I{base_name}: {{uuid_type.hex()}}")
-
-    @classmethod
-    def query(cls, vc: {vc.name}) -> I{base_name}Query:
-        return I{base_name}Query(vc=vc)
 
 {query_content.code}
 

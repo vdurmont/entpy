@@ -1,4 +1,4 @@
-from entpy import DateField, EdgeField, IntervalField, Schema, TimeField
+from entpy import DateField, EdgeField, IntervalField, Pattern, Schema, TimeField
 from entpy.framework.descriptor import Descriptor
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import (
@@ -9,34 +9,44 @@ from entpy.gencode.utils import (
 
 
 def generate(
-    schema: Schema,
+    descriptor: Descriptor,
     base_name: str,
     vc: ImportedObject,
     privacy_mixin: ImportedObject | None = None,
 ) -> GeneratedContent:
+    i = "I" if isinstance(descriptor, Pattern) else ""
     extends = ",".join(
         ([privacy_mixin.name] if privacy_mixin else [])
-        + [f"EntObjectBase[{vc.name}, {base_name}Model]"]
+        + [
+            f"Ent{"Pattern" if isinstance(descriptor, Pattern) else "Object"}Base[{vc.name}, {base_name}Model]"
+        ]
         + [
             f"I{pattern.__class__.__name__.removesuffix("Pattern")}"
-            for pattern in schema.get_patterns()
+            for pattern in descriptor.get_patterns()
         ]
     )
 
-    fields = _generate_fields(schema)
-    edge_gens, edge_types = _generate_edge_gens(schema)
+    fields = _generate_fields(descriptor)
+    edge_gens, edge_types = _generate_edge_gens(descriptor)
 
-    unique_gens = _generate_unique_gens(schema=schema, base_name=base_name, vc=vc)
+    unique_gens = _generate_unique_gens(
+        descriptor=descriptor, base_name=base_name, vc=vc
+    )
 
     imports = [
         "from functools import cache",
         "from entpy import Ent",
-        "from entpy.framework.ent import EntObjectBase",
+        "from entpy.framework.ent import "
+        + ("EntPatternBase" if isinstance(descriptor, Pattern) else "EntObjectBase"),
     ]
     if privacy_mixin:
         imports.append(str(privacy_mixin))
 
-    for pattern in schema.get_patterns():
+    attributes = ""
+    if isinstance(descriptor, Schema):
+        attributes = "    schema = " + base_name + "Schema()"
+
+    for pattern in descriptor.get_patterns():
         pattern_base_name = pattern.__class__.__name__.removesuffix("Pattern")
         class_name = f"I{pattern_base_name}"
         module_name = "." + to_snake_case(pattern_base_name)
@@ -44,7 +54,7 @@ def generate(
 
     child_types = ""
     # Make the type checker happy for ents which implement multiple patterns
-    if len(schema.get_patterns()) > 1:
+    if len(descriptor.get_patterns()) > 1:
         child_types = f"""@classmethod
     def _get_child_type(cls, uuid_type: bytes) -> type[{base_name}]:  # type: ignore[override]
         raise NotImplementedError("get_child_type() should only be called on patterns")
@@ -55,9 +65,9 @@ def generate(
         type_checking_imports=fields.type_checking_imports
         + edge_gens.type_checking_imports,
         code=f"""
-class {base_name}({extends}):{get_description(schema)}
+class {i}{base_name}({extends}):{get_description(descriptor)}
     m = {base_name}Model
-    schema = {base_name}Schema()
+{attributes}
 
     if TYPE_CHECKING:
 {fields.code or "        pass"}
@@ -75,8 +85,8 @@ class {base_name}({extends}):{get_description(schema)}
     {child_types}
 
     @classmethod
-    def query(cls, vc: {vc.name}) -> {base_name}Query:  {"# type: ignore[override]" if schema.get_patterns() else ""}
-        return {base_name}Query(vc=vc)
+    def query(cls, vc: {vc.name}) -> {i}{base_name}Query:  {"# type: ignore[override]" if descriptor.get_patterns() else ""}
+        return {i}{base_name}Query(vc=vc)
 """,
     )
 
@@ -154,10 +164,10 @@ def _generate_edge_gens(
 
 
 def _generate_unique_gens(
-    schema: Descriptor, base_name: str, vc: ImportedObject
+    descriptor: Descriptor, base_name: str, vc: ImportedObject
 ) -> str:
     unique_gens = ""
-    for field in schema.get_sorted_fields():
+    for field in descriptor.get_sorted_fields():
         if field.is_unique:
             unique_gens += f"""
         @classmethod

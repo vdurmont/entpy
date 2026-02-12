@@ -9,8 +9,9 @@ from functools import cache
 from typing import TYPE_CHECKING
 
 
-from entpy.framework.ent import EntPatternBase
 from .ent_model import EntModel
+from entpy import Ent
+from entpy.framework.ent import EntPatternBase
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -28,6 +29,8 @@ class EntTestPatternAPIModel(APIEntity):
 
 
 class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel]):
+    m = EntTestPatternModel
+
     if TYPE_CHECKING:
         pass
 
@@ -35,6 +38,10 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
     @cache
     def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
         return super()._get_edge_type(edge_name)
+
+    @classmethod
+    def query(cls, vc: ExampleViewerContext) -> IEntTestPatternQuery:
+        return IEntTestPatternQuery(vc=vc)
 
     @classmethod
     @cache
@@ -46,10 +53,6 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
                 return EntTestObject2
 
         raise ValueError(f"Unknown UUID type for IEntTestPattern: {uuid_type.hex()}")
-
-    @classmethod
-    def query(cls, vc: ExampleViewerContext) -> IEntTestPatternQuery:
-        return IEntTestPatternQuery(vc=vc)
 
 
 class IEntTestPatternQuery(

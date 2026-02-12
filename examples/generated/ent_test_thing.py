@@ -11,9 +11,10 @@ from uuid import UUID
 
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
-from entpy.framework.ent import EntPatternBase
 from .ent_model import EntModel
 from ent_test_thing_pattern import ThingStatus
+from entpy import Ent
+from entpy.framework.ent import EntPatternBase
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -67,6 +68,8 @@ class EntTestThingAPIModel(APIEntity):
 
 
 class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
+    m = EntTestThingModel
+
     if TYPE_CHECKING:
         a_good_thing: str
         obj5_id: UUID
@@ -115,6 +118,10 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
         return super()._get_edge_type(edge_name)
 
     @classmethod
+    def query(cls, vc: ExampleViewerContext) -> IEntTestThingQuery:
+        return IEntTestThingQuery(vc=vc)
+
+    @classmethod
     @cache
     def _get_child_type(cls, uuid_type: bytes) -> type[IEntTestThing]:
         match uuid_type:
@@ -128,10 +135,6 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
                 return EntTestObject
 
         raise ValueError(f"Unknown UUID type for IEntTestThing: {uuid_type.hex()}")
-
-    @classmethod
-    def query(cls, vc: ExampleViewerContext) -> IEntTestThingQuery:
-        return IEntTestThingQuery(vc=vc)
 
 
 class IEntTestThingQuery(

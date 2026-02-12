@@ -40,7 +40,7 @@ def generate(
     model_content = generate_model(descriptor=schema, base_name=base_name)
     api_model_content = generate_api_model(descriptor=schema, base_name=base_name)
     base_content = generate_base(
-        schema=schema,
+        descriptor=schema,
         base_name=base_name,
         vc=vc,
         privacy_mixin=privacy_mixin,
