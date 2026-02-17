@@ -5,11 +5,8 @@
 from __future__ import annotations
 import logging
 from entpy import (
-    db,
     Ent,
     generate_uuid,
-    Action,
-    Decision,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -17,8 +14,12 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_parent_schema import EntParentSchema
 from entpy import Field
-from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.mutators import (
+    EntMutatorCreationAction,
+    EntMutatorUpdateAction,
+    EntMutatorDeletionAction,
+)
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
 from functools import cache
@@ -131,7 +132,10 @@ class EntParentMutator:
         return EntParentMutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=True)
 
 
-class EntParentMutatorCreationAction:
+class EntParentMutatorCreationAction(
+    EntMutatorCreationAction[ExampleViewerContext, EntParent, EntParentModel]
+):
+    ent_type = EntParent
     vc: ExampleViewerContext
     id: UUID
     grand_parent_id: UUID
@@ -153,26 +157,23 @@ class EntParentMutatorCreationAction:
         self.grand_parent_id = grand_parent_id
         self.name = name
 
-    async def gen_savex(self) -> EntParent:
-        model = EntParentModel(
+    def _validate(self) -> None:
+        pass
+
+    def _create_model(self) -> EntParentModel:
+        return EntParentModel(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
             grand_parent_id=self.grand_parent_id,
             name=self.name,
         )
-        db.session.add(model)
-        ent = EntParent(vc=self.vc, model=model)
-        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to CREATE EntParent with ID {ent.id}"
-            )
-        await db.session.flush()
-        return await EntParent._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntParentMutatorUpdateAction:
+class EntParentMutatorUpdateAction(
+    EntMutatorUpdateAction[ExampleViewerContext, EntParent, EntParentModel]
+):
+    ent_type = EntParent
     vc: ExampleViewerContext
     ent: EntParent
     id: UUID
@@ -185,49 +186,19 @@ class EntParentMutatorUpdateAction:
         self.grand_parent_id = ent.grand_parent_id
         self.name = ent.name
 
-    async def gen_savex(self) -> EntParent:
-        model = self.ent.model
+    def _validate(self) -> None:
+        pass
+
+    def _update_model(self, model: EntParentModel) -> EntParentModel:
         model.grand_parent_id = self.grand_parent_id
         model.name = self.name
-        model.updated_at = datetime.now(tz=UTC)
-        db.session.add(model)
-        new_ent = EntParent(vc=self.vc, model=model)
-        decision = await new_ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to UPDATE EntParent with ID {new_ent.id}"
-            )
-        await db.session.flush()
-        await db.session.refresh(model)
-        return await EntParent._genx_from_model(self.vc, model)  # noqa: SLF001
+        return model
 
 
-class EntParentMutatorDeletionAction:
-    vc: ExampleViewerContext
-    ent: EntParent
-
-    def __init__(
-        self, vc: ExampleViewerContext, ent: EntParent, is_soft_delete: bool
-    ) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.is_soft_delete = is_soft_delete
-
-    async def gen_save(self) -> None:
-        model = self.ent.model
-        action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to {action} EntParent with ID {self.ent.id}"
-            )
-        if self.is_soft_delete:
-            model.soft_deleted_at = datetime.now(tz=UTC)
-            model.updated_at = datetime.now(tz=UTC)
-            db.session.add(model)
-        else:
-            await db.session.delete(model)
-        await db.session.flush()
+class EntParentMutatorDeletionAction(
+    EntMutatorDeletionAction[ExampleViewerContext, EntParent, EntParentModel]
+):
+    ent_type = EntParent
 
 
 class EntParentExample:

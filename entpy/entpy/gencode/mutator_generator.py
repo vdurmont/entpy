@@ -11,7 +11,10 @@ def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedCon
     update = _generate_update(schema=schema, base_name=base_name, vc=vc)
     deletion = _generate_deletion(schema=schema, base_name=base_name, vc=vc)
     return GeneratedContent(
-        imports=["from entpy import PrivacyError"]
+        imports=[
+            "from entpy import PrivacyError",
+            "from entpy.framework.mutators import EntMutatorCreationAction, EntMutatorUpdateAction, EntMutatorDeletionAction",
+        ]
         + base.imports
         + creation.imports
         + update.imports
@@ -117,7 +120,8 @@ def _generate_creation(
     return GeneratedContent(
         imports=validations.imports,
         code=f"""
-class {base_name}MutatorCreationAction:
+class {base_name}MutatorCreationAction(EntMutatorCreationAction[{vc.name}, {base_name}, {base_name}Model]):
+    ent_type = {base_name}
     vc: {vc.name}
     id: UUID
 {local_variables}
@@ -129,21 +133,16 @@ class {base_name}MutatorCreationAction:
         self.id = id if id else generate_uuid({base_name}, self.created_at)
 {constructor_assignments}
 
-    async def gen_savex(self) -> {base_name}:
-{validations.code}
-        model = {base_name}Model(
+    def _validate(self) -> None:
+{validations.code or "        pass"}
+
+    def _create_model(self) -> {base_name}Model:
+        return {base_name}Model(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
 {model_assignments}
         )
-        db.session.add(model)
-        ent = {base_name}(vc=self.vc, model=model)
-        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(f"Current viewer context is not authorized to CREATE {base_name} with ID {{ent.id}}")
-        await db.session.flush()
-        return await {base_name}._genx_from_model(self.vc, model)  # noqa: SLF001
 """,  # noqa: E501
     )
 
@@ -179,28 +178,25 @@ def _generate_update(
     )
 
     # Check if the schema has patterns to determine inheritance
+    extends = [f"EntMutatorUpdateAction[{vc.name}, {base_name}, {base_name}Model]"]
+    pattern_imports: list[str] = []
     patterns = schema.get_patterns()
     if patterns:
         # Use all patterns for multiple inheritance
-        pattern_base_classes = []
         pattern_imports = []
         for pattern in patterns:
             pattern_base_name = pattern.__class__.__name__.removesuffix("Pattern")
-            pattern_base_classes.append(f"I{pattern_base_name}MutatorUpdateAction")
+            extends.append(f"I{pattern_base_name}MutatorUpdateAction")
             pattern_imports.append(
                 f"from .{_to_snake_case(pattern_base_name)} "
                 + f"import I{pattern_base_name}MutatorUpdateAction"
             )
-        inheritance = f"({', '.join(pattern_base_classes)})"
-        imports = validations.imports + pattern_imports
-    else:
-        inheritance = ""
-        imports = validations.imports
 
     return GeneratedContent(
-        imports=imports,
+        imports=validations.imports + pattern_imports,
         code=f"""
-class {base_name}MutatorUpdateAction{inheritance}:
+class {base_name}MutatorUpdateAction({','.join(extends)}):
+    ent_type = {base_name}
     vc: {vc.name}
     ent: {base_name}
     id: UUID
@@ -211,19 +207,12 @@ class {base_name}MutatorUpdateAction{inheritance}:
         self.ent = ent
 {local_variables_assignments}
 
-    async def gen_savex(self) -> {base_name}:
-{validations.code}
-        model = self.ent.model
+    def _validate(self) -> None:
+{validations.code or "        pass"}
+
+    def _update_model(self, model: {base_name}Model) -> {base_name}Model:
 {model_assignments}
-        model.updated_at = datetime.now(tz=UTC)
-        db.session.add(model)
-        new_ent = {base_name}(vc=self.vc, model=model)
-        decision = await new_ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(f"Current viewer context is not authorized to UPDATE {base_name} with ID {{new_ent.id}}")
-        await db.session.flush()
-        await db.session.refresh(model)
-        return await {base_name}._genx_from_model(self.vc, model)  # noqa: SLF001
+        return model
 """,
     )
 
@@ -232,49 +221,27 @@ def _generate_deletion(
     schema: Schema, base_name: str, vc: ImportedObject
 ) -> GeneratedContent:
     # Check if the schema has patterns to determine inheritance
+    extends = [f"EntMutatorDeletionAction[{vc.name}, {base_name}, {base_name}Model]"]
+    pattern_imports: list[str] = []
     patterns = schema.get_patterns()
     if patterns:
         # Use all patterns for multiple inheritance
-        pattern_base_classes = []
         pattern_imports = []
         for pattern in patterns:
             pattern_base_name = pattern.__class__.__name__.removesuffix("Pattern")
-            pattern_base_classes.append(f"I{pattern_base_name}MutatorDeletionAction")
+            extends.append(f"I{pattern_base_name}MutatorDeletionAction")
             pattern_imports.append(
                 f"from .{_to_snake_case(pattern_base_name)} "
                 + f"import I{pattern_base_name}MutatorDeletionAction"
             )
-        inheritance = f"({', '.join(pattern_base_classes)})"
-        imports = pattern_imports
-    else:
-        inheritance = ""
-        imports = []
 
     return GeneratedContent(
-        imports=imports,
+        imports=pattern_imports,
         code=f"""
-class {base_name}MutatorDeletionAction{inheritance}:
-    vc: {vc.name}
-    ent: {base_name}
-
-    def __init__(self, vc: {vc.name}, ent: {base_name}, is_soft_delete: bool) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.is_soft_delete=is_soft_delete
-
-    async def gen_save(self) -> None:
-        model = self.ent.model
-        action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(f"Current viewer context is not authorized to {{action}} {base_name} with ID {{self.ent.id}}")
-        if self.is_soft_delete:
-            model.soft_deleted_at = datetime.now(tz=UTC)
-            model.updated_at = datetime.now(tz=UTC)
-            db.session.add(model)
-        else:
-            await db.session.delete(model)
-        await db.session.flush()
+class {base_name}MutatorDeletionAction(  {"# type: ignore[misc]" if patterns else ""}
+    {','.join(extends)}
+):
+    ent_type = {base_name}
 """,
     )
 

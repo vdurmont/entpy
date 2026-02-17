@@ -5,11 +5,8 @@
 from __future__ import annotations
 import logging
 from entpy import (
-    db,
     Ent,
     generate_uuid,
-    Action,
-    Decision,
     ValidationError,
 )
 from uuid import UUID
@@ -28,8 +25,12 @@ from .ent_test_thing import IEntTestThingMutatorUpdateAction
 from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
 from entpy import Field, FieldWithDynamicExample
-from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.mutators import (
+    EntMutatorCreationAction,
+    EntMutatorUpdateAction,
+    EntMutatorDeletionAction,
+)
 from entpy.framework.query import EntObjectQuery
 from functools import cache
 from privacy import PrivacyMixin
@@ -162,7 +163,10 @@ class EntTestObject2Mutator:
         return EntTestObject2MutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=True)
 
 
-class EntTestObject2MutatorCreationAction:
+class EntTestObject2MutatorCreationAction(
+    EntMutatorCreationAction[ExampleViewerContext, EntTestObject2, EntTestObject2Model]
+):
+    ent_type = EntTestObject2
     vc: ExampleViewerContext
     id: UUID
     a_good_thing: str
@@ -199,7 +203,7 @@ class EntTestObject2MutatorCreationAction:
         self.some_field = some_field
         self.thing_status = thing_status
 
-    async def gen_savex(self) -> EntTestObject2:
+    def _validate(self) -> None:
         a_pattern_validated_field_validators = _get_field(
             "a_pattern_validated_field"
         )._validators  # noqa: SLF001
@@ -209,7 +213,8 @@ class EntTestObject2MutatorCreationAction:
                     "Invalid value for EntTestObject2.a_pattern_validated_field"
                 )
 
-        model = EntTestObject2Model(
+    def _create_model(self) -> EntTestObject2Model:
+        return EntTestObject2Model(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
@@ -221,20 +226,14 @@ class EntTestObject2MutatorCreationAction:
             some_field=self.some_field,
             thing_status=self.thing_status,
         )
-        db.session.add(model)
-        ent = EntTestObject2(vc=self.vc, model=model)
-        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to CREATE EntTestObject2 with ID {ent.id}"
-            )
-        await db.session.flush()
-        return await EntTestObject2._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
 class EntTestObject2MutatorUpdateAction(
-    IEntTestThingMutatorUpdateAction, IEntTestPatternMutatorUpdateAction
+    EntMutatorUpdateAction[ExampleViewerContext, EntTestObject2, EntTestObject2Model],
+    IEntTestThingMutatorUpdateAction,
+    IEntTestPatternMutatorUpdateAction,
 ):
+    ent_type = EntTestObject2
     vc: ExampleViewerContext
     ent: EntTestObject2
     id: UUID
@@ -257,7 +256,7 @@ class EntTestObject2MutatorUpdateAction(
         self.some_field = ent.some_field
         self.thing_status = ent.thing_status
 
-    async def gen_savex(self) -> EntTestObject2:
+    def _validate(self) -> None:
         a_pattern_validated_field_validators = _get_field(
             "a_pattern_validated_field"
         )._validators  # noqa: SLF001
@@ -267,7 +266,7 @@ class EntTestObject2MutatorUpdateAction(
                     "Invalid value for EntTestObject2.a_pattern_validated_field"
                 )
 
-        model = self.ent.model
+    def _update_model(self, model: EntTestObject2Model) -> EntTestObject2Model:
         model.a_good_thing = self.a_good_thing
         model.obj5_id = self.obj5_id
         model.a_pattern_validated_field = self.a_pattern_validated_field
@@ -275,47 +274,15 @@ class EntTestObject2MutatorUpdateAction(
         model.obj5_opt_id = self.obj5_opt_id
         model.some_field = self.some_field
         model.thing_status = self.thing_status
-        model.updated_at = datetime.now(tz=UTC)
-        db.session.add(model)
-        new_ent = EntTestObject2(vc=self.vc, model=model)
-        decision = await new_ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to UPDATE EntTestObject2 with ID {new_ent.id}"
-            )
-        await db.session.flush()
-        await db.session.refresh(model)
-        return await EntTestObject2._genx_from_model(self.vc, model)  # noqa: SLF001
+        return model
 
 
-class EntTestObject2MutatorDeletionAction(
-    IEntTestThingMutatorDeletionAction, IEntTestPatternMutatorDeletionAction
+class EntTestObject2MutatorDeletionAction(  # type: ignore[misc]
+    EntMutatorDeletionAction[ExampleViewerContext, EntTestObject2, EntTestObject2Model],
+    IEntTestThingMutatorDeletionAction,
+    IEntTestPatternMutatorDeletionAction,
 ):
-    vc: ExampleViewerContext
-    ent: EntTestObject2
-
-    def __init__(
-        self, vc: ExampleViewerContext, ent: EntTestObject2, is_soft_delete: bool
-    ) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.is_soft_delete = is_soft_delete
-
-    async def gen_save(self) -> None:
-        model = self.ent.model
-        action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to {action} EntTestObject2 with ID {self.ent.id}"
-            )
-        if self.is_soft_delete:
-            model.soft_deleted_at = datetime.now(tz=UTC)
-            model.updated_at = datetime.now(tz=UTC)
-            db.session.add(model)
-        else:
-            await db.session.delete(model)
-        await db.session.flush()
+    ent_type = EntTestObject2
 
 
 class EntTestObject2Example:

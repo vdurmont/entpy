@@ -5,11 +5,8 @@
 from __future__ import annotations
 import logging
 from entpy import (
-    db,
     Ent,
     generate_uuid,
-    Action,
-    Decision,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -17,8 +14,12 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_single_rule_schema import EntSingleRuleSchema
 from entpy import Field
-from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.mutators import (
+    EntMutatorCreationAction,
+    EntMutatorUpdateAction,
+    EntMutatorDeletionAction,
+)
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
 from functools import cache
@@ -102,7 +103,10 @@ class EntSingleRuleMutator:
         return EntSingleRuleMutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=True)
 
 
-class EntSingleRuleMutatorCreationAction:
+class EntSingleRuleMutatorCreationAction(
+    EntMutatorCreationAction[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
+):
+    ent_type = EntSingleRule
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -121,25 +125,22 @@ class EntSingleRuleMutatorCreationAction:
         self.id = id if id else generate_uuid(EntSingleRule, self.created_at)
         self.name = name
 
-    async def gen_savex(self) -> EntSingleRule:
-        model = EntSingleRuleModel(
+    def _validate(self) -> None:
+        pass
+
+    def _create_model(self) -> EntSingleRuleModel:
+        return EntSingleRuleModel(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
             name=self.name,
         )
-        db.session.add(model)
-        ent = EntSingleRule(vc=self.vc, model=model)
-        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to CREATE EntSingleRule with ID {ent.id}"
-            )
-        await db.session.flush()
-        return await EntSingleRule._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntSingleRuleMutatorUpdateAction:
+class EntSingleRuleMutatorUpdateAction(
+    EntMutatorUpdateAction[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
+):
+    ent_type = EntSingleRule
     vc: ExampleViewerContext
     ent: EntSingleRule
     id: UUID
@@ -150,48 +151,18 @@ class EntSingleRuleMutatorUpdateAction:
         self.ent = ent
         self.name = ent.name
 
-    async def gen_savex(self) -> EntSingleRule:
-        model = self.ent.model
+    def _validate(self) -> None:
+        pass
+
+    def _update_model(self, model: EntSingleRuleModel) -> EntSingleRuleModel:
         model.name = self.name
-        model.updated_at = datetime.now(tz=UTC)
-        db.session.add(model)
-        new_ent = EntSingleRule(vc=self.vc, model=model)
-        decision = await new_ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to UPDATE EntSingleRule with ID {new_ent.id}"
-            )
-        await db.session.flush()
-        await db.session.refresh(model)
-        return await EntSingleRule._genx_from_model(self.vc, model)  # noqa: SLF001
+        return model
 
 
-class EntSingleRuleMutatorDeletionAction:
-    vc: ExampleViewerContext
-    ent: EntSingleRule
-
-    def __init__(
-        self, vc: ExampleViewerContext, ent: EntSingleRule, is_soft_delete: bool
-    ) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.is_soft_delete = is_soft_delete
-
-    async def gen_save(self) -> None:
-        model = self.ent.model
-        action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to {action} EntSingleRule with ID {self.ent.id}"
-            )
-        if self.is_soft_delete:
-            model.soft_deleted_at = datetime.now(tz=UTC)
-            model.updated_at = datetime.now(tz=UTC)
-            db.session.add(model)
-        else:
-            await db.session.delete(model)
-        await db.session.flush()
+class EntSingleRuleMutatorDeletionAction(
+    EntMutatorDeletionAction[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
+):
+    ent_type = EntSingleRule
 
 
 class EntSingleRuleExample:
