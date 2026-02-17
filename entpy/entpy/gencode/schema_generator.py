@@ -61,7 +61,7 @@ def generate(
         base_name=base_name,
         vc=vc,
     )
-    introspection_code = generate_introspection(base_name=base_name)
+    introspection_content = generate_introspection(base_name=base_name)
 
     type_checking_imports = (
         model_content.type_checking_imports
@@ -70,6 +70,7 @@ def generate(
         + query_content.type_checking_imports
         + mutator_content.type_checking_imports
         + example_content.type_checking_imports
+        + introspection_content.type_checking_imports
     )
 
     imports = (
@@ -79,6 +80,7 @@ def generate(
         + query_content.imports
         + mutator_content.imports
         + example_content.imports
+        + introspection_content.imports
         + _get_patterns_imports(schema)
     )
     if type_checking_imports:
@@ -120,7 +122,7 @@ privacy_logger = logging.getLogger("entpy.privacy")
 
 {example_content.code}
 
-{introspection_code}
+{introspection_content.code}
 """  # noqa: E501
 
 

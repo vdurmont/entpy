@@ -10,11 +10,15 @@ from typing import TYPE_CHECKING
 
 
 from .ent_model import EntModel
-from entpy import Ent
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
+
+
+if TYPE_CHECKING:
+    from entpy import Ent
+
 
 if TYPE_CHECKING:
     from entpy import Ent

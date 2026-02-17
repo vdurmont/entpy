@@ -35,12 +35,12 @@ def generate(
 
     imports = [
         "from functools import cache",
-        "from entpy import Ent",
         "from entpy.framework.ent import "
         + ("EntPatternBase" if isinstance(descriptor, Pattern) else "EntObjectBase"),
     ]
     if privacy_mixin:
         imports.append(str(privacy_mixin))
+    type_checking_imports = ["from entpy import Ent"]
 
     attributes = ""
     if isinstance(descriptor, Schema):
@@ -62,7 +62,8 @@ def generate(
 
     return GeneratedContent(
         imports=imports + fields.imports + edge_gens.imports,
-        type_checking_imports=fields.type_checking_imports
+        type_checking_imports=type_checking_imports
+        + fields.type_checking_imports
         + edge_gens.type_checking_imports,
         code=f"""
 class {i}{base_name}({extends}):{get_description(descriptor)}

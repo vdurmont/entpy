@@ -55,7 +55,7 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
             if name.startswith("gen_"):
                 return partial(self._gen_edge, name[4:])
 
-            if not name.startswith("_"):
+            if name in self.model.__table__.columns:
                 return getattr(self.model, name)
 
             raise AttributeError(

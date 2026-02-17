@@ -6,14 +6,12 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_delegating_child_schema import EntDelegatingChildSchema
-from entpy import Field
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -36,7 +34,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .ent_privacy_parent import EntPrivacyParentModel
     from .ent_privacy_parent import EntPrivacyParentAPIModel
+    from entpy import Ent
     from .ent_privacy_parent import EntPrivacyParent
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -146,36 +146,14 @@ class EntDelegatingChildMutatorCreationAction(
     ]
 ):
     ent_type = EntDelegatingChild
+    model_type = EntDelegatingChildModel
     schema = EntDelegatingChildSchema()
     vc: ExampleViewerContext
-    id: UUID
-    name: str
-    privacy_parent_id: UUID
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        name: str,
-        privacy_parent_id: UUID,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntDelegatingChild, self.created_at)
-        self.name = name
-        self.privacy_parent_id = privacy_parent_id
-
-    def _create_model(self) -> EntDelegatingChildModel:
-        return EntDelegatingChildModel(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            name=self.name,
-            privacy_parent_id=self.privacy_parent_id,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        name: str
+        privacy_parent_id: UUID
 
 
 class EntDelegatingChildMutatorUpdateAction(
@@ -184,23 +162,15 @@ class EntDelegatingChildMutatorUpdateAction(
     ]
 ):
     ent_type = EntDelegatingChild
+    model_type = EntDelegatingChildModel
     schema = EntDelegatingChildSchema()
     vc: ExampleViewerContext
     ent: EntDelegatingChild
-    id: UUID
-    name: str
-    privacy_parent_id: UUID
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntDelegatingChild) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.name = ent.name
-        self.privacy_parent_id = ent.privacy_parent_id
-
-    def _update_model(self, model: EntDelegatingChildModel) -> EntDelegatingChildModel:
-        model.name = self.name
-        model.privacy_parent_id = self.privacy_parent_id
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        name: str
+        privacy_parent_id: UUID
 
 
 class EntDelegatingChildMutatorDeletionAction(

@@ -12,7 +12,6 @@ def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedCon
     deletion = _generate_deletion(schema=schema, base_name=base_name, vc=vc)
     return GeneratedContent(
         imports=[
-            "from entpy import PrivacyError",
             "from entpy.framework.mutators import EntMutatorCreationAction, EntMutatorUpdateAction, EntMutatorDeletionAction",
         ]
         + base.imports
@@ -95,23 +94,7 @@ def _generate_creation(
     local_variables = ""
     for field in fields:
         or_not = " | None = None" if field.nullable else ""
-        local_variables += f"    {field.name}: {field.get_python_type()}{or_not}\n"
-
-    # Build up the list of arguments the __init__ function takes
-    constructor_arguments = ""
-    for field in fields:
-        or_not = " | None" if field.nullable else ""
-        constructor_arguments += f", {field.name}: {field.get_python_type()}{or_not}"
-
-    # Build up the list of assignments in the constructor
-    constructor_assignments = "\n".join(
-        [f"        self.{field.name} = {field.name}" for field in fields]
-    )
-
-    # Build up the list of variables to assign to the model
-    model_assignments = "\n".join(
-        [f"                {field.name}=self.{field.name}," for field in fields]
-    )
+        local_variables += f"        {field.name}: {field.get_python_type()}{or_not}\n"
 
     # TODO support UUID factory
 
@@ -119,25 +102,13 @@ def _generate_creation(
         code=f"""
 class {base_name}MutatorCreationAction(EntMutatorCreationAction[{vc.name}, {base_name}, {base_name}Model]):
     ent_type = {base_name}
+    model_type = {base_name}Model
     schema = {schema.__class__.__name__}()
     vc: {vc.name}
-    id: UUID
+
+    if TYPE_CHECKING:
+        id: UUID
 {local_variables}
-
-    def __init__(self, vc: {vc.name}, id: UUID | None, created_at: datetime | None, updated_at: datetime | None{constructor_arguments}) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid({base_name}, self.created_at)
-{constructor_assignments}
-
-    def _create_model(self) -> {base_name}Model:
-        return {base_name}Model(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-{model_assignments}
-        )
 """,  # noqa: E501
     )
 
@@ -154,20 +125,10 @@ def _generate_update(
     # Build up the list of local variables we will store in the class
     local_variables = "\n".join(
         [
-            f"    {field.name}: {field.get_python_type()}"
+            f"        {field.name}: {field.get_python_type()}"
             + (" | None = None" if field.nullable else "")
             for field in mutable_fields
         ]
-    )
-
-    # Build up the list of assignments in the constructor
-    local_variables_assignments = "\n".join(
-        [f"        self.{field.name} = ent.{field.name}" for field in mutable_fields]
-    )
-
-    # Build up the list of variables to assign to the model
-    model_assignments = "\n".join(
-        [f"        model.{field.name}=self.{field.name}" for field in mutable_fields]
     )
 
     # Check if the schema has patterns to determine inheritance
@@ -190,20 +151,14 @@ def _generate_update(
         code=f"""
 class {base_name}MutatorUpdateAction({','.join(extends)}):
     ent_type = {base_name}
+    model_type = {base_name}Model
     schema = {schema.__class__.__name__}()
     vc: {vc.name}
     ent: {base_name}
-    id: UUID
+
+    if TYPE_CHECKING:
+        id: UUID
 {local_variables}
-
-    def __init__(self, vc: {vc.name}, ent: {base_name}) -> None:
-        self.vc = vc
-        self.ent = ent
-{local_variables_assignments}
-
-    def _update_model(self, model: {base_name}Model) -> {base_name}Model:
-{model_assignments}
-        return model
 """,
     )
 

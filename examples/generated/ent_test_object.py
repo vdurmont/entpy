@@ -6,10 +6,9 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from typing import Self
 from evc import ExampleViewerContext
 from .ent_test_thing import EntTestThingAPIModel
@@ -23,7 +22,7 @@ from datetime import timedelta
 from ent_test_object_schema import EntTestObjectSchema
 from ent_test_object_schema import Status
 from ent_test_thing_pattern import ThingStatus
-from entpy import Field, FieldWithDynamicExample
+from entpy import FieldWithDynamicExample
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -59,8 +58,10 @@ if TYPE_CHECKING:
     from .ent_test_sub_object import EntTestSubObjectModel
     from .ent_test_sub_object import EntTestSubObjectAPIModel
     from .ent_test_thing import EntTestThingAPIModel
+    from entpy import Ent
     from .ent_test_sub_object import EntTestSubObject
     from .ent_test_thing import IEntTestThing
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -423,148 +424,42 @@ class EntTestObjectMutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntTestObject, EntTestObjectModel]
 ):
     ent_type = EntTestObject
+    model_type = EntTestObjectModel
     schema = EntTestObjectSchema()
     vc: ExampleViewerContext
-    id: UUID
-    a_good_thing: str
-    firstname: str
-    obj5_id: UUID
-    required_sub_object_id: UUID
-    username: str
-    lastname: str | None = None
-    retry_count: int | None = None
-    sadness: Status | None = None
-    a_pattern_validated_field: str | None = None
-    city: str | None = None
-    context: str | None = None
-    correlation_id: UUID | None = None
-    dob: date | None = None
-    duration: timedelta | None = None
-    end_time: time | None = None
-    idempotency_key: UUID | None = None
-    is_it_true: bool | None = None
-    obj5_opt_id: UUID | None = None
-    optional_sub_object_id: UUID | None = None
-    optional_sub_object_no_ex_id: UUID | None = None
-    self_id: UUID | None = None
-    some_json: list[str] | None = None
-    some_pattern_id: UUID | None = None
-    start_time: time | None = None
-    status: Status | None = None
-    status_code: int | None = None
-    thing_status: ThingStatus | None = None
-    trace_id: UUID | None = None
-    validated_field: str | None = None
-    when_is_it_cool: datetime | None = None
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        a_good_thing: str,
-        firstname: str,
-        obj5_id: UUID,
-        required_sub_object_id: UUID,
-        username: str,
-        lastname: str | None,
-        retry_count: int | None,
-        sadness: Status | None,
-        a_pattern_validated_field: str | None,
-        city: str | None,
-        context: str | None,
-        correlation_id: UUID | None,
-        dob: date | None,
-        duration: timedelta | None,
-        end_time: time | None,
-        idempotency_key: UUID | None,
-        is_it_true: bool | None,
-        obj5_opt_id: UUID | None,
-        optional_sub_object_id: UUID | None,
-        optional_sub_object_no_ex_id: UUID | None,
-        self_id: UUID | None,
-        some_json: list[str] | None,
-        some_pattern_id: UUID | None,
-        start_time: time | None,
-        status: Status | None,
-        status_code: int | None,
-        thing_status: ThingStatus | None,
-        trace_id: UUID | None,
-        validated_field: str | None,
-        when_is_it_cool: datetime | None,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntTestObject, self.created_at)
-        self.a_good_thing = a_good_thing
-        self.firstname = firstname
-        self.obj5_id = obj5_id
-        self.required_sub_object_id = required_sub_object_id
-        self.username = username
-        self.lastname = lastname
-        self.retry_count = retry_count
-        self.sadness = sadness
-        self.a_pattern_validated_field = a_pattern_validated_field
-        self.city = city
-        self.context = context
-        self.correlation_id = correlation_id
-        self.dob = dob
-        self.duration = duration
-        self.end_time = end_time
-        self.idempotency_key = idempotency_key
-        self.is_it_true = is_it_true
-        self.obj5_opt_id = obj5_opt_id
-        self.optional_sub_object_id = optional_sub_object_id
-        self.optional_sub_object_no_ex_id = optional_sub_object_no_ex_id
-        self.self_id = self_id
-        self.some_json = some_json
-        self.some_pattern_id = some_pattern_id
-        self.start_time = start_time
-        self.status = status
-        self.status_code = status_code
-        self.thing_status = thing_status
-        self.trace_id = trace_id
-        self.validated_field = validated_field
-        self.when_is_it_cool = when_is_it_cool
-
-    def _create_model(self) -> EntTestObjectModel:
-        return EntTestObjectModel(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            a_good_thing=self.a_good_thing,
-            firstname=self.firstname,
-            obj5_id=self.obj5_id,
-            required_sub_object_id=self.required_sub_object_id,
-            username=self.username,
-            lastname=self.lastname,
-            retry_count=self.retry_count,
-            sadness=self.sadness,
-            a_pattern_validated_field=self.a_pattern_validated_field,
-            city=self.city,
-            context=self.context,
-            correlation_id=self.correlation_id,
-            dob=self.dob,
-            duration=self.duration,
-            end_time=self.end_time,
-            idempotency_key=self.idempotency_key,
-            is_it_true=self.is_it_true,
-            obj5_opt_id=self.obj5_opt_id,
-            optional_sub_object_id=self.optional_sub_object_id,
-            optional_sub_object_no_ex_id=self.optional_sub_object_no_ex_id,
-            self_id=self.self_id,
-            some_json=self.some_json,
-            some_pattern_id=self.some_pattern_id,
-            start_time=self.start_time,
-            status=self.status,
-            status_code=self.status_code,
-            thing_status=self.thing_status,
-            trace_id=self.trace_id,
-            validated_field=self.validated_field,
-            when_is_it_cool=self.when_is_it_cool,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        a_good_thing: str
+        firstname: str
+        obj5_id: UUID
+        required_sub_object_id: UUID
+        username: str
+        lastname: str | None = None
+        retry_count: int | None = None
+        sadness: Status | None = None
+        a_pattern_validated_field: str | None = None
+        city: str | None = None
+        context: str | None = None
+        correlation_id: UUID | None = None
+        dob: date | None = None
+        duration: timedelta | None = None
+        end_time: time | None = None
+        idempotency_key: UUID | None = None
+        is_it_true: bool | None = None
+        obj5_opt_id: UUID | None = None
+        optional_sub_object_id: UUID | None = None
+        optional_sub_object_no_ex_id: UUID | None = None
+        self_id: UUID | None = None
+        some_json: list[str] | None = None
+        some_pattern_id: UUID | None = None
+        start_time: time | None = None
+        status: Status | None = None
+        status_code: int | None = None
+        thing_status: ThingStatus | None = None
+        trace_id: UUID | None = None
+        validated_field: str | None = None
+        when_is_it_cool: datetime | None = None
 
 
 class EntTestObjectMutatorUpdateAction(
@@ -572,104 +467,42 @@ class EntTestObjectMutatorUpdateAction(
     IEntTestThingMutatorUpdateAction,
 ):
     ent_type = EntTestObject
+    model_type = EntTestObjectModel
     schema = EntTestObjectSchema()
     vc: ExampleViewerContext
     ent: EntTestObject
-    id: UUID
-    a_good_thing: str
-    firstname: str
-    obj5_id: UUID
-    required_sub_object_id: UUID
-    username: str
-    lastname: str | None = None
-    retry_count: int | None = None
-    sadness: Status | None = None
-    a_pattern_validated_field: str | None = None
-    city: str | None = None
-    correlation_id: UUID | None = None
-    dob: date | None = None
-    duration: timedelta | None = None
-    end_time: time | None = None
-    idempotency_key: UUID | None = None
-    is_it_true: bool | None = None
-    obj5_opt_id: UUID | None = None
-    optional_sub_object_id: UUID | None = None
-    optional_sub_object_no_ex_id: UUID | None = None
-    self_id: UUID | None = None
-    some_json: list[str] | None = None
-    some_pattern_id: UUID | None = None
-    start_time: time | None = None
-    status: Status | None = None
-    status_code: int | None = None
-    thing_status: ThingStatus | None = None
-    trace_id: UUID | None = None
-    validated_field: str | None = None
-    when_is_it_cool: datetime | None = None
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.a_good_thing = ent.a_good_thing
-        self.firstname = ent.firstname
-        self.obj5_id = ent.obj5_id
-        self.required_sub_object_id = ent.required_sub_object_id
-        self.username = ent.username
-        self.lastname = ent.lastname
-        self.retry_count = ent.retry_count
-        self.sadness = ent.sadness
-        self.a_pattern_validated_field = ent.a_pattern_validated_field
-        self.city = ent.city
-        self.correlation_id = ent.correlation_id
-        self.dob = ent.dob
-        self.duration = ent.duration
-        self.end_time = ent.end_time
-        self.idempotency_key = ent.idempotency_key
-        self.is_it_true = ent.is_it_true
-        self.obj5_opt_id = ent.obj5_opt_id
-        self.optional_sub_object_id = ent.optional_sub_object_id
-        self.optional_sub_object_no_ex_id = ent.optional_sub_object_no_ex_id
-        self.self_id = ent.self_id
-        self.some_json = ent.some_json
-        self.some_pattern_id = ent.some_pattern_id
-        self.start_time = ent.start_time
-        self.status = ent.status
-        self.status_code = ent.status_code
-        self.thing_status = ent.thing_status
-        self.trace_id = ent.trace_id
-        self.validated_field = ent.validated_field
-        self.when_is_it_cool = ent.when_is_it_cool
-
-    def _update_model(self, model: EntTestObjectModel) -> EntTestObjectModel:
-        model.a_good_thing = self.a_good_thing
-        model.firstname = self.firstname
-        model.obj5_id = self.obj5_id
-        model.required_sub_object_id = self.required_sub_object_id
-        model.username = self.username
-        model.lastname = self.lastname
-        model.retry_count = self.retry_count
-        model.sadness = self.sadness
-        model.a_pattern_validated_field = self.a_pattern_validated_field
-        model.city = self.city
-        model.correlation_id = self.correlation_id
-        model.dob = self.dob
-        model.duration = self.duration
-        model.end_time = self.end_time
-        model.idempotency_key = self.idempotency_key
-        model.is_it_true = self.is_it_true
-        model.obj5_opt_id = self.obj5_opt_id
-        model.optional_sub_object_id = self.optional_sub_object_id
-        model.optional_sub_object_no_ex_id = self.optional_sub_object_no_ex_id
-        model.self_id = self.self_id
-        model.some_json = self.some_json
-        model.some_pattern_id = self.some_pattern_id
-        model.start_time = self.start_time
-        model.status = self.status
-        model.status_code = self.status_code
-        model.thing_status = self.thing_status
-        model.trace_id = self.trace_id
-        model.validated_field = self.validated_field
-        model.when_is_it_cool = self.when_is_it_cool
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        a_good_thing: str
+        firstname: str
+        obj5_id: UUID
+        required_sub_object_id: UUID
+        username: str
+        lastname: str | None = None
+        retry_count: int | None = None
+        sadness: Status | None = None
+        a_pattern_validated_field: str | None = None
+        city: str | None = None
+        correlation_id: UUID | None = None
+        dob: date | None = None
+        duration: timedelta | None = None
+        end_time: time | None = None
+        idempotency_key: UUID | None = None
+        is_it_true: bool | None = None
+        obj5_opt_id: UUID | None = None
+        optional_sub_object_id: UUID | None = None
+        optional_sub_object_no_ex_id: UUID | None = None
+        self_id: UUID | None = None
+        some_json: list[str] | None = None
+        some_pattern_id: UUID | None = None
+        start_time: time | None = None
+        status: Status | None = None
+        status_code: int | None = None
+        thing_status: ThingStatus | None = None
+        trace_id: UUID | None = None
+        validated_field: str | None = None
+        when_is_it_cool: datetime | None = None
 
 
 class EntTestObjectMutatorDeletionAction(  # type: ignore[misc]

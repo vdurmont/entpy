@@ -6,14 +6,12 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_delegating_grandchild_schema import EntDelegatingGrandchildSchema
-from entpy import Field
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -36,7 +34,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .ent_delegating_child import EntDelegatingChildModel
     from .ent_delegating_child import EntDelegatingChildAPIModel
+    from entpy import Ent
     from .ent_delegating_child import EntDelegatingChild
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -148,36 +148,14 @@ class EntDelegatingGrandchildMutatorCreationAction(
     ]
 ):
     ent_type = EntDelegatingGrandchild
+    model_type = EntDelegatingGrandchildModel
     schema = EntDelegatingGrandchildSchema()
     vc: ExampleViewerContext
-    id: UUID
-    delegating_child_id: UUID
-    name: str
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        delegating_child_id: UUID,
-        name: str,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntDelegatingGrandchild, self.created_at)
-        self.delegating_child_id = delegating_child_id
-        self.name = name
-
-    def _create_model(self) -> EntDelegatingGrandchildModel:
-        return EntDelegatingGrandchildModel(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            delegating_child_id=self.delegating_child_id,
-            name=self.name,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        delegating_child_id: UUID
+        name: str
 
 
 class EntDelegatingGrandchildMutatorUpdateAction(
@@ -186,25 +164,15 @@ class EntDelegatingGrandchildMutatorUpdateAction(
     ]
 ):
     ent_type = EntDelegatingGrandchild
+    model_type = EntDelegatingGrandchildModel
     schema = EntDelegatingGrandchildSchema()
     vc: ExampleViewerContext
     ent: EntDelegatingGrandchild
-    id: UUID
-    delegating_child_id: UUID
-    name: str
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntDelegatingGrandchild) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.delegating_child_id = ent.delegating_child_id
-        self.name = ent.name
-
-    def _update_model(
-        self, model: EntDelegatingGrandchildModel
-    ) -> EntDelegatingGrandchildModel:
-        model.delegating_child_id = self.delegating_child_id
-        model.name = self.name
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        delegating_child_id: UUID
+        name: str
 
 
 class EntDelegatingGrandchildMutatorDeletionAction(

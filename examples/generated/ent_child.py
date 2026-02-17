@@ -6,14 +6,12 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_child_schema import EntChildSchema
-from entpy import Field
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -36,7 +34,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .ent_parent import EntParentModel
     from .ent_parent import EntParentAPIModel
+    from entpy import Ent
     from .ent_parent import EntParent
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -135,59 +135,29 @@ class EntChildMutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntChild, EntChildModel]
 ):
     ent_type = EntChild
+    model_type = EntChildModel
     schema = EntChildSchema()
     vc: ExampleViewerContext
-    id: UUID
-    name: str
-    parent_id: UUID
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        name: str,
-        parent_id: UUID,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntChild, self.created_at)
-        self.name = name
-        self.parent_id = parent_id
-
-    def _create_model(self) -> EntChildModel:
-        return EntChildModel(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            name=self.name,
-            parent_id=self.parent_id,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        name: str
+        parent_id: UUID
 
 
 class EntChildMutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntChild, EntChildModel]
 ):
     ent_type = EntChild
+    model_type = EntChildModel
     schema = EntChildSchema()
     vc: ExampleViewerContext
     ent: EntChild
-    id: UUID
-    name: str
-    parent_id: UUID
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntChild) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.name = ent.name
-        self.parent_id = ent.parent_id
-
-    def _update_model(self, model: EntChildModel) -> EntChildModel:
-        model.name = self.name
-        model.parent_id = self.parent_id
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        name: str
+        parent_id: UUID
 
 
 class EntChildMutatorDeletionAction(
