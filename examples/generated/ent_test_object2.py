@@ -7,7 +7,6 @@ import logging
 from entpy import (
     Ent,
     generate_uuid,
-    ValidationError,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -167,6 +166,7 @@ class EntTestObject2MutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntTestObject2, EntTestObject2Model]
 ):
     ent_type = EntTestObject2
+    schema = EntTestObject2Schema()
     vc: ExampleViewerContext
     id: UUID
     a_good_thing: str
@@ -203,16 +203,6 @@ class EntTestObject2MutatorCreationAction(
         self.some_field = some_field
         self.thing_status = thing_status
 
-    def _validate(self) -> None:
-        a_pattern_validated_field_validators = _get_field(
-            "a_pattern_validated_field"
-        )._validators  # noqa: SLF001
-        for validator in a_pattern_validated_field_validators:
-            if not validator.validate(self.a_pattern_validated_field):
-                raise ValidationError(
-                    "Invalid value for EntTestObject2.a_pattern_validated_field"
-                )
-
     def _create_model(self) -> EntTestObject2Model:
         return EntTestObject2Model(
             id=self.id,
@@ -234,6 +224,7 @@ class EntTestObject2MutatorUpdateAction(
     IEntTestPatternMutatorUpdateAction,
 ):
     ent_type = EntTestObject2
+    schema = EntTestObject2Schema()
     vc: ExampleViewerContext
     ent: EntTestObject2
     id: UUID
@@ -255,16 +246,6 @@ class EntTestObject2MutatorUpdateAction(
         self.obj5_opt_id = ent.obj5_opt_id
         self.some_field = ent.some_field
         self.thing_status = ent.thing_status
-
-    def _validate(self) -> None:
-        a_pattern_validated_field_validators = _get_field(
-            "a_pattern_validated_field"
-        )._validators  # noqa: SLF001
-        for validator in a_pattern_validated_field_validators:
-            if not validator.validate(self.a_pattern_validated_field):
-                raise ValidationError(
-                    "Invalid value for EntTestObject2.a_pattern_validated_field"
-                )
 
     def _update_model(self, model: EntTestObject2Model) -> EntTestObject2Model:
         model.a_good_thing = self.a_good_thing

@@ -6,8 +6,9 @@ from entpy.framework.action import Action
 from entpy.framework.database import db
 from entpy.framework.decision import Decision
 from entpy.framework.ent import EntObjectBase
-from entpy.framework.errors import PrivacyError
+from entpy.framework.errors import PrivacyError, ValidationError
 from entpy.framework.model import ModelMixin
+from entpy.framework.schema import Schema
 from entpy.framework.viewer_context import ViewerContext
 
 VC = TypeVar("VC")
@@ -15,17 +16,23 @@ ENT = TypeVar("ENT")
 ENTMODEL = TypeVar("ENTMODEL")
 
 
+class EntMutatorAction:
+    schema: Schema
+
+    def _validate(self) -> None:
+        for field in self.schema.get_all_fields():
+            for validator in field._validators:
+                if not validator.validate(getattr(self, field.name)):
+                    raise ValidationError(f"Field {field.name} is invalid")
+
+
 class EntMutatorCreationAction[
     VC: ViewerContext,
     ENT: EntObjectBase,
     ENTMODEL: ModelMixin,
-]:
+](EntMutatorAction):
     ent_type: type[ENT]
     vc: VC
-
-    @abstractmethod
-    def _validate(self) -> None:
-        pass
 
     @abstractmethod
     def _create_model(self) -> ENTMODEL:
@@ -49,14 +56,10 @@ class EntMutatorUpdateAction[
     VC: ViewerContext,
     ENT: EntObjectBase,
     ENTMODEL: ModelMixin,
-]:
+](EntMutatorAction):
     ent_type: type[ENT]
     ent: ENT
     vc: VC
-
-    @abstractmethod
-    def _validate(self) -> None:
-        pass
 
     @abstractmethod
     def _update_model(self, model: ENTMODEL) -> ENTMODEL:

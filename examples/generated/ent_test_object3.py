@@ -134,6 +134,7 @@ class EntTestObject3MutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntTestObject3, EntTestObject3Model]
 ):
     ent_type = EntTestObject3
+    schema = EntTestObject3Schema()
     vc: ExampleViewerContext
     id: UUID
     other_id: UUID | None = None
@@ -152,9 +153,6 @@ class EntTestObject3MutatorCreationAction(
         self.id = id if id else generate_uuid(EntTestObject3, self.created_at)
         self.other_id = other_id
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntTestObject3Model:
         return EntTestObject3Model(
             id=self.id,
@@ -168,6 +166,7 @@ class EntTestObject3MutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntTestObject3, EntTestObject3Model]
 ):
     ent_type = EntTestObject3
+    schema = EntTestObject3Schema()
     vc: ExampleViewerContext
     ent: EntTestObject3
     id: UUID
@@ -177,9 +176,6 @@ class EntTestObject3MutatorUpdateAction(
         self.vc = vc
         self.ent = ent
         self.other_id = ent.other_id
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntTestObject3Model) -> EntTestObject3Model:
         model.other_id = self.other_id

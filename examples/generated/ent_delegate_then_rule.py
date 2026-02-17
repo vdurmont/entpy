@@ -146,6 +146,7 @@ class EntDelegateThenRuleMutatorCreationAction(
     ]
 ):
     ent_type = EntDelegateThenRule
+    schema = EntDelegateThenRuleSchema()
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -167,9 +168,6 @@ class EntDelegateThenRuleMutatorCreationAction(
         self.name = name
         self.privacy_parent_id = privacy_parent_id
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntDelegateThenRuleModel:
         return EntDelegateThenRuleModel(
             id=self.id,
@@ -186,6 +184,7 @@ class EntDelegateThenRuleMutatorUpdateAction(
     ]
 ):
     ent_type = EntDelegateThenRule
+    schema = EntDelegateThenRuleSchema()
     vc: ExampleViewerContext
     ent: EntDelegateThenRule
     id: UUID
@@ -197,9 +196,6 @@ class EntDelegateThenRuleMutatorUpdateAction(
         self.ent = ent
         self.name = ent.name
         self.privacy_parent_id = ent.privacy_parent_id
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(
         self, model: EntDelegateThenRuleModel

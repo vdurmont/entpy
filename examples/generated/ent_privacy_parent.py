@@ -113,6 +113,7 @@ class EntPrivacyParentMutatorCreationAction(
     ]
 ):
     ent_type = EntPrivacyParent
+    schema = EntPrivacyParentSchema()
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -131,9 +132,6 @@ class EntPrivacyParentMutatorCreationAction(
         self.id = id if id else generate_uuid(EntPrivacyParent, self.created_at)
         self.name = name
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntPrivacyParentModel:
         return EntPrivacyParentModel(
             id=self.id,
@@ -149,6 +147,7 @@ class EntPrivacyParentMutatorUpdateAction(
     ]
 ):
     ent_type = EntPrivacyParent
+    schema = EntPrivacyParentSchema()
     vc: ExampleViewerContext
     ent: EntPrivacyParent
     id: UUID
@@ -158,9 +157,6 @@ class EntPrivacyParentMutatorUpdateAction(
         self.vc = vc
         self.ent = ent
         self.name = ent.name
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntPrivacyParentModel) -> EntPrivacyParentModel:
         model.name = self.name
