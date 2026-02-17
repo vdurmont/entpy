@@ -6,14 +6,12 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_single_rule_schema import EntSingleRuleSchema
-from entpy import Field
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -30,6 +28,9 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from entpy import Ent
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -107,52 +108,27 @@ class EntSingleRuleMutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
 ):
     ent_type = EntSingleRule
+    model_type = EntSingleRuleModel
     schema = EntSingleRuleSchema()
     vc: ExampleViewerContext
-    id: UUID
-    name: str
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        name: str,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntSingleRule, self.created_at)
-        self.name = name
-
-    def _create_model(self) -> EntSingleRuleModel:
-        return EntSingleRuleModel(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            name=self.name,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        name: str
 
 
 class EntSingleRuleMutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
 ):
     ent_type = EntSingleRule
+    model_type = EntSingleRuleModel
     schema = EntSingleRuleSchema()
     vc: ExampleViewerContext
     ent: EntSingleRule
-    id: UUID
-    name: str
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntSingleRule) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.name = ent.name
-
-    def _update_model(self, model: EntSingleRuleModel) -> EntSingleRuleModel:
-        model.name = self.name
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        name: str
 
 
 class EntSingleRuleMutatorDeletionAction(

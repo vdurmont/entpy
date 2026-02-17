@@ -13,7 +13,6 @@ from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
 from .ent_model import EntModel
 from ent_test_thing_pattern import ThingStatus
-from entpy import Ent
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
@@ -28,6 +27,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5APIModel
+    from entpy import Ent
     from .ent_test_object5 import EntTestObject5
 
 

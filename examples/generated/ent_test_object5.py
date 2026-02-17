@@ -6,14 +6,12 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_test_object5_schema import EntTestObject5Schema
-from entpy import Field
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -31,6 +29,9 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from entpy import Ent
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -119,59 +120,29 @@ class EntTestObject5MutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntTestObject5, EntTestObject5Model]
 ):
     ent_type = EntTestObject5
+    model_type = EntTestObject5Model
     schema = EntTestObject5Schema()
     vc: ExampleViewerContext
-    id: UUID
-    obj5_field: str
-    is_it_true: bool
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        obj5_field: str,
-        is_it_true: bool,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntTestObject5, self.created_at)
-        self.obj5_field = obj5_field
-        self.is_it_true = is_it_true
-
-    def _create_model(self) -> EntTestObject5Model:
-        return EntTestObject5Model(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            obj5_field=self.obj5_field,
-            is_it_true=self.is_it_true,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        obj5_field: str
+        is_it_true: bool
 
 
 class EntTestObject5MutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntTestObject5, EntTestObject5Model]
 ):
     ent_type = EntTestObject5
+    model_type = EntTestObject5Model
     schema = EntTestObject5Schema()
     vc: ExampleViewerContext
     ent: EntTestObject5
-    id: UUID
-    obj5_field: str
-    is_it_true: bool
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject5) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.obj5_field = ent.obj5_field
-        self.is_it_true = ent.is_it_true
-
-    def _update_model(self, model: EntTestObject5Model) -> EntTestObject5Model:
-        model.obj5_field = self.obj5_field
-        model.is_it_true = self.is_it_true
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        obj5_field: str
+        is_it_true: bool
 
 
 class EntTestObject5MutatorDeletionAction(

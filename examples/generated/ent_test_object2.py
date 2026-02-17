@@ -6,10 +6,9 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_test_pattern import EntTestPatternAPIModel
 from .ent_test_pattern import EntTestPatternModel
@@ -23,7 +22,7 @@ from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
 from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
-from entpy import Field, FieldWithDynamicExample
+from entpy import FieldWithDynamicExample
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -43,6 +42,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5Model
+    from entpy import Ent
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -166,56 +167,19 @@ class EntTestObject2MutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntTestObject2, EntTestObject2Model]
 ):
     ent_type = EntTestObject2
+    model_type = EntTestObject2Model
     schema = EntTestObject2Schema()
     vc: ExampleViewerContext
-    id: UUID
-    a_good_thing: str
-    obj5_id: UUID
-    a_pattern_validated_field: str | None = None
-    idempotency_key: UUID | None = None
-    obj5_opt_id: UUID | None = None
-    some_field: str | None = None
-    thing_status: ThingStatus | None = None
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        a_good_thing: str,
-        obj5_id: UUID,
-        a_pattern_validated_field: str | None,
-        idempotency_key: UUID | None,
-        obj5_opt_id: UUID | None,
-        some_field: str | None,
-        thing_status: ThingStatus | None,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntTestObject2, self.created_at)
-        self.a_good_thing = a_good_thing
-        self.obj5_id = obj5_id
-        self.a_pattern_validated_field = a_pattern_validated_field
-        self.idempotency_key = idempotency_key
-        self.obj5_opt_id = obj5_opt_id
-        self.some_field = some_field
-        self.thing_status = thing_status
-
-    def _create_model(self) -> EntTestObject2Model:
-        return EntTestObject2Model(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            a_good_thing=self.a_good_thing,
-            obj5_id=self.obj5_id,
-            a_pattern_validated_field=self.a_pattern_validated_field,
-            idempotency_key=self.idempotency_key,
-            obj5_opt_id=self.obj5_opt_id,
-            some_field=self.some_field,
-            thing_status=self.thing_status,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        a_good_thing: str
+        obj5_id: UUID
+        a_pattern_validated_field: str | None = None
+        idempotency_key: UUID | None = None
+        obj5_opt_id: UUID | None = None
+        some_field: str | None = None
+        thing_status: ThingStatus | None = None
 
 
 class EntTestObject2MutatorUpdateAction(
@@ -224,38 +188,20 @@ class EntTestObject2MutatorUpdateAction(
     IEntTestPatternMutatorUpdateAction,
 ):
     ent_type = EntTestObject2
+    model_type = EntTestObject2Model
     schema = EntTestObject2Schema()
     vc: ExampleViewerContext
     ent: EntTestObject2
-    id: UUID
-    a_good_thing: str
-    obj5_id: UUID
-    a_pattern_validated_field: str | None = None
-    idempotency_key: UUID | None = None
-    obj5_opt_id: UUID | None = None
-    some_field: str | None = None
-    thing_status: ThingStatus | None = None
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject2) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.a_good_thing = ent.a_good_thing
-        self.obj5_id = ent.obj5_id
-        self.a_pattern_validated_field = ent.a_pattern_validated_field
-        self.idempotency_key = ent.idempotency_key
-        self.obj5_opt_id = ent.obj5_opt_id
-        self.some_field = ent.some_field
-        self.thing_status = ent.thing_status
-
-    def _update_model(self, model: EntTestObject2Model) -> EntTestObject2Model:
-        model.a_good_thing = self.a_good_thing
-        model.obj5_id = self.obj5_id
-        model.a_pattern_validated_field = self.a_pattern_validated_field
-        model.idempotency_key = self.idempotency_key
-        model.obj5_opt_id = self.obj5_opt_id
-        model.some_field = self.some_field
-        model.thing_status = self.thing_status
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        a_good_thing: str
+        obj5_id: UUID
+        a_pattern_validated_field: str | None = None
+        idempotency_key: UUID | None = None
+        obj5_opt_id: UUID | None = None
+        some_field: str | None = None
+        thing_status: ThingStatus | None = None
 
 
 class EntTestObject2MutatorDeletionAction(  # type: ignore[misc]

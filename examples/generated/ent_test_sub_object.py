@@ -6,14 +6,12 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_test_sub_object_schema import EntTestSubObjectSchema
-from entpy import Field
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -30,6 +28,9 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from entpy import Ent
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -113,32 +114,13 @@ class EntTestSubObjectMutatorCreationAction(
     ]
 ):
     ent_type = EntTestSubObject
+    model_type = EntTestSubObjectModel
     schema = EntTestSubObjectSchema()
     vc: ExampleViewerContext
-    id: UUID
-    email: str
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        email: str,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntTestSubObject, self.created_at)
-        self.email = email
-
-    def _create_model(self) -> EntTestSubObjectModel:
-        return EntTestSubObjectModel(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            email=self.email,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        email: str
 
 
 class EntTestSubObjectMutatorUpdateAction(
@@ -147,20 +129,14 @@ class EntTestSubObjectMutatorUpdateAction(
     ]
 ):
     ent_type = EntTestSubObject
+    model_type = EntTestSubObjectModel
     schema = EntTestSubObjectSchema()
     vc: ExampleViewerContext
     ent: EntTestSubObject
-    id: UUID
-    email: str
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestSubObject) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.email = ent.email
-
-    def _update_model(self, model: EntTestSubObjectModel) -> EntTestSubObjectModel:
-        model.email = self.email
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        email: str
 
 
 class EntTestSubObjectMutatorDeletionAction(

@@ -6,14 +6,12 @@ from __future__ import annotations
 import logging
 from entpy import (
     Ent,
-    generate_uuid,
 )
 from uuid import UUID
-from datetime import datetime, UTC
+from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_test_object3_schema import EntTestObject3Schema
-from entpy import Field
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -35,7 +33,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .ent_test_object4 import EntTestObject4Model
     from .ent_test_object4 import EntTestObject4APIModel
+    from entpy import Ent
     from .ent_test_object4 import EntTestObject4
+    from entpy import Field
 
 privacy_logger = logging.getLogger("entpy.privacy")
 
@@ -134,52 +134,27 @@ class EntTestObject3MutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntTestObject3, EntTestObject3Model]
 ):
     ent_type = EntTestObject3
+    model_type = EntTestObject3Model
     schema = EntTestObject3Schema()
     vc: ExampleViewerContext
-    id: UUID
-    other_id: UUID | None = None
 
-    def __init__(
-        self,
-        vc: ExampleViewerContext,
-        id: UUID | None,
-        created_at: datetime | None,
-        updated_at: datetime | None,
-        other_id: UUID | None,
-    ) -> None:
-        self.vc = vc
-        self.created_at = created_at if created_at else datetime.now(tz=UTC)
-        self.updated_at = updated_at if updated_at else self.created_at
-        self.id = id if id else generate_uuid(EntTestObject3, self.created_at)
-        self.other_id = other_id
-
-    def _create_model(self) -> EntTestObject3Model:
-        return EntTestObject3Model(
-            id=self.id,
-            updated_at=self.updated_at,
-            created_at=self.created_at,
-            other_id=self.other_id,
-        )
+    if TYPE_CHECKING:
+        id: UUID
+        other_id: UUID | None = None
 
 
 class EntTestObject3MutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntTestObject3, EntTestObject3Model]
 ):
     ent_type = EntTestObject3
+    model_type = EntTestObject3Model
     schema = EntTestObject3Schema()
     vc: ExampleViewerContext
     ent: EntTestObject3
-    id: UUID
-    other_id: UUID | None = None
 
-    def __init__(self, vc: ExampleViewerContext, ent: EntTestObject3) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.other_id = ent.other_id
-
-    def _update_model(self, model: EntTestObject3Model) -> EntTestObject3Model:
-        model.other_id = self.other_id
-        return model
+    if TYPE_CHECKING:
+        id: UUID
+        other_id: UUID | None = None
 
 
 class EntTestObject3MutatorDeletionAction(
