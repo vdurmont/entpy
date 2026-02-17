@@ -5,11 +5,8 @@
 from __future__ import annotations
 import logging
 from entpy import (
-    db,
     Ent,
     generate_uuid,
-    Action,
-    Decision,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -17,8 +14,12 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_test_object4_schema import EntTestObject4Schema
 from entpy import Field
-from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.mutators import (
+    EntMutatorCreationAction,
+    EntMutatorUpdateAction,
+    EntMutatorDeletionAction,
+)
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
 from functools import cache
@@ -129,7 +130,10 @@ class EntTestObject4Mutator:
         return EntTestObject4MutatorDeletionAction(vc=vc, ent=ent, is_soft_delete=True)
 
 
-class EntTestObject4MutatorCreationAction:
+class EntTestObject4MutatorCreationAction(
+    EntMutatorCreationAction[ExampleViewerContext, EntTestObject4, EntTestObject4Model]
+):
+    ent_type = EntTestObject4
     vc: ExampleViewerContext
     id: UUID
     other_id: UUID | None = None
@@ -148,25 +152,22 @@ class EntTestObject4MutatorCreationAction:
         self.id = id if id else generate_uuid(EntTestObject4, self.created_at)
         self.other_id = other_id
 
-    async def gen_savex(self) -> EntTestObject4:
-        model = EntTestObject4Model(
+    def _validate(self) -> None:
+        pass
+
+    def _create_model(self) -> EntTestObject4Model:
+        return EntTestObject4Model(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
             other_id=self.other_id,
         )
-        db.session.add(model)
-        ent = EntTestObject4(vc=self.vc, model=model)
-        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to CREATE EntTestObject4 with ID {ent.id}"
-            )
-        await db.session.flush()
-        return await EntTestObject4._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntTestObject4MutatorUpdateAction:
+class EntTestObject4MutatorUpdateAction(
+    EntMutatorUpdateAction[ExampleViewerContext, EntTestObject4, EntTestObject4Model]
+):
+    ent_type = EntTestObject4
     vc: ExampleViewerContext
     ent: EntTestObject4
     id: UUID
@@ -177,48 +178,18 @@ class EntTestObject4MutatorUpdateAction:
         self.ent = ent
         self.other_id = ent.other_id
 
-    async def gen_savex(self) -> EntTestObject4:
-        model = self.ent.model
+    def _validate(self) -> None:
+        pass
+
+    def _update_model(self, model: EntTestObject4Model) -> EntTestObject4Model:
         model.other_id = self.other_id
-        model.updated_at = datetime.now(tz=UTC)
-        db.session.add(model)
-        new_ent = EntTestObject4(vc=self.vc, model=model)
-        decision = await new_ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to UPDATE EntTestObject4 with ID {new_ent.id}"
-            )
-        await db.session.flush()
-        await db.session.refresh(model)
-        return await EntTestObject4._genx_from_model(self.vc, model)  # noqa: SLF001
+        return model
 
 
-class EntTestObject4MutatorDeletionAction:
-    vc: ExampleViewerContext
-    ent: EntTestObject4
-
-    def __init__(
-        self, vc: ExampleViewerContext, ent: EntTestObject4, is_soft_delete: bool
-    ) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.is_soft_delete = is_soft_delete
-
-    async def gen_save(self) -> None:
-        model = self.ent.model
-        action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to {action} EntTestObject4 with ID {self.ent.id}"
-            )
-        if self.is_soft_delete:
-            model.soft_deleted_at = datetime.now(tz=UTC)
-            model.updated_at = datetime.now(tz=UTC)
-            db.session.add(model)
-        else:
-            await db.session.delete(model)
-        await db.session.flush()
+class EntTestObject4MutatorDeletionAction(
+    EntMutatorDeletionAction[ExampleViewerContext, EntTestObject4, EntTestObject4Model]
+):
+    ent_type = EntTestObject4
 
 
 class EntTestObject4Example:

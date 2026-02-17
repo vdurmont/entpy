@@ -5,11 +5,8 @@
 from __future__ import annotations
 import logging
 from entpy import (
-    db,
     Ent,
     generate_uuid,
-    Action,
-    Decision,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -17,8 +14,12 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_delegate_then_rule_schema import EntDelegateThenRuleSchema
 from entpy import Field
-from entpy import PrivacyError
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.mutators import (
+    EntMutatorCreationAction,
+    EntMutatorUpdateAction,
+    EntMutatorDeletionAction,
+)
 from entpy.framework.query import EntObjectQuery
 from entpy.model import APIEntity
 from functools import cache
@@ -139,7 +140,12 @@ class EntDelegateThenRuleMutator:
         )
 
 
-class EntDelegateThenRuleMutatorCreationAction:
+class EntDelegateThenRuleMutatorCreationAction(
+    EntMutatorCreationAction[
+        ExampleViewerContext, EntDelegateThenRule, EntDelegateThenRuleModel
+    ]
+):
+    ent_type = EntDelegateThenRule
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -161,26 +167,25 @@ class EntDelegateThenRuleMutatorCreationAction:
         self.name = name
         self.privacy_parent_id = privacy_parent_id
 
-    async def gen_savex(self) -> EntDelegateThenRule:
-        model = EntDelegateThenRuleModel(
+    def _validate(self) -> None:
+        pass
+
+    def _create_model(self) -> EntDelegateThenRuleModel:
+        return EntDelegateThenRuleModel(
             id=self.id,
             updated_at=self.updated_at,
             created_at=self.created_at,
             name=self.name,
             privacy_parent_id=self.privacy_parent_id,
         )
-        db.session.add(model)
-        ent = EntDelegateThenRule(vc=self.vc, model=model)
-        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to CREATE EntDelegateThenRule with ID {ent.id}"
-            )
-        await db.session.flush()
-        return await EntDelegateThenRule._genx_from_model(self.vc, model)  # noqa: SLF001
 
 
-class EntDelegateThenRuleMutatorUpdateAction:
+class EntDelegateThenRuleMutatorUpdateAction(
+    EntMutatorUpdateAction[
+        ExampleViewerContext, EntDelegateThenRule, EntDelegateThenRuleModel
+    ]
+):
+    ent_type = EntDelegateThenRule
     vc: ExampleViewerContext
     ent: EntDelegateThenRule
     id: UUID
@@ -193,49 +198,23 @@ class EntDelegateThenRuleMutatorUpdateAction:
         self.name = ent.name
         self.privacy_parent_id = ent.privacy_parent_id
 
-    async def gen_savex(self) -> EntDelegateThenRule:
-        model = self.ent.model
+    def _validate(self) -> None:
+        pass
+
+    def _update_model(
+        self, model: EntDelegateThenRuleModel
+    ) -> EntDelegateThenRuleModel:
         model.name = self.name
         model.privacy_parent_id = self.privacy_parent_id
-        model.updated_at = datetime.now(tz=UTC)
-        db.session.add(model)
-        new_ent = EntDelegateThenRule(vc=self.vc, model=model)
-        decision = await new_ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to UPDATE EntDelegateThenRule with ID {new_ent.id}"
-            )
-        await db.session.flush()
-        await db.session.refresh(model)
-        return await EntDelegateThenRule._genx_from_model(self.vc, model)  # noqa: SLF001
+        return model
 
 
-class EntDelegateThenRuleMutatorDeletionAction:
-    vc: ExampleViewerContext
-    ent: EntDelegateThenRule
-
-    def __init__(
-        self, vc: ExampleViewerContext, ent: EntDelegateThenRule, is_soft_delete: bool
-    ) -> None:
-        self.vc = vc
-        self.ent = ent
-        self.is_soft_delete = is_soft_delete
-
-    async def gen_save(self) -> None:
-        model = self.ent.model
-        action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
-        if decision != Decision.ALLOW:
-            raise PrivacyError(
-                f"Current viewer context is not authorized to {action} EntDelegateThenRule with ID {self.ent.id}"
-            )
-        if self.is_soft_delete:
-            model.soft_deleted_at = datetime.now(tz=UTC)
-            model.updated_at = datetime.now(tz=UTC)
-            db.session.add(model)
-        else:
-            await db.session.delete(model)
-        await db.session.flush()
+class EntDelegateThenRuleMutatorDeletionAction(
+    EntMutatorDeletionAction[
+        ExampleViewerContext, EntDelegateThenRule, EntDelegateThenRuleModel
+    ]
+):
+    ent_type = EntDelegateThenRule
 
 
 class EntDelegateThenRuleExample:
