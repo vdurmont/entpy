@@ -111,6 +111,7 @@ class EntPassThenDenyMutatorCreationAction(
     ]
 ):
     ent_type = EntPassThenDeny
+    schema = EntPassThenDenySchema()
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -129,9 +130,6 @@ class EntPassThenDenyMutatorCreationAction(
         self.id = id if id else generate_uuid(EntPassThenDeny, self.created_at)
         self.name = name
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntPassThenDenyModel:
         return EntPassThenDenyModel(
             id=self.id,
@@ -145,6 +143,7 @@ class EntPassThenDenyMutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntPassThenDeny, EntPassThenDenyModel]
 ):
     ent_type = EntPassThenDeny
+    schema = EntPassThenDenySchema()
     vc: ExampleViewerContext
     ent: EntPassThenDeny
     id: UUID
@@ -154,9 +153,6 @@ class EntPassThenDenyMutatorUpdateAction(
         self.vc = vc
         self.ent = ent
         self.name = ent.name
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntPassThenDenyModel) -> EntPassThenDenyModel:
         model.name = self.name

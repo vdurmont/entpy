@@ -7,7 +7,6 @@ import logging
 from entpy import (
     Ent,
     generate_uuid,
-    ValidationError,
 )
 from uuid import UUID
 from datetime import datetime, UTC
@@ -424,6 +423,7 @@ class EntTestObjectMutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntTestObject, EntTestObjectModel]
 ):
     ent_type = EntTestObject
+    schema = EntTestObjectSchema()
     vc: ExampleViewerContext
     id: UUID
     a_good_thing: str
@@ -529,21 +529,6 @@ class EntTestObjectMutatorCreationAction(
         self.validated_field = validated_field
         self.when_is_it_cool = when_is_it_cool
 
-    def _validate(self) -> None:
-        a_pattern_validated_field_validators = _get_field(
-            "a_pattern_validated_field"
-        )._validators  # noqa: SLF001
-        for validator in a_pattern_validated_field_validators:
-            if not validator.validate(self.a_pattern_validated_field):
-                raise ValidationError(
-                    "Invalid value for EntTestObject.a_pattern_validated_field"
-                )
-
-        validated_field_validators = _get_field("validated_field")._validators  # noqa: SLF001
-        for validator in validated_field_validators:
-            if not validator.validate(self.validated_field):
-                raise ValidationError("Invalid value for EntTestObject.validated_field")
-
     def _create_model(self) -> EntTestObjectModel:
         return EntTestObjectModel(
             id=self.id,
@@ -587,6 +572,7 @@ class EntTestObjectMutatorUpdateAction(
     IEntTestThingMutatorUpdateAction,
 ):
     ent_type = EntTestObject
+    schema = EntTestObjectSchema()
     vc: ExampleViewerContext
     ent: EntTestObject
     id: UUID
@@ -652,21 +638,6 @@ class EntTestObjectMutatorUpdateAction(
         self.trace_id = ent.trace_id
         self.validated_field = ent.validated_field
         self.when_is_it_cool = ent.when_is_it_cool
-
-    def _validate(self) -> None:
-        a_pattern_validated_field_validators = _get_field(
-            "a_pattern_validated_field"
-        )._validators  # noqa: SLF001
-        for validator in a_pattern_validated_field_validators:
-            if not validator.validate(self.a_pattern_validated_field):
-                raise ValidationError(
-                    "Invalid value for EntTestObject.a_pattern_validated_field"
-                )
-
-        validated_field_validators = _get_field("validated_field")._validators  # noqa: SLF001
-        for validator in validated_field_validators:
-            if not validator.validate(self.validated_field):
-                raise ValidationError("Invalid value for EntTestObject.validated_field")
 
     def _update_model(self, model: EntTestObjectModel) -> EntTestObjectModel:
         model.a_good_thing = self.a_good_thing

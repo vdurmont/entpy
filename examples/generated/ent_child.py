@@ -135,6 +135,7 @@ class EntChildMutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntChild, EntChildModel]
 ):
     ent_type = EntChild
+    schema = EntChildSchema()
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -156,9 +157,6 @@ class EntChildMutatorCreationAction(
         self.name = name
         self.parent_id = parent_id
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntChildModel:
         return EntChildModel(
             id=self.id,
@@ -173,6 +171,7 @@ class EntChildMutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntChild, EntChildModel]
 ):
     ent_type = EntChild
+    schema = EntChildSchema()
     vc: ExampleViewerContext
     ent: EntChild
     id: UUID
@@ -184,9 +183,6 @@ class EntChildMutatorUpdateAction(
         self.ent = ent
         self.name = ent.name
         self.parent_id = ent.parent_id
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntChildModel) -> EntChildModel:
         model.name = self.name

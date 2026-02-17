@@ -148,6 +148,7 @@ class EntDelegatingGrandchildMutatorCreationAction(
     ]
 ):
     ent_type = EntDelegatingGrandchild
+    schema = EntDelegatingGrandchildSchema()
     vc: ExampleViewerContext
     id: UUID
     delegating_child_id: UUID
@@ -169,9 +170,6 @@ class EntDelegatingGrandchildMutatorCreationAction(
         self.delegating_child_id = delegating_child_id
         self.name = name
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntDelegatingGrandchildModel:
         return EntDelegatingGrandchildModel(
             id=self.id,
@@ -188,6 +186,7 @@ class EntDelegatingGrandchildMutatorUpdateAction(
     ]
 ):
     ent_type = EntDelegatingGrandchild
+    schema = EntDelegatingGrandchildSchema()
     vc: ExampleViewerContext
     ent: EntDelegatingGrandchild
     id: UUID
@@ -199,9 +198,6 @@ class EntDelegatingGrandchildMutatorUpdateAction(
         self.ent = ent
         self.delegating_child_id = ent.delegating_child_id
         self.name = ent.name
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(
         self, model: EntDelegatingGrandchildModel

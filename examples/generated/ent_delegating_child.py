@@ -146,6 +146,7 @@ class EntDelegatingChildMutatorCreationAction(
     ]
 ):
     ent_type = EntDelegatingChild
+    schema = EntDelegatingChildSchema()
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -167,9 +168,6 @@ class EntDelegatingChildMutatorCreationAction(
         self.name = name
         self.privacy_parent_id = privacy_parent_id
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntDelegatingChildModel:
         return EntDelegatingChildModel(
             id=self.id,
@@ -186,6 +184,7 @@ class EntDelegatingChildMutatorUpdateAction(
     ]
 ):
     ent_type = EntDelegatingChild
+    schema = EntDelegatingChildSchema()
     vc: ExampleViewerContext
     ent: EntDelegatingChild
     id: UUID
@@ -197,9 +196,6 @@ class EntDelegatingChildMutatorUpdateAction(
         self.ent = ent
         self.name = ent.name
         self.privacy_parent_id = ent.privacy_parent_id
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntDelegatingChildModel) -> EntDelegatingChildModel:
         model.name = self.name

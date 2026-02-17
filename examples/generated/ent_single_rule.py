@@ -107,6 +107,7 @@ class EntSingleRuleMutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
 ):
     ent_type = EntSingleRule
+    schema = EntSingleRuleSchema()
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -125,9 +126,6 @@ class EntSingleRuleMutatorCreationAction(
         self.id = id if id else generate_uuid(EntSingleRule, self.created_at)
         self.name = name
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntSingleRuleModel:
         return EntSingleRuleModel(
             id=self.id,
@@ -141,6 +139,7 @@ class EntSingleRuleMutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
 ):
     ent_type = EntSingleRule
+    schema = EntSingleRuleSchema()
     vc: ExampleViewerContext
     ent: EntSingleRule
     id: UUID
@@ -150,9 +149,6 @@ class EntSingleRuleMutatorUpdateAction(
         self.vc = vc
         self.ent = ent
         self.name = ent.name
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntSingleRuleModel) -> EntSingleRuleModel:
         model.name = self.name

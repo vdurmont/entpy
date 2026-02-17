@@ -140,6 +140,7 @@ class EntMixedListMutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntMixedList, EntMixedListModel]
 ):
     ent_type = EntMixedList
+    schema = EntMixedListSchema()
     vc: ExampleViewerContext
     id: UUID
     name: str
@@ -161,9 +162,6 @@ class EntMixedListMutatorCreationAction(
         self.name = name
         self.privacy_parent_id = privacy_parent_id
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntMixedListModel:
         return EntMixedListModel(
             id=self.id,
@@ -178,6 +176,7 @@ class EntMixedListMutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntMixedList, EntMixedListModel]
 ):
     ent_type = EntMixedList
+    schema = EntMixedListSchema()
     vc: ExampleViewerContext
     ent: EntMixedList
     id: UUID
@@ -189,9 +188,6 @@ class EntMixedListMutatorUpdateAction(
         self.ent = ent
         self.name = ent.name
         self.privacy_parent_id = ent.privacy_parent_id
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntMixedListModel) -> EntMixedListModel:
         model.name = self.name

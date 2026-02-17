@@ -119,6 +119,7 @@ class EntTestObject5MutatorCreationAction(
     EntMutatorCreationAction[ExampleViewerContext, EntTestObject5, EntTestObject5Model]
 ):
     ent_type = EntTestObject5
+    schema = EntTestObject5Schema()
     vc: ExampleViewerContext
     id: UUID
     obj5_field: str
@@ -140,9 +141,6 @@ class EntTestObject5MutatorCreationAction(
         self.obj5_field = obj5_field
         self.is_it_true = is_it_true
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntTestObject5Model:
         return EntTestObject5Model(
             id=self.id,
@@ -157,6 +155,7 @@ class EntTestObject5MutatorUpdateAction(
     EntMutatorUpdateAction[ExampleViewerContext, EntTestObject5, EntTestObject5Model]
 ):
     ent_type = EntTestObject5
+    schema = EntTestObject5Schema()
     vc: ExampleViewerContext
     ent: EntTestObject5
     id: UUID
@@ -168,9 +167,6 @@ class EntTestObject5MutatorUpdateAction(
         self.ent = ent
         self.obj5_field = ent.obj5_field
         self.is_it_true = ent.is_it_true
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntTestObject5Model) -> EntTestObject5Model:
         model.obj5_field = self.obj5_field

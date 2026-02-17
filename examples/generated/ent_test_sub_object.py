@@ -113,6 +113,7 @@ class EntTestSubObjectMutatorCreationAction(
     ]
 ):
     ent_type = EntTestSubObject
+    schema = EntTestSubObjectSchema()
     vc: ExampleViewerContext
     id: UUID
     email: str
@@ -131,9 +132,6 @@ class EntTestSubObjectMutatorCreationAction(
         self.id = id if id else generate_uuid(EntTestSubObject, self.created_at)
         self.email = email
 
-    def _validate(self) -> None:
-        pass
-
     def _create_model(self) -> EntTestSubObjectModel:
         return EntTestSubObjectModel(
             id=self.id,
@@ -149,6 +147,7 @@ class EntTestSubObjectMutatorUpdateAction(
     ]
 ):
     ent_type = EntTestSubObject
+    schema = EntTestSubObjectSchema()
     vc: ExampleViewerContext
     ent: EntTestSubObject
     id: UUID
@@ -158,9 +157,6 @@ class EntTestSubObjectMutatorUpdateAction(
         self.vc = vc
         self.ent = ent
         self.email = ent.email
-
-    def _validate(self) -> None:
-        pass
 
     def _update_model(self, model: EntTestSubObjectModel) -> EntTestSubObjectModel:
         model.email = self.email
