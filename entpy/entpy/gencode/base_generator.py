@@ -178,5 +178,9 @@ def _generate_unique_gens(
         @classmethod
         async def genx_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> Self:
             pass
+
+        @classmethod
+        async def genx_or_404_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> Self:
+            pass
 """  # noqa: E501
     return unique_gens

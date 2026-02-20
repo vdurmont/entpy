@@ -2,6 +2,7 @@ import uuid
 
 import pytest
 from entpy import EntNotFoundError, ValidationError
+from werkzeug.exceptions import NotFound
 
 from ent_test_object_schema import Status
 from evc import ExampleViewerContext
@@ -43,12 +44,31 @@ async def test_ent_test_object_genx_with_existing_model(
     assert result.firstname == "Vincent"
 
 
+async def test_ent_test_object_genx_or_404_with_existing_model(
+    vc: ExampleViewerContext,
+) -> None:
+    ent = await EntTestObjectExample.gen_create(vc, firstname="Vincent")
+
+    result = await EntTestObject.genx_or_404(vc, ent.id)
+
+    assert result is not None, "genx should not return None for a valid ID"
+    assert result.firstname == "Vincent"
+
+
 async def test_ent_test_object_genx_with_unknown_model(
     vc: ExampleViewerContext,
 ) -> None:
     ent_id = uuid.uuid4()
     with pytest.raises(EntNotFoundError):
         await EntTestObject.genx(vc, ent_id)
+
+
+async def test_ent_test_object_genx_or_404_with_unknown_model(
+    vc: ExampleViewerContext,
+) -> None:
+    ent_id = uuid.uuid4()
+    with pytest.raises(NotFound):
+        await EntTestObject.genx_or_404(vc, ent_id)
 
 
 async def test_edges_work_well(vc: ExampleViewerContext) -> None:

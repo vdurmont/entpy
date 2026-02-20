@@ -273,6 +273,12 @@ class EntTestObject(
         ) -> Self:
             pass
 
+        @classmethod
+        async def genx_or_404_from_username(
+            cls, vc: ExampleViewerContext, username: str, for_update: bool = False
+        ) -> Self:
+            pass
+
         async def gen_required_sub_object(self) -> "EntTestSubObject":
             pass
 
