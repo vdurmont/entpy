@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import Result, Select, Table, func, select
 from sqlalchemy.orm.strategy_options import _AbstractLoad
 from sqlalchemy.sql.expression import ColumnElement
+from werkzeug.exceptions import NotFound
 
 from entpy.framework.database import db
 from entpy.framework.ent import Ent, EntObjectBase, EntPatternBase
@@ -115,6 +116,12 @@ class EntQuery[
                 f"Expected to find a {self.ent_type.__name__}, got None."
             )
         return ent
+
+    async def genx_first_or_404(self, for_update: bool = False) -> ENT:
+        try:
+            return await self.genx_first(for_update)
+        except EntNotFoundError as e:
+            raise NotFound(str(e)) from e
 
     async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:  # noqa: N802
         count_query = (
