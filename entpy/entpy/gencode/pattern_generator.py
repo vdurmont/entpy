@@ -63,7 +63,11 @@ def generate(
 
     # Make sure to import all the things!
     imports = (
-        [str(vc), "from entpy import db"]
+        [
+            str(vc),
+            "from entpy import db",
+            "from entpy.framework.errors import UnknownTypeError",
+        ]
         + model.imports
         + api_model.imports
         + base_content.imports
@@ -116,7 +120,7 @@ if TYPE_CHECKING:
     def _get_child_type(cls, uuid_type: bytes) -> type[I{base_name}]:
         match uuid_type:
 {child_types.code}
-        raise ValueError(f"Unknown UUID type for I{base_name}: {{uuid_type.hex()}}")
+        raise UnknownTypeError(f"Unknown UUID type for I{base_name}: {{uuid_type.hex()}}")
 
 {query_content.code}
 

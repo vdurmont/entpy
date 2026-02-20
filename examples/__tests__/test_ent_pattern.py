@@ -1,3 +1,6 @@
+import pytest
+from uuid import uuid4
+from werkzeug.exceptions import NotFound
 from ent_test_thing_pattern import ThingStatus
 from evc import ExampleViewerContext
 from generated.ent_test_object import (
@@ -27,6 +30,19 @@ async def test_genx_from_pattern(vc: ExampleViewerContext) -> None:
     result = await IEntTestThing.genx(vc, ent.id)
 
     assert isinstance(result, EntTestObject), "we should get the right type"
+
+
+async def test_genx_or_404_from_pattern(vc: ExampleViewerContext) -> None:
+    ent = await EntTestObjectExample.gen_create(vc)
+
+    result = await IEntTestThing.genx_or_404(vc, ent.id)
+
+    assert isinstance(result, EntTestObject), "we should get the right type"
+
+
+async def test_genx_or_404_from_pattern_wrong_type(vc: ExampleViewerContext) -> None:
+    with pytest.raises(NotFound):
+        await IEntTestThing.genx_or_404(vc, uuid4())
 
 
 async def test_query_across_schemas(vc: ExampleViewerContext) -> None:

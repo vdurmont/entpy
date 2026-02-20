@@ -30,3 +30,11 @@ class ValidationError(Exception):
     """
 
     pass
+
+
+class UnknownTypeError(Exception):
+    """
+    Used when an unknown type was passed to EntPy.
+    """
+
+    pass

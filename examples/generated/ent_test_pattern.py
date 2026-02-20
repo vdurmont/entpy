@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from .ent_model import EntModel
 from entpy.framework.ent import EntPatternBase
+from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -56,7 +57,9 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
 
                 return EntTestObject2
 
-        raise ValueError(f"Unknown UUID type for IEntTestPattern: {uuid_type.hex()}")
+        raise UnknownTypeError(
+            f"Unknown UUID type for IEntTestPattern: {uuid_type.hex()}"
+        )
 
 
 class IEntTestPatternQuery(
