@@ -287,7 +287,7 @@ def _generate_update_action(
     # Build up the list of field attributes
     field_attributes = "\n".join(
         [
-            f"    {field.name}: {field.get_python_type()}"
+            f"        {field.name}: {field.get_python_type()}"
             + (" | None" if field.nullable else "")
             for field in mutable_fields
         ]
@@ -297,10 +297,15 @@ def _generate_update_action(
 class I{base_name}MutatorUpdateAction(ABC):
     vc: {vc.name}
     ent: I{base_name}
-{field_attributes}
+    if TYPE_CHECKING:
+{field_attributes or "        pass"}
 
     @abstractmethod
     async def gen_savex(self) -> I{base_name}:
+        pass
+
+    @abstractmethod
+    async def gen_savex_or_403(self) -> I{base_name}:
         pass
 """
 
@@ -313,5 +318,9 @@ class I{base_name}MutatorDeletionAction(ABC):
 
     @abstractmethod
     async def gen_save(self) -> None:
+        pass
+
+    @abstractmethod
+    async def gen_save_or_403(self) -> None:
         pass
 """
