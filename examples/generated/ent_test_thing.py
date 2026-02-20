@@ -14,6 +14,7 @@ from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 from .ent_model import EntModel
 from ent_test_thing_pattern import ThingStatus
 from entpy.framework.ent import EntPatternBase
+from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -143,7 +144,9 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
 
                 return EntTestObject
 
-        raise ValueError(f"Unknown UUID type for IEntTestThing: {uuid_type.hex()}")
+        raise UnknownTypeError(
+            f"Unknown UUID type for IEntTestThing: {uuid_type.hex()}"
+        )
 
 
 class IEntTestThingQuery(

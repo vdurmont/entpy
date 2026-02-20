@@ -11,7 +11,12 @@ from werkzeug.exceptions import NotFound
 from entpy.framework.action import Action
 from entpy.framework.database import db, emulate_for_update
 from entpy.framework.decision import Decision
-from entpy.framework.errors import EntNotFoundError, ExecutionError, ValidationError
+from entpy.framework.errors import (
+    EntNotFoundError,
+    ExecutionError,
+    UnknownTypeError,
+    ValidationError,
+)
 from entpy.framework.id_factory import validate_ent_id
 from entpy.framework.model import ModelMixin
 from entpy.framework.privacy_rule import EdgeDelegate, PrivacyRule
@@ -109,6 +114,8 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
             return await cls.genx(vc, ent_id, for_update)
         except EntNotFoundError as e:
             raise NotFound(str(e)) from e
+        except UnknownTypeError as e:
+            raise NotFound(f"No {cls.__name__} found for ID {ent_id}") from e
         except ValidationError as e:
             raise NotFound(str(e)) from e
 
