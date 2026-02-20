@@ -6,11 +6,12 @@ from typing import TYPE_CHECKING, Any, Self, TypeVar
 from uuid import UUID
 
 from sqlalchemy import select
+from werkzeug.exceptions import NotFound
 
 from entpy.framework.action import Action
 from entpy.framework.database import db, emulate_for_update
 from entpy.framework.decision import Decision
-from entpy.framework.errors import EntNotFoundError, ExecutionError
+from entpy.framework.errors import EntNotFoundError, ExecutionError, ValidationError
 from entpy.framework.id_factory import validate_ent_id
 from entpy.framework.model import ModelMixin
 from entpy.framework.privacy_rule import EdgeDelegate, PrivacyRule
@@ -31,6 +32,9 @@ class EntMeta(type):
         def __getattr__(cls, name: str) -> Any:
             if name.startswith("gen_from_"):
                 return partial(cls._gen_from_unique, name[9:])
+
+            if name.startswith("genx_or_404_from_"):
+                return partial(cls._genx_or_404_from_unique, name[17:])
 
             if name.startswith("genx_from_"):
                 return partial(cls._genx_from_unique, name[10:])
@@ -98,6 +102,17 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
         return ent
 
     @classmethod
+    async def genx_or_404(
+        cls, vc: VC, ent_id: UUID | str, for_update: bool = False
+    ) -> Self:
+        try:
+            return await cls.genx(vc, ent_id, for_update)
+        except EntNotFoundError as e:
+            raise NotFound(str(e)) from e
+        except ValidationError as e:
+            raise NotFound(str(e)) from e
+
+    @classmethod
     @abstractmethod
     async def _gen_from_unique(
         cls, name: str, vc: VC, value: Any, for_update: bool = False
@@ -112,6 +127,15 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
         if not ent:
             raise EntNotFoundError(f"No {cls.__name__} found for {name} {value}")
         return ent
+
+    @classmethod
+    async def _genx_or_404_from_unique(
+        cls, name: str, vc: VC, value: Any, for_update: bool = False
+    ) -> Self | None:
+        try:
+            return await cls._genx_from_unique(name, vc, value, for_update)
+        except EntNotFoundError as e:
+            raise NotFound(str(e)) from e
 
     @classmethod
     @abstractmethod

@@ -2,6 +2,8 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import UUID
 
+from werkzeug.exceptions import Forbidden
+
 from entpy.framework.action import Action
 from entpy.framework.database import db
 from entpy.framework.decision import Decision
@@ -73,6 +75,12 @@ class EntMutatorCreationAction[
         await db.session.flush()
         return await self.ent_type._genx_from_model(self.vc, self.model)  # noqa: SLF001
 
+    async def gen_savex_or_403(self) -> ENT:
+        try:
+            return await self.gen_savex()
+        except PrivacyError as e:
+            raise Forbidden(str(e)) from e
+
 
 class EntMutatorUpdateAction[
     VC: ViewerContext,
@@ -97,6 +105,12 @@ class EntMutatorUpdateAction[
         await db.session.flush()
         await db.session.refresh(self.model)
         return self.ent
+
+    async def gen_savex_or_403(self) -> ENT:
+        try:
+            return await self.gen_savex()
+        except PrivacyError as e:
+            raise Forbidden(str(e)) from e
 
 
 class EntMutatorDeletionAction[
@@ -127,3 +141,9 @@ class EntMutatorDeletionAction[
         else:
             await db.session.delete(model)
         await db.session.flush()
+
+    async def gen_save_or_403(self) -> None:
+        try:
+            await self.gen_save()
+        except PrivacyError as e:
+            raise Forbidden(str(e)) from e

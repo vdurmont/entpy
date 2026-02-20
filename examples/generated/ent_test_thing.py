@@ -96,6 +96,15 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
         ) -> Self:
             pass
 
+        @classmethod
+        async def genx_or_404_from_idempotency_key(
+            cls,
+            vc: ExampleViewerContext,
+            idempotency_key: UUID,
+            for_update: bool = False,
+        ) -> Self:
+            pass
+
         async def gen_obj5(self) -> "EntTestObject5":
             pass
 

@@ -1,9 +1,12 @@
+import pytest
+from werkzeug.exceptions import Forbidden
 from evc import ExampleTestViewerContext, ExampleViewerContext
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
     EntTestObjectMutator,
 )
+from generated.ent_single_rule import EntSingleRuleExample, EntSingleRuleMutator
 
 
 async def test_hard_delete(vc: ExampleViewerContext) -> None:
@@ -11,6 +14,19 @@ async def test_hard_delete(vc: ExampleViewerContext) -> None:
     await EntTestObjectMutator.hard_delete(vc, obj).gen_save()
     res = await EntTestObject.gen(vc, obj.id)
     assert res is None, "Ent should be deleted"
+
+
+async def test_hard_delete_or_403(vc: ExampleViewerContext) -> None:
+    obj = await EntTestObjectExample.gen_create(vc)
+    await EntTestObjectMutator.hard_delete(vc, obj).gen_save_or_403()
+    res = await EntTestObject.gen(vc, obj.id)
+    assert res is None, "Ent should be deleted"
+
+
+async def test_hard_delete_or_403_forbidden(vc: ExampleViewerContext) -> None:
+    obj = await EntSingleRuleExample.gen_create(ExampleTestViewerContext())
+    with pytest.raises(Forbidden):
+        await EntSingleRuleMutator.hard_delete(vc, obj).gen_save_or_403()
 
 
 async def test_soft_delete_with_regular_vc(vc: ExampleViewerContext) -> None:

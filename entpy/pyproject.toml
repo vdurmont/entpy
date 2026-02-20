@@ -12,6 +12,7 @@ dependencies = [
     "sqlalchemy==2.0.43",
     "sqlalchemy-utils>=0.42.0",
     "types-sqlalchemy-utils>=1.1.0",
+    "werkzeug>=3.1.6",
 ]
 
 [dependency-groups]
