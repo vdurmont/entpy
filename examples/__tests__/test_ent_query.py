@@ -1,6 +1,9 @@
+import pytest
+from werkzeug.exceptions import NotFound
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+from entpy import EntNotFoundError
 from evc import ExampleTestViewerContext, ExampleViewerContext
 from generated.ent_child import EntChild, EntChildExample, EntChildModel
 from generated.ent_grand_parent import EntGrandParentExample
@@ -132,3 +135,20 @@ async def test_ent_query_count_force_no_privacy() -> None:
         force_no_privacy=True
     )
     assert count_without_privacy == 5
+
+
+async def test_gen_first(vc: ExampleViewerContext) -> None:
+    ent = await EntTestObjectExample.gen_create(vc)
+    result = await EntTestObject.query(vc).gen_first()
+    assert result is not None
+    assert result.id == ent.id
+
+
+async def test_genx_first(vc: ExampleViewerContext) -> None:
+    with pytest.raises(EntNotFoundError):
+        await EntTestObject.query(vc).genx_first()
+
+
+async def test_genx_first_or_404(vc: ExampleViewerContext) -> None:
+    with pytest.raises(NotFound):
+        await EntTestObject.query(vc).genx_first_or_404()
