@@ -221,15 +221,20 @@ class IEntTestThingMutator:
 class IEntTestThingMutatorUpdateAction(ABC):
     vc: ExampleViewerContext
     ent: IEntTestThing
-    a_good_thing: str
-    obj5_id: UUID
-    a_pattern_validated_field: str | None
-    idempotency_key: UUID | None
-    obj5_opt_id: UUID | None
-    thing_status: ThingStatus | None
+    if TYPE_CHECKING:
+        a_good_thing: str
+        obj5_id: UUID
+        a_pattern_validated_field: str | None
+        idempotency_key: UUID | None
+        obj5_opt_id: UUID | None
+        thing_status: ThingStatus | None
 
     @abstractmethod
     async def gen_savex(self) -> IEntTestThing:
+        pass
+
+    @abstractmethod
+    async def gen_savex_or_403(self) -> IEntTestThing:
         pass
 
 
@@ -239,6 +244,10 @@ class IEntTestThingMutatorDeletionAction(ABC):
 
     @abstractmethod
     async def gen_save(self) -> None:
+        pass
+
+    @abstractmethod
+    async def gen_save_or_403(self) -> None:
         pass
 
 

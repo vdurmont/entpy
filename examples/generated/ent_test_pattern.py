@@ -113,9 +113,15 @@ class IEntTestPatternMutator:
 class IEntTestPatternMutatorUpdateAction(ABC):
     vc: ExampleViewerContext
     ent: IEntTestPattern
+    if TYPE_CHECKING:
+        pass
 
     @abstractmethod
     async def gen_savex(self) -> IEntTestPattern:
+        pass
+
+    @abstractmethod
+    async def gen_savex_or_403(self) -> IEntTestPattern:
         pass
 
 
@@ -125,6 +131,10 @@ class IEntTestPatternMutatorDeletionAction(ABC):
 
     @abstractmethod
     async def gen_save(self) -> None:
+        pass
+
+    @abstractmethod
+    async def gen_save_or_403(self) -> None:
         pass
 
 
