@@ -165,3 +165,91 @@ async def test_email_field_with_invalid_override_of_default(
             firstname="Kevin",
             contact_email="invalid-email",
         )
+
+
+async def test_email_field_normalizes_to_lowercase(
+    vc: ExampleViewerContext,
+) -> None:
+    """Test that EmailField normalizes emails to lowercase."""
+    uppercase_email = "USER@EXAMPLE.COM"
+    ent = await EntTestObjectExample.gen_create(
+        vc,
+        firstname="Lisa",
+        email=uppercase_email,
+    )
+
+    assert ent.email == "user@example.com", "email should be normalized to lowercase"
+
+
+async def test_email_field_normalizes_mixed_case(
+    vc: ExampleViewerContext,
+) -> None:
+    """Test that EmailField normalizes mixed case emails."""
+    mixed_case_email = "User.Name@Example.COM"
+    ent = await EntTestObjectExample.gen_create(
+        vc,
+        firstname="Mike",
+        email=mixed_case_email,
+    )
+
+    assert (
+        ent.email == "user.name@example.com"
+    ), "email should be normalized to lowercase"
+
+
+async def test_email_field_normalization_persists(
+    vc: ExampleViewerContext,
+) -> None:
+    """Test that normalized email values persist after reloading."""
+    uppercase_email = "NORMALIZED@EXAMPLE.COM"
+    ent = await EntTestObjectExample.gen_create(
+        vc,
+        firstname="Nancy",
+        email=uppercase_email,
+    )
+
+    # Reload the entity
+    reloaded = await EntTestObject.genx(vc, ent.id)
+
+    assert (
+        reloaded.email == "normalized@example.com"
+    ), "normalized email should persist after reloading"
+
+
+async def test_email_field_normalizes_default_override(
+    vc: ExampleViewerContext,
+) -> None:
+    """Test that EmailField normalizes when overriding default values."""
+    uppercase_email = "CUSTOM@EXAMPLE.COM"
+    ent = await EntTestObjectExample.gen_create(
+        vc,
+        firstname="Oliver",
+        contact_email=uppercase_email,
+    )
+
+    assert (
+        ent.contact_email == "custom@example.com"
+    ), "contact_email should be normalized even when overriding default"
+
+
+async def test_email_field_normalizes_on_update(
+    vc: ExampleViewerContext,
+) -> None:
+    """Test that EmailField normalizes emails during updates."""
+    from generated.ent_test_object import EntTestObjectMutator
+
+    # Create entity with lowercase email
+    ent = await EntTestObjectExample.gen_create(
+        vc,
+        firstname="Paul",
+        email="paul@example.com",
+    )
+
+    # Update with uppercase email
+    mut = EntTestObjectMutator.update(vc, ent)
+    mut.email = "UPDATED@EXAMPLE.COM"
+    updated_ent = await mut.gen_savex()
+
+    assert (
+        updated_ent.email == "updated@example.com"
+    ), "email should be normalized during update"

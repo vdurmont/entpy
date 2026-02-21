@@ -12,7 +12,10 @@ from entpy.framework.fields.core import (
 
 
 class EmailField(
-    Field, FieldWithExample[str], FieldWithDynamicExample[str], FieldWithDefault[str]
+    Field,
+    FieldWithExample[str],
+    FieldWithDynamicExample[str],
+    FieldWithDefault[str],
 ):
     def __init__(self, name: str, length: int = 255):
         super().__init__(name=name)
@@ -29,6 +32,23 @@ class EmailField(
         if self._default_value:
             return f'"{self._default_value}"'
         return None
+
+    def normalize(self, value: str | None) -> str | None:
+        """Normalize email to lowercase using email-validator library."""
+        if value is None:
+            return None
+
+        try:
+            from email_validator import validate_email
+
+            validated = validate_email(value, check_deliverability=False)
+            # Use the normalized form and convert the entire email to lowercase
+            # (email-validator only normalizes the domain part by default)
+            return validated.normalized.lower()
+        except Exception:
+            # If normalization fails, return the original value
+            # Validation will catch the error later
+            return value
 
 
 class EmailValidator(FieldValidator[str | None]):
