@@ -76,6 +76,9 @@ class EntTestObjectModel(EntTestThingModel):
         nullable=False,
     )
     username: Mapped[str] = mapped_column(String(100), nullable=False)
+    contact_email: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, server_default="support@example.com"
+    )
     lastname: Mapped[str | None] = mapped_column(
         String(100), nullable=True, server_default="Doe"
     )
@@ -90,6 +93,7 @@ class EntTestObjectModel(EntTestThingModel):
     correlation_id: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
     dob: Mapped[date | None] = mapped_column(Date(), nullable=True)
     duration: Mapped[timedelta | None] = mapped_column(Interval(), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     end_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
     is_it_true: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
@@ -194,6 +198,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     username: str = APIField(
         ..., description="This is the username that you will use on the platform."
     )
+    contact_email: str | None = APIField("support@example.com")
     lastname: str | None = APIField("Doe")
     retry_count: int | None = APIField(0)
     sadness: Status | None = APIField(Status.SAD)
@@ -201,6 +206,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     correlation_id: UUID | None = APIField(None)
     dob: date | None = APIField(None, examples=[date.fromisoformat("2000-01-01")])
     duration: timedelta | None = APIField(None, examples=[timedelta(seconds=123.456)])
+    email: str | None = APIField(None, examples=["test@example.com"])
     end_time: time | None = APIField(None)
     is_it_true: bool | None = APIField(None, examples=[False])
     optional_sub_object: "EntTestSubObjectAPIModel | None" = APIField(None)
@@ -235,6 +241,7 @@ class EntTestObject(
         """
         This is the username that you will use on the platform.
         """
+        contact_email: str | None
         lastname: str | None
         retry_count: int | None
         sadness: Status | None
@@ -244,6 +251,7 @@ class EntTestObject(
         correlation_id: UUID | None
         dob: date | None
         duration: timedelta | None
+        email: str | None
         end_time: time | None
         idempotency_key: UUID | None
         is_it_true: bool | None
@@ -341,6 +349,7 @@ class EntTestObjectMutator:
         obj5_id: UUID,
         required_sub_object_id: UUID,
         username: str,
+        contact_email: str | None = None,
         lastname: str | None = None,
         retry_count: int | None = None,
         sadness: Status | None = None,
@@ -350,6 +359,7 @@ class EntTestObjectMutator:
         correlation_id: UUID | None = None,
         dob: date | None = None,
         duration: timedelta | None = None,
+        email: str | None = None,
         end_time: time | None = None,
         idempotency_key: UUID | None = None,
         is_it_true: bool | None = None,
@@ -380,6 +390,7 @@ class EntTestObjectMutator:
             obj5_id=obj5_id,
             required_sub_object_id=required_sub_object_id,
             username=username,
+            contact_email=contact_email,
             lastname=lastname,
             retry_count=retry_count,
             sadness=sadness,
@@ -389,6 +400,7 @@ class EntTestObjectMutator:
             correlation_id=correlation_id,
             dob=dob,
             duration=duration,
+            email=email,
             end_time=end_time,
             idempotency_key=idempotency_key,
             is_it_true=is_it_true,
@@ -441,6 +453,7 @@ class EntTestObjectMutatorCreationAction(
         obj5_id: UUID
         required_sub_object_id: UUID
         username: str
+        contact_email: str | None = None
         lastname: str | None = None
         retry_count: int | None = None
         sadness: Status | None = None
@@ -450,6 +463,7 @@ class EntTestObjectMutatorCreationAction(
         correlation_id: UUID | None = None
         dob: date | None = None
         duration: timedelta | None = None
+        email: str | None = None
         end_time: time | None = None
         idempotency_key: UUID | None = None
         is_it_true: bool | None = None
@@ -485,6 +499,7 @@ class EntTestObjectMutatorUpdateAction(
         obj5_id: UUID
         required_sub_object_id: UUID
         username: str
+        contact_email: str | None = None
         lastname: str | None = None
         retry_count: int | None = None
         sadness: Status | None = None
@@ -493,6 +508,7 @@ class EntTestObjectMutatorUpdateAction(
         correlation_id: UUID | None = None
         dob: date | None = None
         duration: timedelta | None = None
+        email: str | None = None
         end_time: time | None = None
         idempotency_key: UUID | None = None
         is_it_true: bool | None = None
@@ -529,6 +545,7 @@ class EntTestObjectExample:
         obj5_id: UUID | Sentinel = NOTHING,
         required_sub_object_id: UUID | Sentinel = NOTHING,
         username: str | Sentinel = NOTHING,
+        contact_email: str | None = None,
         lastname: str | None = None,
         retry_count: int | None = None,
         sadness: Status | None = None,
@@ -538,6 +555,7 @@ class EntTestObjectExample:
         correlation_id: UUID | None = None,
         dob: date | Sentinel = NOTHING,
         duration: timedelta | Sentinel = NOTHING,
+        email: str | Sentinel = NOTHING,
         end_time: time | Sentinel = NOTHING,
         idempotency_key: UUID | Sentinel = NOTHING,
         is_it_true: bool | Sentinel = NOTHING,
@@ -588,6 +606,12 @@ class EntTestObjectExample:
             if generator:
                 username = generator()
 
+        contact_email = (
+            "support@example.com"
+            if isinstance(contact_email, Sentinel)
+            else contact_email
+        )
+
         lastname = "Doe" if isinstance(lastname, Sentinel) else lastname
 
         retry_count = 0 if isinstance(retry_count, Sentinel) else retry_count
@@ -611,6 +635,8 @@ class EntTestObjectExample:
         duration = (
             timedelta(seconds=123.456) if isinstance(duration, Sentinel) else duration
         )
+
+        email = "test@example.com" if isinstance(email, Sentinel) else email
 
         if isinstance(end_time, Sentinel):
             field = _get_field("end_time")
@@ -688,6 +714,7 @@ class EntTestObjectExample:
             obj5_id=obj5_id,
             required_sub_object_id=required_sub_object_id,
             username=username,
+            contact_email=contact_email,
             lastname=lastname,
             retry_count=retry_count,
             sadness=sadness,
@@ -697,6 +724,7 @@ class EntTestObjectExample:
             correlation_id=correlation_id,
             dob=dob,
             duration=duration,
+            email=email,
             end_time=end_time,
             idempotency_key=idempotency_key,
             is_it_true=is_it_true,

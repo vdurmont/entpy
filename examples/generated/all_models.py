@@ -37,6 +37,8 @@ from .ent_test_pattern_view import ent_test_pattern_view  # noqa: F401
 from .ent_test_sub_object import EntTestSubObjectModel  # noqa: F401
 from .ent_test_sub_object import EntTestSubObject
 from .ent_test_thing_view import ent_test_thing_view  # noqa: F401
+from .ent_user import EntUserModel  # noqa: F401
+from .ent_user import EntUser
 
 UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x43\x48": EntChild,
@@ -55,4 +57,5 @@ UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\xf1\x91": EntTestObject5,
     b"\x23\x1c": EntTestObject,
     b"\x16\xd7": EntTestSubObject,
+    b"\x01\x75": EntUser,
 }
