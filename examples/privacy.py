@@ -1,10 +1,8 @@
 from functools import cache
 
-from entpy import Action, PrivacyRule
+from entpy import Action, DenyIfSoftDeleted, PrivacyRule
 
-from rules import AllowIfTestViewerContext
-from rules import AllowIfOmniscientViewerContext
-from rules import DenyIfSoftDeleted
+from rules import AllowIfOmniscientViewerContext, AllowIfTestViewerContext
 
 
 class PrivacyMixin:

@@ -23,8 +23,3 @@ class AllowIfOmniscientViewerContext(PrivacyRule):
             if isinstance(vc, ExampleOmniscientViewerContext)
             else Decision.PASS
         )
-
-
-class DenyIfSoftDeleted(PrivacyRule):
-    async def gen_evaluate(self, vc: ExampleViewerContext, ent: Ent) -> Decision:
-        return Decision.DENY if ent.soft_deleted_at else Decision.PASS
