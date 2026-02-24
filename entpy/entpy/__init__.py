@@ -3,7 +3,7 @@ from .framework.composite_index import CompositeIndex  # noqa: F401
 from .framework.database import db
 from .framework.decision import Decision  # noqa: F401
 from .framework.deny_is_soft_deleted import DenyIfSoftDeleted  # noqa: F401
-from .framework.ent import Ent  # noqa: F401
+from .framework.ent import Ent, generate_ent_id, validate_ent_id  # noqa: F401
 from .framework.errors import (  # noqa: F401
     EntNotFoundError,
     ExecutionError,
@@ -25,7 +25,6 @@ from .framework.fields.text_field import TextField  # noqa: F401
 from .framework.fields.time_field import TimeField  # noqa: F401
 from .framework.fields.uuid_field import UuidField  # noqa: F401
 from .framework.fields.validator import FieldValidator  # noqa: F401
-from .framework.id_factory import generate_uuid, validate_ent_id  # noqa: F401
 from .framework.pattern import Pattern  # noqa: F401
 from .framework.privacy_rule import EdgeDelegate, PrivacyRule  # noqa: F401
 from .framework.query import EntQuery  # noqa: F401

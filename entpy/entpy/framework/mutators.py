@@ -7,10 +7,9 @@ from werkzeug.exceptions import Forbidden
 from entpy.framework.action import Action
 from entpy.framework.database import db
 from entpy.framework.decision import Decision
-from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntObjectBase, generate_ent_id
 from entpy.framework.errors import PrivacyError, ValidationError
 from entpy.framework.fields.email_field import EmailField
-from entpy.framework.id_factory import generate_uuid
 from entpy.framework.model import ModelMixin
 from entpy.framework.schema import Schema
 from entpy.framework.viewer_context import ViewerContext
@@ -70,7 +69,7 @@ class EntMutatorCreationAction[
                 kwargs[field.name] = field.normalize(kwargs[field.name])
 
         self.model = self.model_type(
-            id=id if id else generate_uuid(self.ent_type, created_at),  # type: ignore[call-arg]
+            id=id if id else generate_ent_id(self.schema.__class__, created_at),  # type: ignore[call-arg]
             created_at=created_at,
             updated_at=updated_at if updated_at else created_at,
             **kwargs,
