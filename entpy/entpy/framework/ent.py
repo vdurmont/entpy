@@ -1,7 +1,9 @@
 import logging
+import struct
 from abc import abstractmethod
 from datetime import datetime
 from functools import partial
+from secrets import token_bytes
 from typing import TYPE_CHECKING, Any, Self, TypeVar
 from uuid import UUID
 
@@ -17,7 +19,6 @@ from entpy.framework.errors import (
     UnknownTypeError,
     ValidationError,
 )
-from entpy.framework.id_factory import validate_ent_id
 from entpy.framework.model import ModelMixin
 from entpy.framework.privacy_rule import EdgeDelegate, PrivacyRule
 from entpy.framework.viewer_context import ViewerContext
@@ -29,6 +30,32 @@ if TYPE_CHECKING:
     from entpy.framework.schema import Schema
 
 privacy_logger = logging.getLogger("entpy.privacy")
+
+
+def generate_ent_id(schema: type["Schema"], created_at: datetime) -> UUID:
+    """
+    These IDs use the time component of UUIDv7, but add the ent type and a sharding key.
+    48 bits: Milliseconds since Unix epoch
+    16 bits: Ent type
+    16 bits: Reserved for sharding key
+    48 bits: Random
+    """
+    return UUID(
+        bytes=struct.pack("!Q", int(created_at.timestamp() * 1000))[2:]
+        + schema.get_uuid_type()
+        + b"\x00\x00"
+        + token_bytes(6)
+    )
+
+
+def validate_ent_id(ent_id: UUID | str) -> UUID:
+    # Convert str to UUID if needed
+    if isinstance(ent_id, str):
+        try:
+            return UUID(ent_id)
+        except ValueError as e:
+            raise ValidationError(f"Invalid ID format for {ent_id}") from e
+    return ent_id
 
 
 class EntMeta(type):

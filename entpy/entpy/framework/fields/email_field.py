@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Self
-
 from entpy.framework.fields.core import (
     Field,
     FieldValidator,

@@ -106,9 +106,9 @@ async def test_email_field_with_default_value(
 
     assert ent.contact_email is not None, "contact_email should be set from default"
     assert isinstance(ent.contact_email, str), "contact_email should be a string"
-    assert (
-        ent.contact_email == "support@example.com"
-    ), "contact_email should match the default value"
+    assert ent.contact_email == "support@example.com", (
+        "contact_email should match the default value"
+    )
 
 
 async def test_email_field_default_can_be_overridden(
@@ -122,9 +122,9 @@ async def test_email_field_default_can_be_overridden(
         contact_email=custom_email,
     )
 
-    assert (
-        ent.contact_email == custom_email
-    ), "contact_email should match the custom value"
+    assert ent.contact_email == custom_email, (
+        "contact_email should match the custom value"
+    )
 
 
 async def test_email_field_with_subdomain(
@@ -192,9 +192,9 @@ async def test_email_field_normalizes_mixed_case(
         email=mixed_case_email,
     )
 
-    assert (
-        ent.email == "user.name@example.com"
-    ), "email should be normalized to lowercase"
+    assert ent.email == "user.name@example.com", (
+        "email should be normalized to lowercase"
+    )
 
 
 async def test_email_field_normalization_persists(
@@ -211,9 +211,9 @@ async def test_email_field_normalization_persists(
     # Reload the entity
     reloaded = await EntTestObject.genx(vc, ent.id)
 
-    assert (
-        reloaded.email == "normalized@example.com"
-    ), "normalized email should persist after reloading"
+    assert reloaded.email == "normalized@example.com", (
+        "normalized email should persist after reloading"
+    )
 
 
 async def test_email_field_normalizes_default_override(
@@ -227,9 +227,9 @@ async def test_email_field_normalizes_default_override(
         contact_email=uppercase_email,
     )
 
-    assert (
-        ent.contact_email == "custom@example.com"
-    ), "contact_email should be normalized even when overriding default"
+    assert ent.contact_email == "custom@example.com", (
+        "contact_email should be normalized even when overriding default"
+    )
 
 
 async def test_email_field_normalizes_on_update(
@@ -250,6 +250,6 @@ async def test_email_field_normalizes_on_update(
     mut.email = "UPDATED@EXAMPLE.COM"
     updated_ent = await mut.gen_savex()
 
-    assert (
-        updated_ent.email == "updated@example.com"
-    ), "email should be normalized during update"
+    assert updated_ent.email == "updated@example.com", (
+        "email should be normalized during update"
+    )
