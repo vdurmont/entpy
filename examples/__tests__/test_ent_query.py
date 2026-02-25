@@ -104,7 +104,7 @@ async def test_ent_query_count(vc: ExampleViewerContext) -> None:
     results = (
         await EntTestObject.query(vc)
         .where(EntTestObjectModel.firstname == firstname)
-        .gen_count_NO_PRIVACY()
+        .gen_count()
     )
 
     assert results == 3
@@ -127,13 +127,11 @@ async def test_ent_query_count_force_no_privacy() -> None:
 
     # Without force_no_privacy, count should be 0 because privacy filters them out
     # (count is <= 50, so it loads entities and applies privacy)
-    count_with_privacy = await EntSingleRule.query(regular_vc).gen_count_NO_PRIVACY()
+    count_with_privacy = await EntSingleRule.query(regular_vc).gen_count()
     assert count_with_privacy == 0
 
     # With force_no_privacy=True, count should be 5 (bypasses privacy completely)
-    count_without_privacy = await EntSingleRule.query(regular_vc).gen_count_NO_PRIVACY(
-        force_no_privacy=True
-    )
+    count_without_privacy = await EntSingleRule.query(regular_vc).gen_count_NO_PRIVACY()
     assert count_without_privacy == 5
 
 

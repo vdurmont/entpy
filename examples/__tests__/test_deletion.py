@@ -58,7 +58,7 @@ async def test_soft_delete_default_queries_with_regular_vc(
     # Don't get it by default in queries with regular vc
     objs = await EntTestObject.query(vc).gen()
     assert len(objs) == 0, "Query should filter out the soft deleted ents"
-    count = await EntTestObject.query(vc).gen_count_NO_PRIVACY()
+    count = await EntTestObject.query(vc).gen_count()
     assert count == 0
 
 
@@ -73,7 +73,7 @@ async def test_soft_delete_specific_queries_with_regular_vc(
     assert len(objs) == 0, (
         "Query should never return the soft deleted ents with regular vc"
     )
-    count = await EntTestObject.query(vc).with_soft_deleted().gen_count_NO_PRIVACY()
+    count = await EntTestObject.query(vc).with_soft_deleted().gen_count()
     assert count == 0
 
 
@@ -87,7 +87,7 @@ async def test_soft_delete_default_queries_with_super_vc(
     test_vc = ExampleTestViewerContext()
     objs = await EntTestObject.query(test_vc).gen()
     assert len(objs) == 0, "Query should filter out the soft deleted ents"
-    count = await EntTestObject.query(test_vc).gen_count_NO_PRIVACY()
+    count = await EntTestObject.query(test_vc).gen_count()
     assert count == 0
 
 
@@ -102,7 +102,5 @@ async def test_soft_delete_specific_queries_with_super_vc(
     objs = await EntTestObject.query(test_vc).with_soft_deleted().gen()
     assert len(objs) == 1, "Query should return the soft deleted ents when requested"
     assert objs[0].id == obj.id
-    count = (
-        await EntTestObject.query(test_vc).with_soft_deleted().gen_count_NO_PRIVACY()
-    )
+    count = await EntTestObject.query(test_vc).with_soft_deleted().gen_count()
     assert count == 1
