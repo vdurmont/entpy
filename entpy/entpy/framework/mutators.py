@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import UUID
@@ -17,6 +18,8 @@ from entpy.framework.viewer_context import ViewerContext
 VC = TypeVar("VC")
 ENT = TypeVar("ENT")
 ENTMODEL = TypeVar("ENTMODEL")
+
+log = logging.getLogger(__name__)
 
 
 class EntMutatorAction[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMixin]:
@@ -45,6 +48,14 @@ class EntMutatorAction[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMix
             for validator in field._validators:
                 if not validator.validate(getattr(self.model, field.name)):
                     raise ValidationError(f"Field {field.name} is invalid")
+
+    def record_events(self) -> None:
+        for descriptor in [self.schema] + self.schema.get_patterns():
+            if fields := descriptor.get_event_fields():
+                payload = {field: getattr(self.model, field) for field in fields}
+                db.session.info.setdefault("events", []).append(
+                    (descriptor.get_table_name(), payload)
+                )
 
 
 class EntMutatorCreationAction[
@@ -85,6 +96,7 @@ class EntMutatorCreationAction[
                 f"Current viewer context is not authorized to CREATE {self.ent_type.__name__} with ID {ent.id}"
             )
         await db.session.flush()
+        self.record_events()
         return await self.ent_type._genx_from_model(self.vc, self.model)  # noqa: SLF001
 
     async def gen_savex_or_403(self) -> ENT:
@@ -116,6 +128,7 @@ class EntMutatorUpdateAction[
             )
         await db.session.flush()
         await db.session.refresh(self.model)
+        self.record_events()
         return self.ent
 
     async def gen_savex_or_403(self) -> ENT:

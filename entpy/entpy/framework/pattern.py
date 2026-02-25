@@ -9,3 +9,7 @@ class Pattern(Descriptor):
 
         Use the class name. For example, for `EntTestSchema`, return `EntTest`."""
         return None
+
+    @classmethod
+    def get_table_name(cls) -> str:
+        return "ent_" + super().get_table_name() + "_view"

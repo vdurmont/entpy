@@ -22,7 +22,7 @@ Base = declarative_base(metadata=metadata)
 
 
 session = SessionLocal()
-init_entpy(session)
+init_entpy(engine, session)
 
 
 async def init_db() -> None:

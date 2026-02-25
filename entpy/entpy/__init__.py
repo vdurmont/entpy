@@ -1,6 +1,9 @@
 from .framework.action import Action  # noqa: F401
 from .framework.composite_index import CompositeIndex  # noqa: F401
-from .framework.database import db
+from .framework.database import (
+    db,
+    event_subscription,  # noqa: F401
+)
 from .framework.decision import Decision  # noqa: F401
 from .framework.deny_is_soft_deleted import DenyIfSoftDeleted  # noqa: F401
 from .framework.ent import Ent, generate_ent_id, validate_ent_id  # noqa: F401

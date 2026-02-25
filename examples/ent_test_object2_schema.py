@@ -21,3 +21,6 @@ class EntTestObject2Schema(Schema):
 
     def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         return [AllowAll()]
+
+    def get_event_fields(self) -> list[str]:
+        return ["id", "some_field"]
