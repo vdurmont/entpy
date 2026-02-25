@@ -125,18 +125,20 @@ class EntQuery[
         except EntNotFoundError as e:
             raise NotFound from e
 
-    async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:  # noqa: N802
+    async def gen_count_NO_PRIVACY(self) -> int:  # noqa: N802
         count_query = (
             self._finalize_query()
             .with_only_columns(func.count(), maintain_column_froms=True)
             .order_by(None)
         )
-        count_result = await db.session.execute(count_query)
-        count = count_result.scalar()
+        count = await db.session.scalar(count_query)
         if count is None:
             raise ExecutionError("Unable to get the count")
+        return count
 
-        if count <= 50 and not force_no_privacy:
+    async def gen_count(self, privacy_threshold: int = 50) -> int:  # noqa: N802
+        count = await self.gen_count_NO_PRIVACY()
+        if count <= privacy_threshold:
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
