@@ -15,6 +15,9 @@ from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
+from pydantic import Field as APIField
+from sqlalchemy import Integer
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 if TYPE_CHECKING:
@@ -28,16 +31,18 @@ if TYPE_CHECKING:
 class EntTestPatternModel(EntModel):
     __abstract__ = True
 
+    limit: Mapped[int | None] = mapped_column(Integer(), nullable=True)
+
 
 class EntTestPatternAPIModel(APIEntity):
-    pass
+    limit: int | None = APIField(None)
 
 
 class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel]):
     m = EntTestPatternModel
 
     if TYPE_CHECKING:
-        pass
+        limit: int | None
 
     @classmethod
     @cache
@@ -114,7 +119,7 @@ class IEntTestPatternMutatorUpdateAction(ABC):
     vc: ExampleViewerContext
     ent: IEntTestPattern
     if TYPE_CHECKING:
-        pass
+        limit: int | None
 
     @abstractmethod
     async def gen_savex(self) -> IEntTestPattern:
@@ -141,10 +146,15 @@ class IEntTestPatternMutatorDeletionAction(ABC):
 class IEntTestPatternExample:
     @classmethod
     async def gen_create(
-        cls, vc: ExampleViewerContext, created_at: datetime | None = None
+        cls,
+        vc: ExampleViewerContext,
+        created_at: datetime | None = None,
+        limit: int | None = None,
     ) -> IEntTestPattern:
         # TODO make sure we only use this in test mode
 
         from .ent_test_object2 import EntTestObject2Example
 
-        return await EntTestObject2Example.gen_create(vc=vc, created_at=created_at)
+        return await EntTestObject2Example.gen_create(
+            vc=vc, created_at=created_at, limit=limit
+        )

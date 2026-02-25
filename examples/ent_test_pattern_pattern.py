@@ -1,4 +1,4 @@
-from entpy import Field, Pattern
+from entpy import Field, Pattern, IntField
 
 
 class EntTestPatternPattern(Pattern):
@@ -6,4 +6,7 @@ class EntTestPatternPattern(Pattern):
         return "EntTestObject2"
 
     def get_fields(self) -> list[Field]:
-        return []
+        return [IntField("limit")]
+
+    def get_event_fields(self) -> list[str]:
+        return ["id", "limit"]

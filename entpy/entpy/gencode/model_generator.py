@@ -1,5 +1,3 @@
-import re
-
 from entpy import (
     BoolField,
     CompositeIndex,
@@ -115,7 +113,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += "mapped_column(DBUUID()"
             if not field.edge_class.__name__.endswith("Pattern"):
                 # Cannot do FKs for Patterns
-                fields_code += f', ForeignKey("{_get_table_name(edge_base_name)}.id", deferrable=True, initially="DEFERRED")'
+                fields_code += f', ForeignKey("{field.edge_class.get_table_name()}.id", deferrable=True, initially="DEFERRED")'
             fields_code += f"{common_column_attributes})\n"
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
@@ -145,7 +143,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
     metadata = (
         "__abstract__ = True"
         if isinstance(descriptor, Pattern)
-        else f'__tablename__ = "{_get_table_name(base_name)}"'
+        else f'__tablename__ = "{descriptor.get_table_name()}"'
     )
 
     extends = _generate_extends(descriptor=descriptor)
@@ -198,19 +196,6 @@ def _generate_index(index: CompositeIndex, base_name: str) -> str:
 {f"    postgresql_where = {index.where}," if index.where else ""}
 {f"    sqlite_where = {index.where}," if index.where else ""}
 )"""
-
-
-def _get_table_name(base_name: str) -> str:
-    # Remove "Ent" prefix
-    if base_name.startswith("Ent"):
-        base_name = base_name[3:]
-
-    # Convert CamelCase to snake_case
-    # Insert underscore before uppercase letters (except first)
-    base_name = re.sub(r"(?<!^)(?=[A-Z])", "_", base_name)
-
-    # Convert to lowercase
-    return base_name.lower()
 
 
 def _generate_extends(descriptor: Descriptor) -> GeneratedContent:

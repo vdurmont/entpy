@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -30,8 +31,26 @@ class Descriptor(ABC):
             fields += pattern.get_all_fields()
         return _sort_fields(fields)
 
+    def get_event_fields(self) -> list[str]:
+        return []
+
     def get_description(self) -> str:
         return ""
+
+    @classmethod
+    def get_table_name(cls) -> str:
+        base_name = (
+            cls.__name__.removeprefix("Ent")
+            .removesuffix("Schema")
+            .removesuffix("Pattern")
+        )
+
+        # Convert CamelCase to snake_case
+        # Insert underscore before uppercase letters (except first)
+        base_name = re.sub(r"(?<!^)(?=[A-Z])", "_", base_name)
+
+        # Convert to lowercase
+        return base_name.lower()
 
 
 def _sort_fields(fields: list[Field]) -> list[Field]:

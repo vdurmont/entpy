@@ -89,6 +89,7 @@ class EntTestObject2(
         obj5_id: UUID
         a_pattern_validated_field: str | None
         idempotency_key: UUID | None
+        limit: int | None
         obj5_opt_id: UUID | None
         some_field: str | None
         thing_status: ThingStatus | None
@@ -123,6 +124,7 @@ class EntTestObject2Mutator:
         obj5_id: UUID,
         a_pattern_validated_field: str | None = None,
         idempotency_key: UUID | None = None,
+        limit: int | None = None,
         obj5_opt_id: UUID | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
@@ -139,6 +141,7 @@ class EntTestObject2Mutator:
             obj5_id=obj5_id,
             a_pattern_validated_field=a_pattern_validated_field,
             idempotency_key=idempotency_key,
+            limit=limit,
             obj5_opt_id=obj5_opt_id,
             some_field=some_field,
             thing_status=thing_status,
@@ -177,6 +180,7 @@ class EntTestObject2MutatorCreationAction(
         obj5_id: UUID
         a_pattern_validated_field: str | None = None
         idempotency_key: UUID | None = None
+        limit: int | None = None
         obj5_opt_id: UUID | None = None
         some_field: str | None = None
         thing_status: ThingStatus | None = None
@@ -199,6 +203,7 @@ class EntTestObject2MutatorUpdateAction(
         obj5_id: UUID
         a_pattern_validated_field: str | None = None
         idempotency_key: UUID | None = None
+        limit: int | None = None
         obj5_opt_id: UUID | None = None
         some_field: str | None = None
         thing_status: ThingStatus | None = None
@@ -222,6 +227,7 @@ class EntTestObject2Example:
         obj5_id: UUID | Sentinel = NOTHING,
         a_pattern_validated_field: str | Sentinel = NOTHING,
         idempotency_key: UUID | Sentinel = NOTHING,
+        limit: int | None = None,
         obj5_opt_id: UUID | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
@@ -266,6 +272,7 @@ class EntTestObject2Example:
             obj5_id=obj5_id,
             a_pattern_validated_field=a_pattern_validated_field,
             idempotency_key=idempotency_key,
+            limit=limit,
             obj5_opt_id=obj5_opt_id,
             some_field=some_field,
             thing_status=thing_status,

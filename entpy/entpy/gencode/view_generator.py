@@ -81,7 +81,7 @@ view_query: Selectable = union_all(
 )
 
 {to_snake_case(base_name)}_view = create_view(
-    "{to_snake_case(base_name)}_view",
+    "{pattern_class.get_table_name()}",
     view_query,
     metadata=Base.metadata,
 )

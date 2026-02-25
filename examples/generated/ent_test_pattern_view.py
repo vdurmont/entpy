@@ -18,6 +18,7 @@ view_query: Selectable = union_all(
         EntTestObject2Model.created_at,
         EntTestObject2Model.updated_at,
         EntTestObject2Model.soft_deleted_at,
+        EntTestObject2Model.limit,
     ),
 )
 
