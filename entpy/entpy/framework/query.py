@@ -112,9 +112,11 @@ class EntQuery[
     async def genx_first(self, for_update: bool = False) -> ENT:
         ent = await self.gen_first(for_update)
         if not ent:
-            raise EntNotFoundError(
-                f"Expected to find a {self.ent_type.__name__}, got None."
-            )
+            if self.query._whereclause is not None:
+                where = f" for {self.query._whereclause.compile(compile_kwargs={"include_table": False, "literal_binds": True})}"
+            else:
+                where = ""
+            raise EntNotFoundError(f"No {self.ent_type.__name__} found{where}")
         return ent
 
     async def genx_first_or_404(self, for_update: bool = False) -> ENT:
