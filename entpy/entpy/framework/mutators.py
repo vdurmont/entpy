@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import UUID
 
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import BadRequest, Forbidden
 
 from entpy.framework.action import Action
 from entpy.framework.database import db
@@ -104,6 +104,8 @@ class EntMutatorCreationAction[
             return await self.gen_savex()
         except PrivacyError as e:
             raise Forbidden(str(e)) from e
+        except ValidationError as e:
+            raise BadRequest(str(e)) from e
 
 
 class EntMutatorUpdateAction[
@@ -136,6 +138,8 @@ class EntMutatorUpdateAction[
             return await self.gen_savex()
         except PrivacyError as e:
             raise Forbidden(str(e)) from e
+        except ValidationError as e:
+            raise BadRequest(str(e)) from e
 
 
 class EntMutatorDeletionAction[
