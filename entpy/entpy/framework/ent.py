@@ -140,11 +140,11 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
         try:
             return await cls.genx(vc, ent_id, for_update)
         except EntNotFoundError as e:
-            raise NotFound(str(e)) from e
+            raise NotFound from e
         except UnknownTypeError as e:
-            raise NotFound(f"No {cls.__name__} found for id = '{ent_id}'") from e
+            raise NotFound from e
         except ValidationError as e:
-            raise NotFound(str(e)) from e
+            raise NotFound from e
 
     @classmethod
     @abstractmethod
@@ -169,7 +169,7 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
         try:
             return await cls._genx_from_unique(name, vc, value, for_update)
         except EntNotFoundError as e:
-            raise NotFound(str(e)) from e
+            raise NotFound from e
 
     @classmethod
     @abstractmethod
