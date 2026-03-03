@@ -103,7 +103,7 @@ class EntMutatorCreationAction[
         try:
             return await self.gen_savex()
         except PrivacyError as e:
-            raise Forbidden(str(e)) from e
+            raise Forbidden from e
         except ValidationError as e:
             raise BadRequest(str(e)) from e
 
@@ -137,7 +137,7 @@ class EntMutatorUpdateAction[
         try:
             return await self.gen_savex()
         except PrivacyError as e:
-            raise Forbidden(str(e)) from e
+            raise Forbidden from e
         except ValidationError as e:
             raise BadRequest(str(e)) from e
 
@@ -175,4 +175,4 @@ class EntMutatorDeletionAction[
         try:
             await self.gen_save()
         except PrivacyError as e:
-            raise Forbidden(str(e)) from e
+            raise Forbidden from e

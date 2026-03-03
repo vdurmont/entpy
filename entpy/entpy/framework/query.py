@@ -123,7 +123,7 @@ class EntQuery[
         try:
             return await self.genx_first(for_update)
         except EntNotFoundError as e:
-            raise NotFound(str(e)) from e
+            raise NotFound from e
 
     async def gen_count_NO_PRIVACY(self, force_no_privacy: bool = False) -> int:  # noqa: N802
         count_query = (
