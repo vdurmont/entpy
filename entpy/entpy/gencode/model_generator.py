@@ -118,11 +118,6 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
 
-    # Add ent_type field for Pattern models (will be excluded from Schema children)
-    if isinstance(descriptor, Pattern):
-        types_imports.append("from sqlalchemy import String")
-        fields_code += "    ent_type: Mapped[str | None] = mapped_column(String(50), nullable=True)\n"
-
     if isinstance(descriptor, Schema):
         for field in descriptor.get_all_fields():
             if isinstance(field, EdgeField) and issubclass(field.edge_class, Schema):
@@ -151,11 +146,6 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         else f'__tablename__ = "{descriptor.get_table_name()}"'
     )
 
-    # For Schemas that inherit from Patterns, exclude ent_type from the table mapping
-    mapper_args = ""
-    if isinstance(descriptor, Schema) and descriptor.get_patterns():
-        mapper_args = "\n    __mapper_args__ = {'exclude_properties': ['ent_type']}"
-
     extends = _generate_extends(descriptor=descriptor)
 
     return GeneratedContent(
@@ -170,7 +160,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         type_checking_imports=type_checking_imports,
         code=f"""
 class {base_name}Model({extends.code}):
-    {metadata}{mapper_args}
+    {metadata}
 
 {fields_code}
 

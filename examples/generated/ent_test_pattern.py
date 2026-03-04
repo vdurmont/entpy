@@ -17,7 +17,6 @@ from entpy.model import APIEntity
 from evc import ExampleViewerContext
 from pydantic import Field as APIField
 from sqlalchemy import Integer
-from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -33,7 +32,6 @@ class EntTestPatternModel(EntModel):
     __abstract__ = True
 
     limit: Mapped[int | None] = mapped_column(Integer(), nullable=True)
-    ent_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
 
 class EntTestPatternAPIModel(APIEntity):

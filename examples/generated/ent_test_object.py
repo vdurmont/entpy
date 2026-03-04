@@ -68,7 +68,6 @@ privacy_logger = logging.getLogger("entpy.privacy")
 
 class EntTestObjectModel(EntTestThingModel):
     __tablename__ = "test_object"
-    __mapper_args__ = {"exclude_properties": ["ent_type"]}
 
     firstname: Mapped[str] = mapped_column(String(100), nullable=False)
     required_sub_object_id: Mapped[UUID] = mapped_column(

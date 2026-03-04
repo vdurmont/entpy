@@ -57,7 +57,6 @@ class EntTestThingModel(EntModel):
     thing_status: Mapped[ThingStatus | None] = mapped_column(
         DBEnum(ThingStatus, native_enum=True), nullable=True
     )
-    ent_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
 
 class EntTestThingAPIModel(APIEntity):
