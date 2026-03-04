@@ -118,6 +118,11 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
 
+    # Add ent_type field for Pattern models
+    if isinstance(descriptor, Pattern):
+        types_imports.append("from sqlalchemy import String")
+        fields_code += "    ent_type: Mapped[str | None] = mapped_column(String(50), nullable=True)\n"
+
     if isinstance(descriptor, Schema):
         for field in descriptor.get_all_fields():
             if isinstance(field, EdgeField) and issubclass(field.edge_class, Schema):

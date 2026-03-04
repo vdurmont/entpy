@@ -155,3 +155,55 @@ async def test_pattern_mutator_delete(vc: ExampleViewerContext) -> None:
     # Verify it was deleted
     deleted_thing = await IEntTestThing.gen(vc, thing_id)
     assert deleted_thing is None, "Ent should be deleted"
+
+
+async def test_filter_by_ent_type(vc: ExampleViewerContext) -> None:
+    """Test that we can filter pattern queries by ent_type"""
+    # Create different types of ents with unique identifiers
+    obj1 = await EntTestObjectExample.gen_create(vc=vc, a_good_thing="ent_type_test_obj1")
+    obj2 = await EntTestObjectExample.gen_create(vc=vc, a_good_thing="ent_type_test_obj2")
+    obj2_1 = await EntTestObject2Example.gen_create(vc=vc, a_good_thing="ent_type_test_obj2_1")
+    obj2_2 = await EntTestObject2Example.gen_create(vc=vc, a_good_thing="ent_type_test_obj2_2")
+
+    # Query for only EntTestObject type with our test data
+    objects = (
+        await IEntTestThing.query(vc)
+        .where(EntTestThingModel.ent_type == "EntTestObjectModel")
+        .where(EntTestThingModel.a_good_thing.startswith("ent_type_test_obj"))
+        .order_by(EntTestThingModel.a_good_thing.asc())
+        .gen()
+    )
+
+    assert len(objects) == 2
+    assert objects[0].id == obj1.id
+    assert objects[1].id == obj2.id
+
+    # Query for only EntTestObject2 type with our test data
+    objects2 = (
+        await IEntTestThing.query(vc)
+        .where(EntTestThingModel.ent_type == "EntTestObject2Model")
+        .where(EntTestThingModel.a_good_thing.startswith("ent_type_test_obj"))
+        .order_by(EntTestThingModel.a_good_thing.asc())
+        .gen()
+    )
+
+    assert len(objects2) == 2
+    assert objects2[0].id == obj2_1.id
+    assert objects2[1].id == obj2_2.id
+
+    # Verify count with ent_type filter (checking our specific test data)
+    count = (
+        await IEntTestThing.query(vc)
+        .where(EntTestThingModel.ent_type == "EntTestObjectModel")
+        .where(EntTestThingModel.a_good_thing.startswith("ent_type_test_obj"))
+        .gen_count_NO_PRIVACY()
+    )
+    assert count == 2
+
+    count2 = (
+        await IEntTestThing.query(vc)
+        .where(EntTestThingModel.ent_type == "EntTestObject2Model")
+        .where(EntTestThingModel.a_good_thing.startswith("ent_type_test_obj"))
+        .gen_count_NO_PRIVACY()
+    )
+    assert count2 == 2
