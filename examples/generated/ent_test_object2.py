@@ -50,6 +50,7 @@ privacy_logger = logging.getLogger("entpy.privacy")
 
 class EntTestObject2Model(EntTestThingModel, EntTestPatternModel):
     __tablename__ = "test_object2"
+    __mapper_args__ = {"exclude_properties": ["ent_type"]}
 
     some_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
     obj5: Mapped["EntTestObject5Model"] = relationship(
