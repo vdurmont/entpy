@@ -42,7 +42,7 @@ view_query: Selectable = union_all(
 )
 
 ent_test_thing_view = create_view(
-    "ent_test_thing_view",
+    "test_thing",
     view_query,
     metadata=Base.metadata,
 )

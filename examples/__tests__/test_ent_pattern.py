@@ -160,10 +160,18 @@ async def test_pattern_mutator_delete(vc: ExampleViewerContext) -> None:
 async def test_filter_by_ent_type(vc: ExampleViewerContext) -> None:
     """Test that we can filter pattern queries by ent_type"""
     # Create different types of ents with unique identifiers
-    obj1 = await EntTestObjectExample.gen_create(vc=vc, a_good_thing="ent_type_test_obj1")
-    obj2 = await EntTestObjectExample.gen_create(vc=vc, a_good_thing="ent_type_test_obj2")
-    obj2_1 = await EntTestObject2Example.gen_create(vc=vc, a_good_thing="ent_type_test_obj2_1")
-    obj2_2 = await EntTestObject2Example.gen_create(vc=vc, a_good_thing="ent_type_test_obj2_2")
+    obj1 = await EntTestObjectExample.gen_create(
+        vc=vc, a_good_thing="ent_type_test_obj1"
+    )
+    obj2 = await EntTestObjectExample.gen_create(
+        vc=vc, a_good_thing="ent_type_test_obj2"
+    )
+    obj2_1 = await EntTestObject2Example.gen_create(
+        vc=vc, a_good_thing="ent_type_test_obj2_1"
+    )
+    obj2_2 = await EntTestObject2Example.gen_create(
+        vc=vc, a_good_thing="ent_type_test_obj2_2"
+    )
 
     # Query for only EntTestObject type with our test data
     objects = (

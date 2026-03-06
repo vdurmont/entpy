@@ -23,7 +23,7 @@ view_query: Selectable = union_all(
 )
 
 ent_test_pattern_view = create_view(
-    "ent_test_pattern_view",
+    "test_pattern",
     view_query,
     metadata=Base.metadata,
 )
