@@ -247,7 +247,11 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     async def _gen_from_unique(
         cls, name: str, vc: VC, value: Any, for_update: bool = False
     ) -> Self | None:
-        query = select(cls.m).where(getattr(cls.m, name) == value)
+        query = (
+            select(cls.m)
+            .where(getattr(cls.m, name) == value)
+            .where(cls.m.soft_deleted_at.is_(None))
+        )
         if for_update:
             query = query.with_for_update()
         async with emulate_for_update(cls.m, name, value, for_update):
