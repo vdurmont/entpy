@@ -11,7 +11,7 @@ class TestEvents:
         obj = await EntTestObject2Example.gen_create(vc, some_field="test", limit=42)
         assert db.session.info.get("events") == [
             ("test_object2", {"id": obj.id, "some_field": "test"}),
-            ("ent_test_pattern_view", {"id": obj.id, "limit": 42}),
+            ("test_pattern", {"id": obj.id, "limit": 42}),
         ]
 
     async def test_dispatch_in_process(self, vc: ExampleViewerContext) -> None:
