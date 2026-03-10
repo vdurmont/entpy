@@ -28,14 +28,6 @@ class EntMutatorAction[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMix
     schema: Schema
     vc: VC
 
-    if not TYPE_CHECKING:
-
-        def __setattr__(self, name: str, value: Any) -> None:
-            if hasattr(self, "model") and name in self.model.__table__.columns:
-                setattr(self.model, name, value)
-            else:
-                super().__setattr__(name, value)
-
     def _validate(self) -> None:
         for field in self.schema.get_all_fields():
             for validator in field._validators:
@@ -74,6 +66,14 @@ class EntMutatorCreationAction[
             **kwargs,
         )
 
+    if not TYPE_CHECKING:
+
+        def __setattr__(self, name: str, value: Any) -> None:
+            if hasattr(self, "model") and name in self.model.__table__.columns:
+                setattr(self.model, name, value)
+            else:
+                super().__setattr__(name, value)
+
     async def gen_savex(self) -> ENT:
         self._validate()
         db.session.add(self.model)
@@ -85,7 +85,7 @@ class EntMutatorCreationAction[
             )
         await db.session.flush()
         self.record_events()
-        return await self.ent_type._genx_from_model(self.vc, self.model)  # noqa: SLF001
+        return ent
 
     async def gen_savex_or_403(self) -> ENT:
         try:
@@ -107,18 +107,33 @@ class EntMutatorUpdateAction[
         self.vc = vc
         self.ent = ent
         self.model = ent.model
+        self._updates: dict[str, Any] = {}
+
+    if not TYPE_CHECKING:
+
+        def __setattr__(self, name: str, value: Any) -> None:
+            if hasattr(self, "model") and name in self.model.__table__.columns:
+                self._updates[name] = value
+            else:
+                super().__setattr__(name, value)
 
     async def gen_savex(self) -> ENT:
-        self._validate()
-        db.session.add(self.model)
         decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context is not authorized to UPDATE {self.ent_type.__name__} with ID {self.ent.id}"
             )
-        await db.session.flush()
-        await db.session.refresh(self.model)
-        self.record_events()
+
+        if self._updates:
+            for name, value in self._updates.items():
+                setattr(self.model, name, value)
+            self._validate()
+
+            db.session.add(self.model)
+            await db.session.flush()
+            await db.session.refresh(self.model)
+            self.record_events()
+
         return self.ent
 
     async def gen_savex_or_403(self) -> ENT:
