@@ -4,7 +4,6 @@ from entpy import (
     DateField,
     DatetimeField,
     EdgeField,
-    EmailField,
     EnumField,
     IntervalField,
     IntField,
@@ -75,12 +74,6 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             types_imports.append("from sqlalchemy.dialects.postgresql import JSONB")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f'mapped_column(JSON().with_variant(JSONB(), "postgresql"){common_column_attributes})\n'
-        elif isinstance(field, EmailField):
-            types_imports.append("from sqlalchemy import String")
-            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += (
-                f"mapped_column(String({field.length}){common_column_attributes})\n"
-            )
         elif isinstance(field, StringField):
             types_imports.append("from sqlalchemy import String")
             attributes = ", collation='nocase'" if not field.case_sensitive else ""

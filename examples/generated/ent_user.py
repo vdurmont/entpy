@@ -38,12 +38,16 @@ privacy_logger = logging.getLogger("entpy.privacy")
 class EntUserModel(EntModel):
     __tablename__ = "user"
 
-    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255, collation="nocase"), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     contact_email: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, server_default="noreply@example.com"
+        String(255, collation="nocase"),
+        nullable=True,
+        server_default="noreply@example.com",
     )
-    secondary_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    secondary_email: Mapped[str | None] = mapped_column(
+        String(255, collation="nocase"), nullable=True
+    )
 
 
 class EntUserAPIModel(APIEntity):
