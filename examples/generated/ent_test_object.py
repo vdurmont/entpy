@@ -77,7 +77,9 @@ class EntTestObjectModel(EntTestThingModel):
     )
     username: Mapped[str] = mapped_column(String(100), nullable=False)
     contact_email: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, server_default="support@example.com"
+        String(255, collation="nocase"),
+        nullable=True,
+        server_default="support@example.com",
     )
     lastname: Mapped[str | None] = mapped_column(
         String(100), nullable=True, server_default="Doe"
@@ -93,7 +95,9 @@ class EntTestObjectModel(EntTestThingModel):
     correlation_id: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
     dob: Mapped[date | None] = mapped_column(Date(), nullable=True)
     duration: Mapped[timedelta | None] = mapped_column(Interval(), nullable=True)
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email: Mapped[str | None] = mapped_column(
+        String(255, collation="nocase"), nullable=True
+    )
     end_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
     is_it_true: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(

@@ -10,7 +10,6 @@ from entpy.framework.database import db
 from entpy.framework.decision import Decision
 from entpy.framework.ent import EntObjectBase, generate_ent_id
 from entpy.framework.errors import PrivacyError, ValidationError
-from entpy.framework.fields.email_field import EmailField
 from entpy.framework.model import ModelMixin
 from entpy.framework.schema import Schema
 from entpy.framework.viewer_context import ViewerContext
@@ -33,12 +32,6 @@ class EntMutatorAction[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMix
 
         def __setattr__(self, name: str, value: Any) -> None:
             if hasattr(self, "model") and name in self.model.__table__.columns:
-                # Normalize email fields
-                if hasattr(self, "schema"):
-                    for field in self.schema.get_all_fields():
-                        if field.name == name and isinstance(field, EmailField):
-                            value = field.normalize(value)
-                            break
                 setattr(self.model, name, value)
             else:
                 super().__setattr__(name, value)
@@ -73,11 +66,6 @@ class EntMutatorCreationAction[
     ) -> None:
         self.vc = vc
         created_at = created_at if created_at else datetime.now(tz=UTC)
-
-        # Normalize email field values before creating the model
-        for field in self.schema.get_all_fields():
-            if isinstance(field, EmailField) and field.name in kwargs:
-                kwargs[field.name] = field.normalize(kwargs[field.name])
 
         self.model = self.model_type(
             id=id if id else generate_ent_id(self.schema.__class__, created_at),  # type: ignore[call-arg]
