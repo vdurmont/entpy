@@ -167,7 +167,8 @@ class InProcessEvents(DatabaseEvents):
 
 @event.listens_for(Session, "after_commit")
 def notify_events(session: Session) -> None:
-    asyncio.create_task(db.events.notify_all(session.info.pop("events", [])))
+    if session.info.get("events"):
+        asyncio.create_task(db.events.notify_all(session.info.pop("events")))
 
 
 @asynccontextmanager
