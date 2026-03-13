@@ -41,6 +41,7 @@ def run(
     examples_list = ""
     models_list_imports = ""
     models_list_mapping = ""
+    id_type_mappings_imports = ""
     id_type_mappings_types = ""
     id_type_mappings_types_to_ents = ""
     for config in configs:
@@ -54,6 +55,9 @@ def run(
             models_list_mapping += f'\n    b"{uuid_hex}": {base_name},'
             models_list_imports += f"\nfrom .{descriptor_output_path.stem} import {base_name}Model  # noqa: F401"  # noqa: E501
             models_list_imports += (
+                f"\nfrom .{descriptor_output_path.stem} import {base_name}"
+            )
+            id_type_mappings_imports += (
                 f"\nfrom .{descriptor_output_path.stem} import {base_name}"
             )
             id_type_mappings_types += f"\n_{to_snake_case(base_name)}_type = sha256({base_name}.__name__.encode()).digest()[:2]"
@@ -120,7 +124,7 @@ from uuid import UUID
 
 from entpy import Ent
 
-{models_list_imports}
+{id_type_mappings_imports}
 
 # Compute type identifiers (first 2 bytes of SHA256 of class name)
 {id_type_mappings_types}
