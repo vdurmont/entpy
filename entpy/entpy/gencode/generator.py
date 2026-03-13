@@ -6,7 +6,7 @@ from entpy import Pattern, Schema
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
-from entpy.gencode.utils import ImportedObject, to_snake_case
+from entpy.gencode.utils import ImportedObject
 from entpy.gencode.view_generator import generate as generate_view
 
 
@@ -41,9 +41,6 @@ def run(
     examples_list = ""
     models_list_imports = ""
     models_list_mapping = ""
-    id_type_mappings_imports = ""
-    id_type_mappings_types = ""
-    id_type_mappings_types_to_ents = ""
     for config in configs:
         descriptor_class = config[0]
         descriptor_output_path = config[1]
@@ -56,13 +53,6 @@ def run(
             models_list_imports += f"\nfrom .{descriptor_output_path.stem} import {base_name}Model  # noqa: F401"  # noqa: E501
             models_list_imports += (
                 f"\nfrom .{descriptor_output_path.stem} import {base_name}"
-            )
-            id_type_mappings_imports += (
-                f"\nfrom .{descriptor_output_path.stem} import {base_name}"
-            )
-            id_type_mappings_types += f"\n_{to_snake_case(base_name)}_type = sha256({base_name}.__name__.encode()).digest()[:2]"
-            id_type_mappings_types_to_ents += (
-                f"\n_{to_snake_case(base_name)}_type: {base_name},"
             )
             examples_list_imports += (
                 f"from .{descriptor_output_path.stem} import {base_name}Example\n"
@@ -117,24 +107,6 @@ UUID_TO_ENT: dict[bytes, type[Ent[{vc.name}, EntModel]]] = {{
 }}
 """
     _write_file(output_path / "all_models.py", models_list_code)
-
-    id_type_mappings_code = f"""
-from hashlib import sha256
-from uuid import UUID
-
-from entpy import Ent
-
-{id_type_mappings_imports}
-
-# Compute type identifiers (first 2 bytes of SHA256 of class name)
-{id_type_mappings_types}
-
-# Map type bytes to Ent classes
-ID_TYPE_MAPPING: dict[bytes, type] = {{
-{id_type_mappings_types_to_ents}
-}}
-"""
-    _write_file(output_path / "all_id_types.py", id_type_mappings_code)
 
     examples_list_code = f"""
 {examples_list_imports}
