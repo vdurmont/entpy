@@ -1,0 +1,32 @@
+from sqlalchemy import (
+    literal_column,
+    select,
+    union_all,
+    Selectable,
+)
+from entpy.framework.view import create_view
+from .ent_other_schema_pattern import EntOtherSchemaPatternModel
+from .ent_test_object4 import EntTestObject4Model
+
+from database import Base
+
+
+view_query: Selectable = union_all(
+    select(
+        literal_column("'EntTestObject4Model'").label("ent_type"),
+        EntTestObject4Model.id,
+        EntTestObject4Model.created_at,
+        EntTestObject4Model.updated_at,
+        EntTestObject4Model.soft_deleted_at,
+    ),
+)
+
+ent_other_schema_pattern_view = create_view(
+    "other_schema_pattern",
+    view_query,
+    metadata=Base.metadata,
+    schema="other",
+)
+Base.registry.map_imperatively(
+    EntOtherSchemaPatternModel, ent_other_schema_pattern_view
+)

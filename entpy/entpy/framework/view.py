@@ -16,4 +16,5 @@ def create_view(
         metadata,
         cascade_on_drop=False,
         replace=True,
+        schema=schema,
     )

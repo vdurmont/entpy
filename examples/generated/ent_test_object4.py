@@ -10,7 +10,11 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
-from .ent_model import EntModel
+from .ent_other_schema_pattern import EntOtherSchemaPatternAPIModel
+from .ent_other_schema_pattern import EntOtherSchemaPatternModel
+from .ent_other_schema_pattern import IEntOtherSchemaPattern
+from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorDeletionAction
+from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorUpdateAction
 from ent_test_object4_schema import EntTestObject4Schema
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
@@ -19,7 +23,6 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
 from pydantic import Field as APIField
@@ -40,8 +43,9 @@ if TYPE_CHECKING:
 privacy_logger = logging.getLogger("entpy.privacy")
 
 
-class EntTestObject4Model(EntModel):
+class EntTestObject4Model(EntOtherSchemaPatternModel):
     __tablename__ = "test_object4"
+    __table_args__ = {"schema": "other"}
 
     other_id: Mapped[UUID | None] = mapped_column(
         DBUUID(),
@@ -54,12 +58,14 @@ class EntTestObject4Model(EntModel):
     )
 
 
-class EntTestObject4APIModel(APIEntity):
+class EntTestObject4APIModel(EntOtherSchemaPatternAPIModel):
     other: "EntTestObject3APIModel | None" = APIField(None)
 
 
 class EntTestObject4(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntTestObject4Model]
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntTestObject4Model],
+    IEntOtherSchemaPattern,
 ):
     m = EntTestObject4Model
     schema = EntTestObject4Schema()
@@ -82,7 +88,7 @@ class EntTestObject4(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestObject4Query:
+    def query(cls, vc: ExampleViewerContext) -> EntTestObject4Query:  # type: ignore[override]
         return EntTestObject4Query(vc=vc)
 
 
@@ -144,7 +150,8 @@ class EntTestObject4MutatorCreationAction(
 
 
 class EntTestObject4MutatorUpdateAction(
-    EntMutatorUpdateAction[ExampleViewerContext, EntTestObject4, EntTestObject4Model]
+    EntMutatorUpdateAction[ExampleViewerContext, EntTestObject4, EntTestObject4Model],
+    IEntOtherSchemaPatternMutatorUpdateAction,
 ):
     ent_type = EntTestObject4
     model_type = EntTestObject4Model
@@ -157,8 +164,9 @@ class EntTestObject4MutatorUpdateAction(
         other_id: UUID | None = None
 
 
-class EntTestObject4MutatorDeletionAction(
-    EntMutatorDeletionAction[ExampleViewerContext, EntTestObject4, EntTestObject4Model]
+class EntTestObject4MutatorDeletionAction(  # type: ignore[misc]
+    EntMutatorDeletionAction[ExampleViewerContext, EntTestObject4, EntTestObject4Model],
+    IEntOtherSchemaPatternMutatorDeletionAction,
 ):
     ent_type = EntTestObject4
 

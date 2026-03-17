@@ -45,5 +45,6 @@ ent_test_thing_view = create_view(
     "test_thing",
     view_query,
     metadata=Base.metadata,
+    schema=None,
 )
 Base.registry.map_imperatively(EntTestThingModel, ent_test_thing_view)

@@ -84,6 +84,7 @@ view_query: Selectable = union_all(
     "{pattern_class.get_table_name()}",
     view_query,
     metadata=Base.metadata,
+    schema={repr(pattern_class.get_table_schema())},
 )
 Base.registry.map_imperatively({base_name}Model, {to_snake_case(base_name)}_view)
 """  # noqa: E501

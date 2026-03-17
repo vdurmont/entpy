@@ -59,4 +59,4 @@ build-backend = "hatchling.build"
 packages = ["entpy"]
 
 [tool.uv.sources]
-sqlalchemy-utils = { git = "https://github.com/mgorven/sqlalchemy-utils", branch = "view-replace-sqlite" }
+sqlalchemy-utils = { git = "https://github.com/mgorven/sqlalchemy-utils", branch = "view-schema" }

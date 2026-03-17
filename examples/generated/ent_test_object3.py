@@ -45,7 +45,7 @@ class EntTestObject3Model(EntModel):
 
     other_id: Mapped[UUID | None] = mapped_column(
         DBUUID(),
-        ForeignKey("test_object4.id", deferrable=True, initially="DEFERRED"),
+        ForeignKey("other.test_object4.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
     other: Mapped["EntTestObject4Model"] = relationship(
