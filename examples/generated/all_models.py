@@ -15,6 +15,7 @@ from .ent_grand_parent import EntGrandParentModel  # noqa: F401
 from .ent_grand_parent import EntGrandParent
 from .ent_mixed_list import EntMixedListModel  # noqa: F401
 from .ent_mixed_list import EntMixedList
+from .ent_other_schema_pattern_view import ent_other_schema_pattern_view  # noqa: F401
 from .ent_parent import EntParentModel  # noqa: F401
 from .ent_parent import EntParent
 from .ent_pass_then_deny import EntPassThenDenyModel  # noqa: F401

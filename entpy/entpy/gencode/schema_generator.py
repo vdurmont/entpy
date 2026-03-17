@@ -26,6 +26,7 @@ def generate(
     schema = schema_class()
     base_name = schema_class.__name__.removesuffix("Schema")
 
+    _validate_table_schemas(schema)
     # Validate that the schema has at least one field
     _validate_has_fields(schema)
     # Validate that all field names are unique
@@ -124,6 +125,15 @@ privacy_logger = logging.getLogger("entpy.privacy")
 
 {introspection_content.code}
 """  # noqa: E501
+
+
+def _validate_table_schemas(schema: Schema) -> None:
+    """Validate that the schema and all patterns have the same table schema."""
+    for pattern in schema.get_patterns():
+        if pattern.get_table_schema() != schema.get_table_schema():
+            raise ValueError(
+                f"Pattern {pattern.__class__.__name__} has a different table schema than the schema"
+            )
 
 
 def _validate_has_fields(schema: Schema) -> None:

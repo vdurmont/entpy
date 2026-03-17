@@ -78,7 +78,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "sentinels", specifier = ">=1.1.1" },
     { name = "sqlalchemy", specifier = "==2.0.43" },
-    { name = "sqlalchemy-utils", git = "https://github.com/mgorven/sqlalchemy-utils?branch=view-replace-sqlite" },
+    { name = "sqlalchemy-utils", git = "https://github.com/mgorven/sqlalchemy-utils?branch=view-schema" },
     { name = "types-sqlalchemy-utils", specifier = ">=1.1.0" },
     { name = "werkzeug", specifier = ">=3.1.6" },
 ]
@@ -496,7 +496,7 @@ wheels = [
 [[package]]
 name = "sqlalchemy-utils"
 version = "0.42.0"
-source = { git = "https://github.com/mgorven/sqlalchemy-utils?branch=view-replace-sqlite#13c12fef35905bf5bf861a23a4c5141182b57efd" }
+source = { git = "https://github.com/mgorven/sqlalchemy-utils?branch=view-schema#9eded1acb1aa8ec0722f05fef51fc2407c726e68" }
 dependencies = [
     { name = "sqlalchemy" },
 ]

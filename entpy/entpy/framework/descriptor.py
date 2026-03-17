@@ -52,6 +52,16 @@ class Descriptor(ABC):
         # Convert to lowercase
         return base_name.lower()
 
+    @classmethod
+    def get_table_schema(cls) -> str | None:
+        return None
+
+    @classmethod
+    def get_qualified_table_name(cls) -> str:
+        if cls.get_table_schema():
+            return f"{cls.get_table_schema()}.{cls.get_table_name()}"
+        return cls.get_table_name()
+
 
 def _sort_fields(fields: list[Field]) -> list[Field]:
     # Separate nullable fields, fields with defaults, and non-nullable fields

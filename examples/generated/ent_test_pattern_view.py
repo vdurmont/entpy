@@ -26,5 +26,6 @@ ent_test_pattern_view = create_view(
     "test_pattern",
     view_query,
     metadata=Base.metadata,
+    schema=None,
 )
 Base.registry.map_imperatively(EntTestPatternModel, ent_test_pattern_view)
