@@ -182,6 +182,14 @@ Index(
 )
 Index(
     None,
+    EntTestObjectModel.a_good_thing,
+    EntTestObjectModel.thing_status,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
+Index(
+    None,
     EntTestObjectModel.firstname,
     postgresql_where=text("soft_deleted_at IS NULL"),
     sqlite_where=text("soft_deleted_at IS NULL"),
@@ -228,6 +236,35 @@ event.listen(
     "after_create",
     CreatePatternUniqueTriggerSqlite(
         "update", "test_thing", "test_object", ["idempotency_key"]
+    ).execute_if(dialect="sqlite"),
+)
+
+event.listen(
+    EntTestObjectModel.__table__,
+    "after_create",
+    CreatePatternUniqueFunctionPostgres(
+        "test_thing", "test_object", ["a_good_thing", "thing_status"]
+    ).execute_if(dialect="postgresql"),
+)
+event.listen(
+    EntTestObjectModel.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerPostgres(
+        "test_thing", "test_object", ["a_good_thing", "thing_status"]
+    ).execute_if(dialect="postgresql"),
+)
+event.listen(
+    EntTestObjectModel.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite(
+        "insert", "test_thing", "test_object", ["a_good_thing", "thing_status"]
+    ).execute_if(dialect="sqlite"),
+)
+event.listen(
+    EntTestObjectModel.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite(
+        "update", "test_thing", "test_object", ["a_good_thing", "thing_status"]
     ).execute_if(dialect="sqlite"),
 )
 

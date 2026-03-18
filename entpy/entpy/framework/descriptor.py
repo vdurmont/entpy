@@ -2,6 +2,7 @@ import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from entpy.framework.composite_index import CompositeIndex
 from entpy.framework.fields.core import Field, FieldWithDefault
 
 if TYPE_CHECKING:
@@ -30,6 +31,15 @@ class Descriptor(ABC):
         for pattern in self.get_patterns():
             fields += pattern.get_all_fields()
         return _sort_fields(fields)
+
+    def get_composite_indexes(self) -> list[CompositeIndex]:
+        return []
+
+    def get_all_composite_indexes(self) -> list[CompositeIndex]:
+        indexs = self.get_composite_indexes()
+        for pattern in self.get_patterns():
+            indexs += pattern.get_composite_indexes()
+        return indexs
 
     def get_event_fields(self) -> list[str]:
         return []
