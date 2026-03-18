@@ -30,7 +30,7 @@ class StringField(
         return f'"{self._example}"' if self._example else None
 
     def generate_default(self) -> str | None:
-        if self._default_value:
+        if self._default_value is not None:
             return f'"{self._default_value}"'
         return None
 
