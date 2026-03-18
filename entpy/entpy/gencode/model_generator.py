@@ -133,6 +133,12 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         else GeneratedContent("")
     )
 
+    triggers = (
+        _generate_triggers(descriptor=descriptor, base_name=base_name)
+        if isinstance(descriptor, Schema)
+        else GeneratedContent("")
+    )
+
     metadata = (
         "__abstract__ = True"
         if isinstance(descriptor, Pattern)
@@ -151,7 +157,8 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         ]
         + types_imports
         + indexes.imports
-        + extends.imports,
+        + extends.imports
+        + triggers.imports,
         type_checking_imports=type_checking_imports,
         code=f"""
 class {base_name}Model({extends.code}):
@@ -160,6 +167,8 @@ class {base_name}Model({extends.code}):
 {fields_code}
 
 {indexes.code}
+
+{triggers.code}
 """,
     )
 
@@ -209,3 +218,55 @@ def _generate_extends(descriptor: Descriptor) -> GeneratedContent:
         if code
         else GeneratedContent(code="EntModel")
     )
+
+
+def gen_trigger_events(
+    base_name: str, pattern: str, table: str, columns: list[str]
+) -> str:
+    column_list = ", ".join([f'"{column}"' for column in columns])
+    return f"""
+event.listen(
+    {base_name}Model.__table__,
+    "after_create",
+    CreatePatternUniqueFunctionPostgres("{pattern}", "{table}", [{column_list}]).execute_if(dialect="postgresql"),
+)
+event.listen(
+    {base_name}Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerPostgres("{pattern}", "{table}", [{column_list}]).execute_if(dialect="postgresql"),
+)
+event.listen(
+    {base_name}Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite("insert", "{pattern}", "{table}", [{column_list}]).execute_if(dialect="sqlite"),
+)
+event.listen(
+    {base_name}Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite("update", "{pattern}", "{table}", [{column_list}]).execute_if(dialect="sqlite"),
+)
+"""
+
+
+def _generate_triggers(descriptor: Descriptor, base_name: str) -> GeneratedContent:
+    code = ""
+    for pattern in descriptor.get_patterns():
+        for field in pattern.get_fields():
+            if field.is_unique:
+                code += gen_trigger_events(
+                    base_name,
+                    pattern.get_table_name(),
+                    descriptor.get_table_name(),
+                    [field.name],
+                )
+
+    if code:
+        return GeneratedContent(
+            code=code,
+            imports=[
+                "from sqlalchemy import event, DDL",
+                "from entpy.framework.triggers import CreatePatternUniqueFunctionPostgres, CreatePatternUniqueTriggerPostgres, CreatePatternUniqueTriggerSqlite",
+            ],
+        )
+    else:
+        return GeneratedContent("")

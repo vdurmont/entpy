@@ -6,6 +6,7 @@ description = "EntPy is a data access and privacy framework that augments SQLAlc
 authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
 dependencies = [
     "aiosqlite>=0.21.0",
+    "alembic>=1.18.4",
     "email-validator>=2.0.0",
     "greenlet>=3.2.4",
     "pydantic>=2.12.5",
