@@ -30,12 +30,18 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
+from entpy.framework.triggers import (
+    CreatePatternUniqueFunctionPostgres,
+    CreatePatternUniqueTriggerPostgres,
+    CreatePatternUniqueTriggerSqlite,
+)
 from functools import cache
 from privacy import PrivacyMixin
 from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Index, text
 from sqlalchemy import String
+from sqlalchemy import event
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from typing import TYPE_CHECKING
@@ -68,6 +74,36 @@ Index(
     unique=True,
     postgresql_where=text("soft_deleted_at IS NULL"),
     sqlite_where=text("soft_deleted_at IS NULL"),
+)
+
+
+event.listen(
+    EntTestObject2Model.__table__,
+    "after_create",
+    CreatePatternUniqueFunctionPostgres(
+        "test_thing", "test_object2", ["idempotency_key"]
+    ).execute_if(dialect="postgresql"),
+)
+event.listen(
+    EntTestObject2Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerPostgres(
+        "test_thing", "test_object2", ["idempotency_key"]
+    ).execute_if(dialect="postgresql"),
+)
+event.listen(
+    EntTestObject2Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite(
+        "insert", "test_thing", "test_object2", ["idempotency_key"]
+    ).execute_if(dialect="sqlite"),
+)
+event.listen(
+    EntTestObject2Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite(
+        "update", "test_thing", "test_object2", ["idempotency_key"]
+    ).execute_if(dialect="sqlite"),
 )
 
 

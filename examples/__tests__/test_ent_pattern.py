@@ -1,6 +1,7 @@
 import pytest
 from uuid import uuid4
 from werkzeug.exceptions import NotFound
+from sqlalchemy.exc import IntegrityError
 from ent_test_thing_pattern import ThingStatus
 from evc import ExampleViewerContext
 from generated.ent_test_object import (
@@ -9,6 +10,7 @@ from generated.ent_test_object import (
 )
 from generated.ent_test_object2 import (
     EntTestObject2Example,
+    EntTestObject2Mutator,
 )
 from generated.ent_test_object5 import EntTestObject5Example
 from generated.ent_test_thing import IEntTestThing, IEntTestThingMutator
@@ -215,3 +217,20 @@ async def test_filter_by_ent_type(vc: ExampleViewerContext) -> None:
         .gen_count_NO_PRIVACY()
     )
     assert count2 == 2
+
+
+async def test_unique_across_schemas_insert(vc: ExampleViewerContext) -> None:
+    object1 = await EntTestObjectExample.gen_create(vc=vc)
+    with pytest.raises(IntegrityError):
+        await EntTestObject2Example.gen_create(
+            vc=vc, idempotency_key=object1.idempotency_key
+        )
+
+
+async def test_unique_across_schemas_update(vc: ExampleViewerContext) -> None:
+    object1 = await EntTestObjectExample.gen_create(vc=vc)
+    object2 = await EntTestObject2Example.gen_create(vc=vc)
+    mutator = EntTestObject2Mutator.update(vc, object2)
+    mutator.idempotency_key = object1.idempotency_key
+    with pytest.raises(IntegrityError):
+        await mutator.gen_savex()
