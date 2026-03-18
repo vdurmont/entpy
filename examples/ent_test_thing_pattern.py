@@ -1,4 +1,12 @@
-from entpy import Field, Pattern, StringField, EnumField, FieldValidator, EdgeField
+from entpy import (
+    Field,
+    Pattern,
+    StringField,
+    EnumField,
+    FieldValidator,
+    EdgeField,
+    CompositeIndex,
+)
 from entpy.framework.fields.uuid_field import UuidField
 from ent_test_object5_schema import EntTestObject5Schema
 from enum import Enum
@@ -34,4 +42,9 @@ class EntTestThingPattern(Pattern):
             StringField("a_pattern_validated_field", 100)
             .example("vdurmont")
             .validators([MyValidator()]),
+        ]
+
+    def get_composite_indexes(self) -> list[CompositeIndex]:
+        return [
+            CompositeIndex(field_names=["a_good_thing", "thing_status"], unique=True),
         ]

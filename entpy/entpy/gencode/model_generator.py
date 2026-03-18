@@ -174,7 +174,7 @@ class {base_name}Model({extends.code}):
 
 
 def _generate_indexes(schema: Schema, base_name: str) -> GeneratedContent:
-    indexes = schema.get_composite_indexes()
+    indexes = schema.get_all_composite_indexes()
     for field in schema.get_all_fields():
         if field.is_indexed or field.is_unique:
             indexes.append(
@@ -258,6 +258,14 @@ def _generate_triggers(descriptor: Descriptor, base_name: str) -> GeneratedConte
                     pattern.get_table_name(),
                     descriptor.get_table_name(),
                     [field.name],
+                )
+        for index in pattern.get_composite_indexes():
+            if index.unique:
+                code += gen_trigger_events(
+                    base_name,
+                    pattern.get_table_name(),
+                    descriptor.get_table_name(),
+                    index.field_names,
                 )
 
     if code:
