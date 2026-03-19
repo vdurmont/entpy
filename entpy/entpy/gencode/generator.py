@@ -187,10 +187,18 @@ def get_children_schema_classes(pattern_class: type[Pattern]) -> list[type[Schem
         # Safe to ignore the typing error here: we're not instantiating the base
         # class and all subclasses implement the right functions
         sch = schema_class()  # type: ignore
-        patterns = sch.get_patterns()
-        for pattern in patterns:
-            if isinstance(pattern, pattern_class):
-                result.append(schema_class)
+        if _uses_pattern_recursively(sch, pattern_class):
+            result.append(schema_class)
     # Sort by class name for deterministic ordering
     result.sort(key=lambda schema: schema.__name__)
     return result
+
+
+def _uses_pattern_recursively(descriptor: Schema | Pattern, pattern_class: type[Pattern]) -> bool:
+    patterns = descriptor.get_patterns()
+    for pattern in patterns:
+        if isinstance(pattern, pattern_class):
+            return True
+        if _uses_pattern_recursively(pattern, pattern_class):
+            return True
+    return False

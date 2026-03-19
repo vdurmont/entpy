@@ -3,6 +3,7 @@ from .ent_delegate_then_rule import EntDelegateThenRuleExample
 from .ent_delegating_child import EntDelegatingChildExample
 from .ent_delegating_grandchild import EntDelegatingGrandchildExample
 from .ent_grand_parent import EntGrandParentExample
+from .ent_inherited_test import EntInheritedTestExample
 from .ent_mixed_list import EntMixedListExample
 from .ent_parent import EntParentExample
 from .ent_pass_then_deny import EntPassThenDenyExample
@@ -23,6 +24,7 @@ examples = [
     EntDelegatingChildExample,
     EntDelegatingGrandchildExample,
     EntGrandParentExample,
+    EntInheritedTestExample,
     EntMixedListExample,
     EntParentExample,
     EntPassThenDenyExample,

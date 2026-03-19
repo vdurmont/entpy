@@ -13,6 +13,10 @@ from .ent_delegating_grandchild import EntDelegatingGrandchildModel  # noqa: F40
 from .ent_delegating_grandchild import EntDelegatingGrandchild
 from .ent_grand_parent import EntGrandParentModel  # noqa: F401
 from .ent_grand_parent import EntGrandParent
+from .ent_inherited_test_middle_view import ent_inherited_test_middle_view  # noqa: F401
+from .ent_inherited_test import EntInheritedTestModel  # noqa: F401
+from .ent_inherited_test import EntInheritedTest
+from .ent_inherited_test_top_view import ent_inherited_test_top_view  # noqa: F401
 from .ent_mixed_list import EntMixedListModel  # noqa: F401
 from .ent_mixed_list import EntMixedList
 from .ent_other_schema_pattern_view import ent_other_schema_pattern_view  # noqa: F401
@@ -47,6 +51,7 @@ UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x49\xc2": EntDelegatingChild,
     b"\x2a\x0c": EntDelegatingGrandchild,
     b"\x3b\xdf": EntGrandParent,
+    b"\xb6\x61": EntInheritedTest,
     b"\x6f\xd4": EntMixedList,
     b"\x20\x33": EntParent,
     b"\xd5\x27": EntPassThenDeny,

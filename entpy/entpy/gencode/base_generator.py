@@ -15,16 +15,21 @@ def generate(
     privacy_mixin: ImportedObject | None = None,
 ) -> GeneratedContent:
     i = "I" if isinstance(descriptor, Pattern) else ""
-    extends = ",".join(
+    base_parent = None
+    if isinstance(descriptor, Schema):
+        base_parent = f"EntObjectBase[{vc.name}, {base_name}Model]"
+    elif isinstance(descriptor, Pattern) and len(descriptor.get_patterns()) == 0:
+        base_parent = f"EntPatternBase[{vc.name}, {base_name}Model]"
+    extends_list = (
         ([privacy_mixin.name] if privacy_mixin else [])
+        + [base_parent]
         + [
-            f"Ent{"Pattern" if isinstance(descriptor, Pattern) else "Object"}Base[{vc.name}, {base_name}Model]"
-        ]
-        + [
-            f"I{pattern.__class__.__name__.removesuffix("Pattern")}"
+            f"I{pattern.__class__.__name__.removesuffix('Pattern')}"
             for pattern in descriptor.get_patterns()
         ]
     )
+    extends = ",".join(list(filter(None, extends_list)))
+    print(f"FOR {descriptor.__class__.__name__}, extends = {extends}")
 
     fields = _generate_fields(descriptor)
     edge_gens, edge_types = _generate_edge_gens(descriptor)

@@ -1,9 +1,12 @@
-import pytest
 from uuid import uuid4
-from werkzeug.exceptions import NotFound
+
+import pytest
 from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import NotFound
+
 from ent_test_thing_pattern import ThingStatus
 from evc import ExampleViewerContext
+from generated.ent_inherited_test import EntInheritedTestExample
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
@@ -13,8 +16,11 @@ from generated.ent_test_object2 import (
     EntTestObject2Mutator,
 )
 from generated.ent_test_object5 import EntTestObject5Example
-from generated.ent_test_thing import IEntTestThing, IEntTestThingMutator
-from generated.ent_test_thing import EntTestThingModel
+from generated.ent_test_thing import (
+    EntTestThingModel,
+    IEntTestThing,
+    IEntTestThingMutator,
+)
 
 
 async def test_gen_from_pattern(vc: ExampleViewerContext) -> None:
@@ -234,3 +240,8 @@ async def test_unique_across_schemas_update(vc: ExampleViewerContext) -> None:
     mutator.idempotency_key = object1.idempotency_key
     with pytest.raises(IntegrityError):
         await mutator.gen_savex()
+
+
+async def test_pattern_multiple_inheritance(vc: ExampleViewerContext) -> None:
+    example = await EntInheritedTestExample.gen_create(vc)
+    assert example is not None
