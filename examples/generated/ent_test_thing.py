@@ -222,12 +222,12 @@ class IEntTestThingMutatorUpdateAction(ABC):
     vc: ExampleViewerContext
     ent: IEntTestThing
     if TYPE_CHECKING:
-        a_good_thing: str
         obj5_id: UUID
-        a_pattern_validated_field: str | None
-        idempotency_key: UUID | None
         obj5_opt_id: UUID | None
+        a_good_thing: str
         thing_status: ThingStatus | None
+        idempotency_key: UUID | None
+        a_pattern_validated_field: str | None
 
     @abstractmethod
     async def gen_savex(self) -> IEntTestThing:

@@ -117,7 +117,7 @@ if TYPE_CHECKING:
 
     @classmethod
     @cache
-    def _get_child_type(cls, uuid_type: bytes) -> type[I{base_name}]:
+    def _get_child_type(cls, uuid_type: bytes) -> type[I{base_name}]:  {"# type: ignore[override]" if pattern.get_patterns() else ""}
         match uuid_type:
 {child_types.code}
         raise UnknownTypeError(f"Unknown UUID type for I{base_name}: {{uuid_type.hex()}}")
@@ -200,7 +200,17 @@ def _generate_mutator(
 
     # Generate the abstract action classes
     update_action = _generate_update_action(base_name=base_name, vc=vc, pattern=pattern)
-    delete_action = _generate_delete_action(base_name=base_name, vc=vc)
+    delete_action = _generate_delete_action(base_name=base_name, vc=vc, pattern=pattern)
+
+    # Add imports for parent pattern's mutator action classes if needed
+    imports = []
+    parent_patterns = pattern.get_patterns()
+    if parent_patterns:
+        for parent_pattern in parent_patterns:
+            parent_base_name = parent_pattern.__class__.__name__.removesuffix("Pattern")
+            parent_module = "." + to_snake_case(parent_base_name)
+            imports.append(f"from {parent_module} import I{parent_base_name}MutatorUpdateAction")
+            imports.append(f"from {parent_module} import I{parent_base_name}MutatorDeletionAction")
 
     code = f"""
 class I{base_name}Mutator:
@@ -211,7 +221,7 @@ class I{base_name}Mutator:
 {delete_action}
 """
 
-    return GeneratedContent(code=code)
+    return GeneratedContent(code=code, imports=imports)
 
 
 def _generate_delete_checks(
@@ -280,8 +290,8 @@ def _generate_mutator_methods(
 def _generate_update_action(
     base_name: str, vc: ImportedObject, pattern: Pattern
 ) -> str:
-    # Get mutable fields from the pattern
-    fields = pattern.get_all_fields()
+    # Get mutable fields from the pattern (only the ones defined in this pattern)
+    fields = pattern.get_fields()
     mutable_fields = list(filter(lambda f: not f.is_immutable, fields))
 
     # Build up the list of field attributes
@@ -293,8 +303,18 @@ def _generate_update_action(
         ]
     )
 
+    # Determine parent class for the mutator update action
+    parent_patterns = pattern.get_patterns()
+    if parent_patterns:
+        # Inherit from the parent pattern's mutator update action
+        parent_pattern = parent_patterns[0]  # Assume single inheritance for now
+        parent_base_name = parent_pattern.__class__.__name__.removesuffix("Pattern")
+        parent_class = f"I{parent_base_name}MutatorUpdateAction"
+    else:
+        parent_class = "ABC"
+
     return f"""
-class I{base_name}MutatorUpdateAction(ABC):
+class I{base_name}MutatorUpdateAction({parent_class}):
     vc: {vc.name}
     ent: I{base_name}
     if TYPE_CHECKING:
@@ -310,9 +330,19 @@ class I{base_name}MutatorUpdateAction(ABC):
 """
 
 
-def _generate_delete_action(base_name: str, vc: ImportedObject) -> str:
+def _generate_delete_action(base_name: str, vc: ImportedObject, pattern: Pattern) -> str:
+    # Determine parent class for the mutator deletion action
+    parent_patterns = pattern.get_patterns()
+    if parent_patterns:
+        # Inherit from the parent pattern's mutator deletion action
+        parent_pattern = parent_patterns[0]  # Assume single inheritance for now
+        parent_base_name = parent_pattern.__class__.__name__.removesuffix("Pattern")
+        parent_class = f"I{parent_base_name}MutatorDeletionAction"
+    else:
+        parent_class = "ABC"
+
     return f"""
-class I{base_name}MutatorDeletionAction(ABC):
+class I{base_name}MutatorDeletionAction({parent_class}):
     vc: {vc.name}
     ent: I{base_name}
 

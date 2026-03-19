@@ -3,7 +3,7 @@
 ####################
 
 from __future__ import annotations
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from datetime import datetime
 from functools import cache
 from typing import TYPE_CHECKING
@@ -13,6 +13,8 @@ from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 from .ent_inherited_test_top import EntInheritedTestTopAPIModel
 from .ent_inherited_test_top import EntInheritedTestTopModel
 from .ent_inherited_test_top import IEntInheritedTestTop
+from .ent_inherited_test_top import IEntInheritedTestTopMutatorDeletionAction
+from .ent_inherited_test_top import IEntInheritedTestTopMutatorUpdateAction
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from evc import ExampleViewerContext
@@ -57,7 +59,7 @@ class IEntInheritedTestMiddle(IEntInheritedTestTop):
 
     @classmethod
     @cache
-    def _get_child_type(cls, uuid_type: bytes) -> type[IEntInheritedTestMiddle]:
+    def _get_child_type(cls, uuid_type: bytes) -> type[IEntInheritedTestMiddle]:  # type: ignore[override]
         match uuid_type:
             case b"\xb6\x61":
                 from .ent_inherited_test import EntInheritedTest
@@ -125,11 +127,12 @@ class IEntInheritedTestMiddleMutator:
         )
 
 
-class IEntInheritedTestMiddleMutatorUpdateAction(ABC):
+class IEntInheritedTestMiddleMutatorUpdateAction(
+    IEntInheritedTestTopMutatorUpdateAction
+):
     vc: ExampleViewerContext
     ent: IEntInheritedTestMiddle
     if TYPE_CHECKING:
-        base_field: str
         middle_field: int
 
     @abstractmethod
@@ -141,7 +144,9 @@ class IEntInheritedTestMiddleMutatorUpdateAction(ABC):
         pass
 
 
-class IEntInheritedTestMiddleMutatorDeletionAction(ABC):
+class IEntInheritedTestMiddleMutatorDeletionAction(
+    IEntInheritedTestTopMutatorDeletionAction
+):
     vc: ExampleViewerContext
     ent: IEntInheritedTestMiddle
 
