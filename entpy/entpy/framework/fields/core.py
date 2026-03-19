@@ -14,6 +14,7 @@ class Field(ABC, Generic[T]):
     original_name: str
     nullable: bool = True
     is_unique: bool = False
+    is_unique_pattern: bool = False
     is_indexed: bool = False
     is_immutable: bool = False
     description: str | None = None
@@ -33,8 +34,9 @@ class Field(ABC, Generic[T]):
         self.nullable = False
         return self
 
-    def unique(self) -> Self:
+    def unique(self, pattern: bool = True) -> Self:
         self.is_unique = True
+        self.is_unique_pattern = pattern
         return self
 
     def index(self) -> Self:

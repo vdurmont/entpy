@@ -83,6 +83,13 @@ Index(
     postgresql_where=text("soft_deleted_at IS NULL"),
     sqlite_where=text("soft_deleted_at IS NULL"),
 )
+Index(
+    None,
+    EntTestObject2Model.limit,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
 
 
 event.listen(
@@ -300,7 +307,7 @@ class EntTestObject2Example:
         obj5_id: UUID | Sentinel = NOTHING,
         a_pattern_validated_field: str | Sentinel = NOTHING,
         idempotency_key: UUID | Sentinel = NOTHING,
-        limit: int | None = None,
+        limit: int | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
@@ -331,6 +338,16 @@ class EntTestObject2Example:
             generator = field.get_example_generator()
             if generator:
                 idempotency_key = generator()
+
+        if isinstance(limit, Sentinel):
+            field = _get_field("limit")
+            if not isinstance(field, FieldWithDynamicExample):
+                raise TypeError(
+                    "Internal ent error: Field {field.name} must support dynamic examples."
+                )
+            generator = field.get_example_generator()
+            if generator:
+                limit = generator()
 
         if isinstance(obj5_opt_id, Sentinel) or obj5_opt_id is None:
             from .ent_test_object5 import EntTestObject5Example
