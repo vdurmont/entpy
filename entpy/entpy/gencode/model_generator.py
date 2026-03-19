@@ -252,7 +252,7 @@ def _generate_triggers(descriptor: Descriptor, base_name: str) -> GeneratedConte
     code = ""
     for pattern in descriptor.get_patterns():
         for field in pattern.get_fields():
-            if field.is_unique:
+            if field.is_unique_pattern:
                 code += gen_trigger_events(
                     base_name,
                     pattern.get_table_name(),

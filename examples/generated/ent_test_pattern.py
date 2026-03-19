@@ -6,7 +6,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
-from typing import TYPE_CHECKING
+from typing import Self, TYPE_CHECKING
 
 
 from .ent_model import EntModel
@@ -43,6 +43,24 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
 
     if TYPE_CHECKING:
         limit: int | None
+
+        @classmethod
+        async def gen_from_limit(
+            cls, vc: ExampleViewerContext, limit: int, for_update: bool = False
+        ) -> Self | None:
+            pass
+
+        @classmethod
+        async def genx_from_limit(
+            cls, vc: ExampleViewerContext, limit: int, for_update: bool = False
+        ) -> Self:
+            pass
+
+        @classmethod
+        async def genx_or_404_from_limit(
+            cls, vc: ExampleViewerContext, limit: int, for_update: bool = False
+        ) -> Self:
+            pass
 
     @classmethod
     @cache
