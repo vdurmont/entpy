@@ -194,7 +194,9 @@ def get_children_schema_classes(pattern_class: type[Pattern]) -> list[type[Schem
     return result
 
 
-def _uses_pattern_recursively(descriptor: Schema | Pattern, pattern_class: type[Pattern]) -> bool:
+def _uses_pattern_recursively(
+    descriptor: Schema | Pattern, pattern_class: type[Pattern]
+) -> bool:
     patterns = descriptor.get_patterns()
     for pattern in patterns:
         if isinstance(pattern, pattern_class):

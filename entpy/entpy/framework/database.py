@@ -99,14 +99,16 @@ class DatabaseEvents(ABC):
             await self.notify(table, json.dumps(payload, default=str))
 
     async def subscribe(
-        self, descriptor: type[Descriptor], field: str, value: JSONScalar
-    ) -> asyncio.Queue[dict[str, JSONScalar]]:
+        self,
+        descriptor: type[Descriptor],
+        field: str,
+        value: JSONScalar,
+        queue: asyncio.Queue[dict[str, JSONScalar]],
+    ) -> None:
         table = descriptor.get_table_name()
         if table not in self.queues:
             await self.listen(table)
-        queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(32)
         self.queues[table][(field, value)].append(queue)
-        return queue
 
     def unsubscribe(
         self,
@@ -175,7 +177,8 @@ def notify_events(session: Session) -> None:
 async def event_subscription(
     descriptor: type[Descriptor], field: str, value: JSONScalar
 ) -> AsyncGenerator[asyncio.Queue[dict[str, Any]], None]:
-    queue = await db.events.subscribe(descriptor, field, value)
+    queue: asyncio.Queue[dict[str, JSONScalar]] = asyncio.Queue(32)
+    await db.events.subscribe(descriptor, field, value, queue)
     try:
         yield queue
     finally:
