@@ -209,8 +209,12 @@ def _generate_mutator(
         for parent_pattern in parent_patterns:
             parent_base_name = parent_pattern.__class__.__name__.removesuffix("Pattern")
             parent_module = "." + to_snake_case(parent_base_name)
-            imports.append(f"from {parent_module} import I{parent_base_name}MutatorUpdateAction")
-            imports.append(f"from {parent_module} import I{parent_base_name}MutatorDeletionAction")
+            imports.append(
+                f"from {parent_module} import I{parent_base_name}MutatorUpdateAction"
+            )
+            imports.append(
+                f"from {parent_module} import I{parent_base_name}MutatorDeletionAction"
+            )
 
     code = f"""
 class I{base_name}Mutator:
@@ -330,7 +334,9 @@ class I{base_name}MutatorUpdateAction({parent_class}):
 """
 
 
-def _generate_delete_action(base_name: str, vc: ImportedObject, pattern: Pattern) -> str:
+def _generate_delete_action(
+    base_name: str, vc: ImportedObject, pattern: Pattern
+) -> str:
     # Determine parent class for the mutator deletion action
     parent_patterns = pattern.get_patterns()
     if parent_patterns:
