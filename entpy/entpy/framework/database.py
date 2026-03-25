@@ -137,6 +137,7 @@ class DatabaseEvents(ABC):
 
 class PostgresEvents(DatabaseEvents):
     conn: AsyncConnection | None = None
+    lock = asyncio.Lock()
 
     async def connect(self) -> AsyncConnection:
         conn = await self.engine.connect()
@@ -146,10 +147,11 @@ class PostgresEvents(DatabaseEvents):
         return conn
 
     async def listen(self, table: str) -> None:
-        if self.conn is None:
-            self.conn = await self.connect()
-        conn = await self.conn.get_raw_connection()
-        await conn._connection.add_listener(table, self.callback)
+        async with self.lock:
+            if self.conn is None:
+                self.conn = await self.connect()
+            conn = await self.conn.get_raw_connection()
+            await conn._connection.add_listener(table, self.callback)
 
     async def callback(
         self, _conn: "Connection", _pid: int, channel: str, payload: str
@@ -157,9 +159,10 @@ class PostgresEvents(DatabaseEvents):
         await self.dispatch(channel, payload)
 
     async def notify(self, table: str, payload: str) -> None:
-        if self.conn is None:
-            self.conn = await self.connect()
-        await self.conn.execute(func.pg_notify(table, payload))
+        async with self.lock:
+            if self.conn is None:
+                self.conn = await self.connect()
+            await self.conn.execute(func.pg_notify(table, payload))
 
 
 class InProcessEvents(DatabaseEvents):
