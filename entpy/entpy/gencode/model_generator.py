@@ -57,10 +57,9 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(DateTime(){common_column_attributes})\n"
         elif isinstance(field, EnumField):
-            module = field.enum_class.__module__
             type_name = field.enum_class.__name__
             types_imports.append("from sqlalchemy import Enum as DBEnum")
-            types_imports.append(f"from {module} import {type_name}")
+            types_imports.append(_generate_enum_import(field))
             mapped_type = type_name + " | None" if field.nullable else type_name
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(DBEnum({type_name}, native_enum=True)"
@@ -110,6 +109,12 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += f"{common_column_attributes})\n"
         else:
             raise Exception(f"Unsupported field type: {type(field)}")
+
+    # Add imports for EnumFields only
+    all_fields = descriptor.get_all_fields()
+    for field in all_fields:
+        if isinstance(field, EnumField):
+            types_imports.append(_generate_enum_import(field))
 
     if isinstance(descriptor, Schema):
         for field in descriptor.get_all_fields():
@@ -171,6 +176,12 @@ class {base_name}Model({extends.code}):
 {triggers.code}
 """,
     )
+
+
+def _generate_enum_import(field: EnumField) -> str:
+    module = field.enum_class.__module__
+    type_name = field.enum_class.__name__
+    return f"from {module} import {type_name}"
 
 
 def _generate_indexes(schema: Schema, base_name: str) -> GeneratedContent:
