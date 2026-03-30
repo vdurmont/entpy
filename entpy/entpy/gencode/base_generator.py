@@ -60,7 +60,10 @@ def generate(
     # Make the type checker happy for ents which implement multiple patterns
     if len(descriptor.get_patterns()) > 1:
         child_types = f"""@classmethod
-    def _get_child_type(cls, uuid_type: bytes) -> type[{base_name}]:  # type: ignore[override]
+    def _get_child_type(  # type: ignore[override]
+        cls,
+        uuid_type: bytes,
+    ) -> type[{base_name}]:
         raise NotImplementedError("get_child_type() should only be called on patterns")
     """
 

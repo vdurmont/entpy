@@ -180,7 +180,10 @@ class EntTestObject2(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def _get_child_type(cls, uuid_type: bytes) -> type[EntTestObject2]:  # type: ignore[override]
+    def _get_child_type(  # type: ignore[override]
+        cls,
+        uuid_type: bytes,
+    ) -> type[EntTestObject2]:
         raise NotImplementedError("get_child_type() should only be called on patterns")
 
     @classmethod

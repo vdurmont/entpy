@@ -59,7 +59,10 @@ class IEntInheritedTestMiddle(IEntInheritedTestTop):
 
     @classmethod
     @cache
-    def _get_child_type(cls, uuid_type: bytes) -> type[IEntInheritedTestMiddle]:  # type: ignore[override]
+    def _get_child_type(  # type: ignore[override]
+        cls,
+        uuid_type: bytes,
+    ) -> type[IEntInheritedTestMiddle]:
         match uuid_type:
             case b"\xb6\x61":
                 from .ent_inherited_test import EntInheritedTest

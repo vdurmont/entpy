@@ -58,7 +58,10 @@ class IEntInheritedTestTop(
 
     @classmethod
     @cache
-    def _get_child_type(cls, uuid_type: bytes) -> type[IEntInheritedTestTop]:
+    def _get_child_type(
+        cls,
+        uuid_type: bytes,
+    ) -> type[IEntInheritedTestTop]:
         match uuid_type:
             case b"\xb6\x61":
                 from .ent_inherited_test import EntInheritedTest

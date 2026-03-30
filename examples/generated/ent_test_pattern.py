@@ -73,7 +73,10 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
 
     @classmethod
     @cache
-    def _get_child_type(cls, uuid_type: bytes) -> type[IEntTestPattern]:
+    def _get_child_type(
+        cls,
+        uuid_type: bytes,
+    ) -> type[IEntTestPattern]:
         match uuid_type:
             case b"\x7c\x9a":
                 from .ent_test_object2 import EntTestObject2

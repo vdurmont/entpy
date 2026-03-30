@@ -117,7 +117,10 @@ if TYPE_CHECKING:
 
     @classmethod
     @cache
-    def _get_child_type(cls, uuid_type: bytes) -> type[I{base_name}]:  {"# type: ignore[override]" if pattern.get_patterns() else ""}
+    def _get_child_type(  {"# type: ignore[override]" if pattern.get_patterns() else ""}
+        cls,
+        uuid_type: bytes,
+    ) -> type[I{base_name}]:
         match uuid_type:
 {child_types.code}
         raise UnknownTypeError(f"Unknown UUID type for I{base_name}: {{uuid_type.hex()}}")

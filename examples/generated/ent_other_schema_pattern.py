@@ -53,7 +53,10 @@ class IEntOtherSchemaPattern(
 
     @classmethod
     @cache
-    def _get_child_type(cls, uuid_type: bytes) -> type[IEntOtherSchemaPattern]:
+    def _get_child_type(
+        cls,
+        uuid_type: bytes,
+    ) -> type[IEntOtherSchemaPattern]:
         match uuid_type:
             case b"\x5c\x4c":
                 from .ent_test_object4 import EntTestObject4
