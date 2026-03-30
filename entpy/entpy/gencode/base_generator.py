@@ -29,7 +29,6 @@ def generate(
         ]
     )
     extends = ",".join(list(filter(None, extends_list)))
-    print(f"FOR {descriptor.__class__.__name__}, extends = {extends}")
 
     fields = _generate_fields(descriptor)
     edge_gens, edge_types = _generate_edge_gens(descriptor)
