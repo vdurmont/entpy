@@ -77,7 +77,10 @@ class EntUser(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntUserModel]):
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntUserQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntUserQuery:
         return EntUserQuery(vc=vc)
 
 

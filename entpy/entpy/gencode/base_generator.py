@@ -93,7 +93,10 @@ class {i}{base_name}({extends}):{get_description(descriptor)}
     {child_types}
 
     @classmethod
-    def query(cls, vc: {vc.name}) -> {i}{base_name}Query:  {"# type: ignore[override]" if descriptor.get_patterns() else ""}
+    def query(  {"# type: ignore[override]" if descriptor.get_patterns() else ""}
+        cls,
+        vc: {vc.name},
+    ) -> {i}{base_name}Query:
         return {i}{base_name}Query(vc=vc)
 """,
     )

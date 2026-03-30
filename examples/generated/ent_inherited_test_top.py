@@ -53,7 +53,10 @@ class IEntInheritedTestTop(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> IEntInheritedTestTopQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> IEntInheritedTestTopQuery:
         return IEntInheritedTestTopQuery(vc=vc)
 
     @classmethod

@@ -60,7 +60,10 @@ class EntSingleRule(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntSingleRuleQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntSingleRuleQuery:
         return EntSingleRuleQuery(vc=vc)
 
 

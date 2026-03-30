@@ -187,7 +187,10 @@ class EntTestObject2(
         raise NotImplementedError("get_child_type() should only be called on patterns")
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestObject2Query:  # type: ignore[override]
+    def query(  # type: ignore[override]
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntTestObject2Query:
         return EntTestObject2Query(vc=vc)
 
 

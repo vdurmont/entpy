@@ -60,7 +60,10 @@ class EntGrandParent(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntGrandParentQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntGrandParentQuery:
         return EntGrandParentQuery(vc=vc)
 
 

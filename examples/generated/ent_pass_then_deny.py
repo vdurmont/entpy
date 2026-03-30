@@ -60,7 +60,10 @@ class EntPassThenDeny(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntPassThenDenyQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntPassThenDenyQuery:
         return EntPassThenDenyQuery(vc=vc)
 
 

@@ -83,7 +83,10 @@ class EntChild(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntChildModel])
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntChildQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntChildQuery:
         return EntChildQuery(vc=vc)
 
 

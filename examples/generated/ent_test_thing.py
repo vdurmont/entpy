@@ -128,7 +128,10 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> IEntTestThingQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> IEntTestThingQuery:
         return IEntTestThingQuery(vc=vc)
 
     @classmethod

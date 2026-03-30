@@ -67,7 +67,10 @@ class EntInheritedTest(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntInheritedTestQuery:  # type: ignore[override]
+    def query(  # type: ignore[override]
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntInheritedTestQuery:
         return EntInheritedTestQuery(vc=vc)
 
 

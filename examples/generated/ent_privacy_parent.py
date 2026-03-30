@@ -60,7 +60,10 @@ class EntPrivacyParent(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntPrivacyParentQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntPrivacyParentQuery:
         return EntPrivacyParentQuery(vc=vc)
 
 

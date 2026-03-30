@@ -88,7 +88,10 @@ class EntTestObject4(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestObject4Query:  # type: ignore[override]
+    def query(  # type: ignore[override]
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntTestObject4Query:
         return EntTestObject4Query(vc=vc)
 
 

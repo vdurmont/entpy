@@ -86,7 +86,10 @@ class EntDelegatingGrandchild(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntDelegatingGrandchildQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntDelegatingGrandchildQuery:
         return EntDelegatingGrandchildQuery(vc=vc)
 
 

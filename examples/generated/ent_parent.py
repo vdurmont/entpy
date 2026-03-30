@@ -84,7 +84,10 @@ class EntParent(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntParentModel
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntParentQuery:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntParentQuery:
         return EntParentQuery(vc=vc)
 
 

@@ -82,7 +82,10 @@ class EntTestObject3(
         return super()._get_edge_type(edge_name)
 
     @classmethod
-    def query(cls, vc: ExampleViewerContext) -> EntTestObject3Query:
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntTestObject3Query:
         return EntTestObject3Query(vc=vc)
 
 
