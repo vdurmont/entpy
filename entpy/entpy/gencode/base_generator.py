@@ -58,7 +58,7 @@ def generate(
 
     child_types = ""
     # Make the type checker happy for ents which implement multiple patterns
-    if len(descriptor.get_patterns()) > 1:
+    if isinstance(descriptor, Schema) and len(descriptor.get_patterns()) > 1:
         child_types = f"""@classmethod
     def _get_child_type(  # type: ignore[override]
         cls,

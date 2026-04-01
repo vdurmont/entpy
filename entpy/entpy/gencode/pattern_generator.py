@@ -314,9 +314,10 @@ def _generate_update_action(
     parent_patterns = pattern.get_patterns()
     if parent_patterns:
         # Inherit from the parent pattern's mutator update action
-        parent_pattern = parent_patterns[0]  # Assume single inheritance for now
-        parent_base_name = parent_pattern.__class__.__name__.removesuffix("Pattern")
-        parent_class = f"I{parent_base_name}MutatorUpdateAction"
+        parent_class = ", ".join(
+            f"I{p.__class__.__name__.removesuffix('Pattern')}MutatorUpdateAction"
+            for p in parent_patterns
+        )
     else:
         parent_class = "ABC"
 
@@ -343,10 +344,10 @@ def _generate_delete_action(
     # Determine parent class for the mutator deletion action
     parent_patterns = pattern.get_patterns()
     if parent_patterns:
-        # Inherit from the parent pattern's mutator deletion action
-        parent_pattern = parent_patterns[0]  # Assume single inheritance for now
-        parent_base_name = parent_pattern.__class__.__name__.removesuffix("Pattern")
-        parent_class = f"I{parent_base_name}MutatorDeletionAction"
+        parent_class = ", ".join(
+            f"I{p.__class__.__name__.removesuffix('Pattern')}MutatorDeletionAction"
+            for p in parent_patterns
+        )
     else:
         parent_class = "ABC"
 
