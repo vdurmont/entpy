@@ -45,8 +45,14 @@ class IEntInheritedTestMiddle(IEntInheritedTestTop):
     m = EntInheritedTestMiddleModel
 
     if TYPE_CHECKING:
-        base_field: str
-        middle_field: int
+
+        @property
+        def base_field(self) -> str:
+            pass
+
+        @property
+        def middle_field(self) -> int:
+            pass
 
     @classmethod
     @cache

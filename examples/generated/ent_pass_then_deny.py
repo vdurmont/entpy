@@ -52,7 +52,10 @@ class EntPassThenDeny(
     schema = EntPassThenDenySchema()
 
     if TYPE_CHECKING:
-        name: str
+
+        @property
+        def name(self) -> str:
+            pass
 
     @classmethod
     @cache

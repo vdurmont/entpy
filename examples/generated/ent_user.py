@@ -66,10 +66,22 @@ class EntUser(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntUserModel]):
     schema = EntUserSchema()
 
     if TYPE_CHECKING:
-        email: str
-        name: str
-        contact_email: str | None
-        secondary_email: str | None
+
+        @property
+        def email(self) -> str:
+            pass
+
+        @property
+        def name(self) -> str:
+            pass
+
+        @property
+        def contact_email(self) -> str | None:
+            pass
+
+        @property
+        def secondary_email(self) -> str | None:
+            pass
 
     @classmethod
     @cache

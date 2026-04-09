@@ -45,7 +45,10 @@ class IEntInheritedTestTop(
     m = EntInheritedTestTopModel
 
     if TYPE_CHECKING:
-        base_field: str
+
+        @property
+        def base_field(self) -> str:
+            pass
 
     @classmethod
     @cache

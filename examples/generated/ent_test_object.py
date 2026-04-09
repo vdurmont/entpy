@@ -310,41 +310,136 @@ class EntTestObject(
     schema = EntTestObjectSchema()
 
     if TYPE_CHECKING:
-        a_good_thing: str
-        firstname: str
-        obj5_id: UUID
-        required_sub_object_id: UUID
-        username: str
-        """
-        This is the username that you will use on the platform.
-        """
-        contact_email: str | None
-        lastname: str | None
-        retry_count: int | None
-        sadness: Status | None
-        a_pattern_validated_field: str | None
-        city: str | None
-        context: str | None
-        correlation_id: UUID | None
-        dob: date | None
-        duration: timedelta | None
-        email: str | None
-        end_time: time | None
-        idempotency_key: UUID | None
-        is_it_true: bool | None
-        obj5_opt_id: UUID | None
-        optional_sub_object_id: UUID | None
-        optional_sub_object_no_ex_id: UUID | None
-        self_id: UUID | None
-        some_json: list[str] | None
-        some_pattern_id: UUID | None
-        start_time: time | None
-        status: Status | None
-        status_code: int | None
-        thing_status: ThingStatus | None
-        trace_id: UUID | None
-        validated_field: str | None
-        when_is_it_cool: datetime | None
+
+        @property
+        def a_good_thing(self) -> str:
+            pass
+
+        @property
+        def firstname(self) -> str:
+            pass
+
+        @property
+        def obj5_id(self) -> UUID:
+            pass
+
+        @property
+        def required_sub_object_id(self) -> UUID:
+            pass
+
+        @property
+        def username(self) -> str:
+            """
+            This is the username that you will use on the platform.
+            """
+
+        @property
+        def contact_email(self) -> str | None:
+            pass
+
+        @property
+        def lastname(self) -> str | None:
+            pass
+
+        @property
+        def retry_count(self) -> int | None:
+            pass
+
+        @property
+        def sadness(self) -> Status | None:
+            pass
+
+        @property
+        def a_pattern_validated_field(self) -> str | None:
+            pass
+
+        @property
+        def city(self) -> str | None:
+            pass
+
+        @property
+        def context(self) -> str | None:
+            pass
+
+        @property
+        def correlation_id(self) -> UUID | None:
+            pass
+
+        @property
+        def dob(self) -> date | None:
+            pass
+
+        @property
+        def duration(self) -> timedelta | None:
+            pass
+
+        @property
+        def email(self) -> str | None:
+            pass
+
+        @property
+        def end_time(self) -> time | None:
+            pass
+
+        @property
+        def idempotency_key(self) -> UUID | None:
+            pass
+
+        @property
+        def is_it_true(self) -> bool | None:
+            pass
+
+        @property
+        def obj5_opt_id(self) -> UUID | None:
+            pass
+
+        @property
+        def optional_sub_object_id(self) -> UUID | None:
+            pass
+
+        @property
+        def optional_sub_object_no_ex_id(self) -> UUID | None:
+            pass
+
+        @property
+        def self_id(self) -> UUID | None:
+            pass
+
+        @property
+        def some_json(self) -> list[str] | None:
+            pass
+
+        @property
+        def some_pattern_id(self) -> UUID | None:
+            pass
+
+        @property
+        def start_time(self) -> time | None:
+            pass
+
+        @property
+        def status(self) -> Status | None:
+            pass
+
+        @property
+        def status_code(self) -> int | None:
+            pass
+
+        @property
+        def thing_status(self) -> ThingStatus | None:
+            pass
+
+        @property
+        def trace_id(self) -> UUID | None:
+            pass
+
+        @property
+        def validated_field(self) -> str | None:
+            pass
+
+        @property
+        def when_is_it_cool(self) -> datetime | None:
+            pass
 
         @classmethod
         async def gen_from_username(

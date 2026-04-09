@@ -72,12 +72,30 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
     m = EntTestThingModel
 
     if TYPE_CHECKING:
-        a_good_thing: str
-        obj5_id: UUID
-        a_pattern_validated_field: str | None
-        idempotency_key: UUID | None
-        obj5_opt_id: UUID | None
-        thing_status: ThingStatus | None
+
+        @property
+        def a_good_thing(self) -> str:
+            pass
+
+        @property
+        def obj5_id(self) -> UUID:
+            pass
+
+        @property
+        def a_pattern_validated_field(self) -> str | None:
+            pass
+
+        @property
+        def idempotency_key(self) -> UUID | None:
+            pass
+
+        @property
+        def obj5_opt_id(self) -> UUID | None:
+            pass
+
+        @property
+        def thing_status(self) -> ThingStatus | None:
+            pass
 
         @classmethod
         async def gen_from_idempotency_key(

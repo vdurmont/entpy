@@ -71,7 +71,10 @@ class EntTestObject4(
     schema = EntTestObject4Schema()
 
     if TYPE_CHECKING:
-        other_id: UUID | None
+
+        @property
+        def other_id(self) -> UUID | None:
+            pass
 
         async def gen_other(self) -> "EntTestObject3" | None:
             pass

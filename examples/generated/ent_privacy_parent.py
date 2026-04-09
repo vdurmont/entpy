@@ -52,7 +52,10 @@ class EntPrivacyParent(
     schema = EntPrivacyParentSchema()
 
     if TYPE_CHECKING:
-        name: str
+
+        @property
+        def name(self) -> str:
+            pass
 
     @classmethod
     @cache
