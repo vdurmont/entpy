@@ -57,9 +57,18 @@ class EntInheritedTest(
     schema = EntInheritedTestSchema()
 
     if TYPE_CHECKING:
-        base_field: str
-        middle_field: int
-        schema_field: str
+
+        @property
+        def base_field(self) -> str:
+            pass
+
+        @property
+        def middle_field(self) -> int:
+            pass
+
+        @property
+        def schema_field(self) -> str:
+            pass
 
     @classmethod
     @cache

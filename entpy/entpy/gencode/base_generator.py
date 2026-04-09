@@ -115,11 +115,14 @@ def _generate_fields(schema: Descriptor) -> GeneratedContent:
         if isinstance(field, IntervalField):
             imports.append("from datetime import timedelta")
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
-        field_code += f"        {field.name}: {accessor_type}\n"
+        field_code += "        @property\n"
+        field_code += f"        def {field.name}(self) -> {accessor_type}:\n"
         if field.description:
-            field_code += f"""        \"\"\"
-        {field.description}
-        \"\"\"\n"""
+            field_code += f"""            \"\"\"
+            {field.description}
+            \"\"\"\n"""
+        else:
+            field_code += "            pass\n"
 
     return GeneratedContent(
         imports=imports,

@@ -81,10 +81,23 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
 
     # Model fields are actually returned by __getattr__()
     if TYPE_CHECKING:
-        id: UUID
-        created_at: datetime
-        updated_at: datetime
-        soft_deleted_at: datetime | None
+
+        @property
+        def id(self) -> UUID:
+            pass
+
+        @property
+        def created_at(self) -> datetime:
+            pass
+
+        @property
+        def updated_at(self) -> datetime:
+            pass
+
+        @property
+        def soft_deleted_at(self) -> datetime | None:
+            pass
+
     else:
         # Hide this from mypy otherwise it thinks any attribute is valid
         def __getattr__(self, name: str) -> Any:

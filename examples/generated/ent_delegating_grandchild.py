@@ -68,8 +68,14 @@ class EntDelegatingGrandchild(
     schema = EntDelegatingGrandchildSchema()
 
     if TYPE_CHECKING:
-        delegating_child_id: UUID
-        name: str
+
+        @property
+        def delegating_child_id(self) -> UUID:
+            pass
+
+        @property
+        def name(self) -> str:
+            pass
 
         async def gen_delegating_child(self) -> "EntDelegatingChild":
             pass

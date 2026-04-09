@@ -57,8 +57,14 @@ class EntTestObject5(
     schema = EntTestObject5Schema()
 
     if TYPE_CHECKING:
-        obj5_field: str
-        is_it_true: bool
+
+        @property
+        def obj5_field(self) -> str:
+            pass
+
+        @property
+        def is_it_true(self) -> bool:
+            pass
 
     @classmethod
     @cache

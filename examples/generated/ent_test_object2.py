@@ -165,14 +165,38 @@ class EntTestObject2(
     schema = EntTestObject2Schema()
 
     if TYPE_CHECKING:
-        a_good_thing: str
-        obj5_id: UUID
-        a_pattern_validated_field: str | None
-        idempotency_key: UUID | None
-        limit: int | None
-        obj5_opt_id: UUID | None
-        some_field: str | None
-        thing_status: ThingStatus | None
+
+        @property
+        def a_good_thing(self) -> str:
+            pass
+
+        @property
+        def obj5_id(self) -> UUID:
+            pass
+
+        @property
+        def a_pattern_validated_field(self) -> str | None:
+            pass
+
+        @property
+        def idempotency_key(self) -> UUID | None:
+            pass
+
+        @property
+        def limit(self) -> int | None:
+            pass
+
+        @property
+        def obj5_opt_id(self) -> UUID | None:
+            pass
+
+        @property
+        def some_field(self) -> str | None:
+            pass
+
+        @property
+        def thing_status(self) -> ThingStatus | None:
+            pass
 
     @classmethod
     @cache

@@ -65,8 +65,14 @@ class EntChild(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntChildModel])
     schema = EntChildSchema()
 
     if TYPE_CHECKING:
-        name: str
-        parent_id: UUID
+
+        @property
+        def name(self) -> str:
+            pass
+
+        @property
+        def parent_id(self) -> UUID:
+            pass
 
         async def gen_parent(self) -> "EntParent":
             pass

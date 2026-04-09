@@ -68,8 +68,14 @@ class EntDelegateThenRule(
     schema = EntDelegateThenRuleSchema()
 
     if TYPE_CHECKING:
-        name: str
-        privacy_parent_id: UUID
+
+        @property
+        def name(self) -> str:
+            pass
+
+        @property
+        def privacy_parent_id(self) -> UUID:
+            pass
 
         async def gen_privacy_parent(self) -> "EntPrivacyParent":
             pass

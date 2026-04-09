@@ -66,8 +66,14 @@ class EntParent(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntParentModel
     schema = EntParentSchema()
 
     if TYPE_CHECKING:
-        grand_parent_id: UUID
-        name: str
+
+        @property
+        def grand_parent_id(self) -> UUID:
+            pass
+
+        @property
+        def name(self) -> str:
+            pass
 
         async def gen_grand_parent(self) -> "EntGrandParent":
             pass

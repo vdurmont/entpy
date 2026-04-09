@@ -52,7 +52,10 @@ class EntTestSubObject(
     schema = EntTestSubObjectSchema()
 
     if TYPE_CHECKING:
-        email: str
+
+        @property
+        def email(self) -> str:
+            pass
 
     @classmethod
     @cache

@@ -42,7 +42,10 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
     m = EntTestPatternModel
 
     if TYPE_CHECKING:
-        limit: int | None
+
+        @property
+        def limit(self) -> int | None:
+            pass
 
         @classmethod
         async def gen_from_limit(
