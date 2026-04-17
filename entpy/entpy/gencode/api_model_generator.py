@@ -1,6 +1,7 @@
 from entpy import (
     DatetimeField,
     EdgeField,
+    JsonField,
     Pattern,
 )
 from entpy.framework.descriptor import Descriptor
@@ -48,6 +49,12 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
                 )
             quote = True
             python_type = f"{edge_base}APIModel"
+        elif isinstance(field, JsonField) and field.is_pydantic_field():
+            # For Pydantic JsonFields, use the Pydantic model class directly
+            pydantic_import = field.get_pydantic_model_import()
+            if pydantic_import:
+                types_imports.append(pydantic_import)
+            python_type = field.get_entity_property_type()
         else:
             python_type = field.get_python_type()
 

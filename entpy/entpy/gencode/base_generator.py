@@ -1,4 +1,12 @@
-from entpy import DateField, EdgeField, IntervalField, Pattern, Schema, TimeField
+from entpy import (
+    DateField,
+    EdgeField,
+    IntervalField,
+    JsonField,
+    Pattern,
+    Schema,
+    TimeField,
+)
 from entpy.framework.descriptor import Descriptor
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import (
@@ -31,6 +39,7 @@ def generate(
     extends = ",".join(list(filter(None, extends_list)))
 
     fields = _generate_fields(descriptor)
+    pydantic_properties = _generate_pydantic_properties(descriptor)
     edge_gens, edge_types = _generate_edge_gens(descriptor)
 
     unique_gens = _generate_unique_gens(
@@ -68,9 +77,13 @@ def generate(
     """
 
     return GeneratedContent(
-        imports=imports + fields.imports + edge_gens.imports,
+        imports=imports
+        + fields.imports
+        + pydantic_properties.imports
+        + edge_gens.imports,
         type_checking_imports=type_checking_imports
         + fields.type_checking_imports
+        + pydantic_properties.type_checking_imports
         + edge_gens.type_checking_imports,
         code=f"""
 class {i}{base_name}({extends}):{get_description(descriptor)}
@@ -79,6 +92,8 @@ class {i}{base_name}({extends}):{get_description(descriptor)}
 
     if TYPE_CHECKING:
 {fields.code or "        pass"}
+
+{pydantic_properties.code}
 
 {unique_gens}
 
@@ -114,6 +129,13 @@ def _generate_fields(schema: Descriptor) -> GeneratedContent:
             imports.append("from datetime import time")
         if isinstance(field, IntervalField):
             imports.append("from datetime import timedelta")
+
+        # Pydantic fields have real @property implementations outside TYPE_CHECKING,
+        # so we skip them here to avoid name collisions with mypy
+        if isinstance(field, JsonField) and field.is_pydantic_field():
+            continue
+
+        # Regular fields get @property stubs in TYPE_CHECKING
         accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
         field_code += "        @property\n"
         field_code += f"        def {field.name}(self) -> {accessor_type}:\n"
@@ -127,6 +149,48 @@ def _generate_fields(schema: Descriptor) -> GeneratedContent:
     return GeneratedContent(
         imports=imports,
         code=field_code,
+    )
+
+
+def _generate_pydantic_properties(schema: Descriptor) -> GeneratedContent:
+    """Generate property methods for Pydantic JsonFields."""
+    fields = schema.get_all_fields()
+    properties_code = ""
+    imports: list[str] = []
+    type_checking_imports: list[str] = []
+
+    for field in fields:
+        if isinstance(field, JsonField) and field.is_pydantic_field():
+            model_name = field.get_entity_property_type()
+            pydantic_import = field.get_pydantic_model_import()
+            if pydantic_import:
+                imports.append(pydantic_import)
+
+            nullable_suffix = " | None" if field.nullable else ""
+
+            # Generate the parsed property (returns Pydantic model)
+            properties_code += f"""
+    @property
+    def {field.name}(self) -> {model_name}{nullable_suffix}:
+        raw = self.model.{field.name}
+        if raw is None:
+            return None
+        return {model_name}.model_validate(raw)
+
+"""
+
+            # Generate the _raw property (returns dict)
+            properties_code += f"""
+    @property
+    def {field.name}_raw(self) -> dict[str, Any]{nullable_suffix}:
+        return self.model.{field.name}
+
+"""
+
+    return GeneratedContent(
+        imports=imports,
+        type_checking_imports=type_checking_imports,
+        code=properties_code,
     )
 
 

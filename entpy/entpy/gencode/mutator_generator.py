@@ -1,4 +1,4 @@
-from entpy import Schema
+from entpy import JsonField, Schema
 from entpy.framework.fields.core import FieldWithDefault
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import ImportedObject
@@ -31,9 +31,22 @@ def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedCon
 def _generate_base(
     schema: Schema, base_name: str, vc: ImportedObject
 ) -> GeneratedContent:
+    # Collect Pydantic imports
+    imports = []
+
     # Build up the list of arguments the create function takes
     arguments_definition = ""
     for field in schema.get_all_fields():
+        # For Pydantic JsonFields, accept both Pydantic instances and dicts
+        if isinstance(field, JsonField) and field.is_pydantic_field():
+            pydantic_import = field.get_pydantic_model_import()
+            if pydantic_import:
+                imports.append(pydantic_import)
+            pydantic_type = field.get_entity_property_type()
+            field_type = f"{pydantic_type} | dict[str, Any]"
+        else:
+            field_type = field.get_python_type()
+
         or_not = ""
         if field.nullable:
             or_not = " | None = None"
@@ -41,7 +54,7 @@ def _generate_base(
             default = field.generate_default()
             if default:
                 or_not = f" = {default}"
-        arguments_definition += f", {field.name}: {field.get_python_type()}{or_not}"
+        arguments_definition += f", {field.name}: {field_type}{or_not}"
 
     # Build up the list of arguments the create function takes
     arguments_usage = "".join(
@@ -62,6 +75,7 @@ def _generate_base(
     )
 
     return GeneratedContent(
+        imports=imports,
         code=f"""
 class {base_name}Mutator:
     @classmethod
@@ -90,15 +104,86 @@ def _generate_creation(
 ) -> GeneratedContent:
     fields = schema.get_all_fields()
 
+    # Collect Pydantic imports
+    imports = []
+    pydantic_fields = []
+
     # Build up the list of local variables we will store in the class
     local_variables = ""
     for field in fields:
+        # For Pydantic JsonFields, accept both Pydantic instances and dicts
+        if isinstance(field, JsonField) and field.is_pydantic_field():
+            pydantic_import = field.get_pydantic_model_import()
+            if pydantic_import:
+                imports.append(pydantic_import)
+            pydantic_type = field.get_entity_property_type()
+            field_type = f"{pydantic_type} | dict[str, Any]"
+            pydantic_fields.append(field.name)
+        else:
+            field_type = field.get_python_type()
+
         or_not = " | None = None" if field.nullable else ""
-        local_variables += f"        {field.name}: {field.get_python_type()}{or_not}\n"
+        local_variables += f"        {field.name}: {field_type}{or_not}\n"
+
+    # Generate __init__ override and __setattr__ if there are Pydantic fields
+    init_override = ""
+    setattr_override = ""
+    if pydantic_fields:
+        imports.append("from typing import Any")
+        imports.append("from datetime import datetime, UTC")
+        imports.append("from uuid import UUID")
+
+        # Generate __init__ to handle Pydantic serialization before model creation
+        init_override = f"""
+    def __init__(
+        self,
+        vc: {vc.name},
+        id: UUID | None,
+        created_at: datetime | None,
+        updated_at: datetime | None,
+        **kwargs: Any,
+    ) -> None:
+        # Process Pydantic fields before passing to model
+"""
+        for field_name in pydantic_fields:
+            field = next(f for f in fields if f.name == field_name)
+            model_class = field.get_entity_property_type()  # type: ignore
+            init_override += f"""        if "{field_name}" in kwargs and kwargs["{field_name}"] is not None:
+            value = kwargs["{field_name}"]
+            if isinstance(value, {model_class}):
+                kwargs["{field_name}"] = value.model_dump(mode='json')
+            elif isinstance(value, dict):
+                kwargs["{field_name}"] = {model_class}.model_validate(value).model_dump(mode='json')
+"""
+        init_override += """        super().__init__(vc=vc, id=id, created_at=created_at, updated_at=updated_at, **kwargs)
+
+"""
+
+        setattr_override = """    if not TYPE_CHECKING:
+        def __setattr__(self, name: str, value: Any) -> None:
+            if hasattr(self, "model") and name in self.model.__table__.columns:
+                # Handle Pydantic JsonFields
+"""
+        for field_name in pydantic_fields:
+            field = next(f for f in fields if f.name == field_name)
+            model_class = field.get_entity_property_type()  # type: ignore
+            setattr_override += f"""                if name == "{field_name}" and value is not None:
+                    # Accept both Pydantic instances and dicts
+                    if isinstance(value, {model_class}):
+                        value = value.model_dump(mode='json')
+                    elif isinstance(value, dict):
+                        # Validate dict by parsing it
+                        value = {model_class}.model_validate(value).model_dump(mode='json')
+"""
+        setattr_override += """                setattr(self.model, name, value)
+            else:
+                super().__setattr__(name, value)
+"""
 
     # TODO support UUID factory
 
     return GeneratedContent(
+        imports=imports,
         code=f"""
 class {base_name}MutatorCreationAction(EntMutatorCreationAction[{vc.name}, {base_name}, {base_name}Model]):
     ent_type = {base_name}
@@ -109,6 +194,8 @@ class {base_name}MutatorCreationAction(EntMutatorCreationAction[{vc.name}, {base
     if TYPE_CHECKING:
         id: UUID
 {local_variables}
+{init_override}
+{setattr_override}
 """,  # noqa: E501
     )
 
@@ -122,14 +209,56 @@ def _generate_update(
     fields = schema.get_all_fields()
     mutable_fields = list(filter(lambda f: not f.is_immutable, fields))
 
+    # Collect Pydantic imports
+    imports: list[str] = []
+    pydantic_fields = []
+
     # Build up the list of local variables we will store in the class
-    local_variables = "\n".join(
-        [
-            f"        {field.name}: {field.get_python_type()}"
+    local_variables = []
+    for field in mutable_fields:
+        # For Pydantic JsonFields, accept both Pydantic instances and dicts
+        if isinstance(field, JsonField) and field.is_pydantic_field():
+            pydantic_import = field.get_pydantic_model_import()
+            if pydantic_import:
+                imports.append(pydantic_import)
+            pydantic_type = field.get_entity_property_type()
+            field_type = f"{pydantic_type} | dict[str, Any]"
+            pydantic_fields.append(field.name)
+        else:
+            field_type = field.get_python_type()
+
+        local_variables.append(
+            f"        {field.name}: {field_type}"
             + (" | None = None" if field.nullable else "")
-            for field in mutable_fields
-        ]
-    )
+        )
+
+    local_variables_str = "\n".join(local_variables)
+
+    # Generate __setattr__ override if there are Pydantic fields
+    setattr_override = ""
+    if pydantic_fields:
+        imports.append("from typing import Any")
+        setattr_override = """
+    if not TYPE_CHECKING:
+        def __setattr__(self, name: str, value: Any) -> None:
+            if hasattr(self, "model") and name in self.model.__table__.columns:
+                # Handle Pydantic JsonFields
+"""
+        for field_name in pydantic_fields:
+            field = next(f for f in mutable_fields if f.name == field_name)
+            model_class = field.get_entity_property_type()  # type: ignore
+            setattr_override += f"""                if name == "{field_name}" and value is not None:
+                    # Accept both Pydantic instances and dicts
+                    if isinstance(value, {model_class}):
+                        value = value.model_dump(mode='json')
+                    elif isinstance(value, dict):
+                        # Validate dict by parsing it
+                        value = {model_class}.model_validate(value).model_dump(mode='json')
+"""
+        setattr_override += """                self._updates[name] = value
+            else:
+                super().__setattr__(name, value)
+"""
 
     # Check if the schema has patterns to determine inheritance
     extends = [f"EntMutatorUpdateAction[{vc.name}, {base_name}, {base_name}Model]"]
@@ -147,7 +276,7 @@ def _generate_update(
             )
 
     return GeneratedContent(
-        imports=pattern_imports,
+        imports=pattern_imports + imports,
         code=f"""
 class {base_name}MutatorUpdateAction({','.join(extends)}):
     ent_type = {base_name}
@@ -158,7 +287,8 @@ class {base_name}MutatorUpdateAction({','.join(extends)}):
 
     if TYPE_CHECKING:
         id: UUID
-{local_variables}
+{local_variables_str}
+{setattr_override}
 """,
     )
 

@@ -71,7 +71,17 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
         elif isinstance(field, JsonField):
             types_imports.append("from sqlalchemy import JSON")
             types_imports.append("from sqlalchemy.dialects.postgresql import JSONB")
-            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
+            # For Pydantic fields, the mapped type is always dict[str, Any]
+            if field.is_pydantic_field():
+                pydantic_import = field.get_pydantic_model_import()
+                if pydantic_import:
+                    types_imports.append(pydantic_import)
+                actual_mapped_type = (
+                    "dict[str, Any] | None" if field.nullable else "dict[str, Any]"
+                )
+                fields_code += f"    {field.name}: Mapped[{actual_mapped_type}] = "
+            else:
+                fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f'mapped_column(JSON().with_variant(JSONB(), "postgresql"){common_column_attributes})\n'
         elif isinstance(field, StringField):
             types_imports.append("from sqlalchemy import String")
