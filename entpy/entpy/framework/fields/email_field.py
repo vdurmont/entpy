@@ -11,14 +11,14 @@ class EmailField(StringField):
 
 
 class EmailValidator(FieldValidator[str | None]):
-    def validate(self, value: str | None) -> bool:
+    def validate(self, value: str | None) -> tuple[bool, str | None]:
         if value is None:
-            return True
+            return (True, None)
 
         try:
             from email_validator import EmailNotValidError, validate_email
 
             validate_email(value, check_deliverability=False)
-            return True
-        except EmailNotValidError:
-            return False
+            return (True, None)
+        except EmailNotValidError as e:
+            return (False, f"Invalid email address: {str(e)}")

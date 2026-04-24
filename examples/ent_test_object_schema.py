@@ -95,7 +95,9 @@ class EntTestObjectSchema(Schema):
 
 
 class CustomValidator(FieldValidator[str | None]):
-    def validate(self, value: str | None) -> bool:
+    def validate(self, value: str | None) -> tuple[bool, str | None]:
         if not value:
-            return True
-        return bool(re.match(r"^[a-z0-9_-]+$", value))
+            return (True, None)
+        if not re.match(r"^[a-z0-9_-]+$", value):
+            return (False, "Value must contain only lowercase letters, numbers, underscores, and hyphens")
+        return (True, None)

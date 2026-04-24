@@ -36,5 +36,6 @@ class StringField(
 
 
 class NotEmptyStringValidator(FieldValidator[str | None]):
-    def validate(self, value: str | None) -> bool:
-        return value is not None and value.strip() != ""
+    def validate(self, value: str | None) -> tuple[bool, str | None]:
+        is_valid = value is not None and value.strip() != ""
+        return (is_valid, "Field cannot be empty" if not is_valid else None)

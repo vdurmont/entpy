@@ -8,5 +8,5 @@ T = TypeVar("T")
 
 class FieldValidator(ABC, Generic[T]):
     @abstractmethod
-    def validate(self, value: T) -> bool:
+    def validate(self, value: T) -> tuple[bool, str | None]:
         pass
