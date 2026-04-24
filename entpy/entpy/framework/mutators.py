@@ -31,7 +31,9 @@ class EntMutatorAction[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMix
     def _validate(self) -> None:
         for field in self.schema.get_all_fields():
             for validator in field._validators:
-                is_valid, error_message = validator.validate(getattr(self.model, field.name))
+                is_valid, error_message = validator.validate(
+                    getattr(self.model, field.name)
+                )
                 if not is_valid:
                     if error_message:
                         message = f'Field "{field.name}" is invalid: {error_message}'
