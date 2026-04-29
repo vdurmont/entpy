@@ -26,7 +26,10 @@ class MyValidator(FieldValidator[str | None]):
         if len(value) < 1 or len(value) > 100:
             return (False, "Value must be between 1 and 100 characters")
         if not re.match(r"^[a-z0-9-]+$", value):
-            return (False, "Value must contain only lowercase letters, numbers, and hyphens")
+            return (
+                False,
+                "Value must contain only lowercase letters, numbers, and hyphens",
+            )
         return (True, None)
 
 

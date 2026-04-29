@@ -2,8 +2,9 @@ import pytest
 from werkzeug.exceptions import NotFound
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
+from unittest.mock import patch
 
-from entpy import EntNotFoundError
+from entpy import EntNotFoundError, db
 from evc import ExampleTestViewerContext, ExampleViewerContext
 from generated.ent_child import EntChild, EntChildExample, EntChildModel
 from generated.ent_grand_parent import EntGrandParentExample
@@ -150,3 +151,78 @@ async def test_genx_first(vc: ExampleViewerContext) -> None:
 async def test_genx_first_or_404(vc: ExampleViewerContext) -> None:
     with pytest.raises(NotFound):
         await EntTestObject.query(vc).genx_first_or_404()
+
+
+async def test_cache_hit(vc: ExampleViewerContext) -> None:
+    firstname = "jane"
+    await EntTestObjectExample.gen_create(vc)
+    await EntTestObjectExample.gen_create(vc, firstname=firstname)
+
+    assert not db.session.info.get("query")
+    results = (
+        await EntTestObject.query(vc)
+        .where(EntTestObjectModel.firstname == firstname)
+        .gen()
+    )
+    assert len(results) == 1
+    assert db.session.info["query"]
+
+    with patch("entpy.framework.query.db.session.scalars") as mock:
+        results = (
+            await EntTestObject.query(vc)
+            .where(EntTestObjectModel.firstname == firstname)
+            .gen()
+        )
+        mock.assert_not_called()
+        assert len(results) == 1
+
+
+async def test_cache_for_update(vc: ExampleViewerContext) -> None:
+    firstname = "jane"
+    await EntTestObjectExample.gen_create(vc)
+    await EntTestObjectExample.gen_create(vc, firstname=firstname)
+
+    assert not db.session.info.get("query")
+    results = (
+        await EntTestObject.query(vc)
+        .where(EntTestObjectModel.firstname == firstname)
+        .gen()
+    )
+    assert len(results) == 1
+    assert db.session.info["query"]
+
+    with patch(
+        "entpy.framework.query.db.session.scalars", side_effect=db.session.scalars
+    ) as mock:
+        results = (
+            await EntTestObject.query(vc)
+            .where(EntTestObjectModel.firstname == firstname)
+            .gen(for_update=True)
+        )
+        mock.assert_called_once()
+        assert len(results) == 1
+
+
+async def test_cache_mutate(vc: ExampleViewerContext) -> None:
+    firstname = "jane"
+    await EntTestObjectExample.gen_create(vc)
+    await EntTestObjectExample.gen_create(vc, firstname=firstname)
+
+    assert not db.session.info.get("query")
+    results = (
+        await EntTestObject.query(vc)
+        .where(EntTestObjectModel.firstname == firstname)
+        .gen()
+    )
+    assert len(results) == 1
+    assert db.session.info["query"]
+
+    await EntTestObjectExample.gen_create(vc, firstname=firstname)
+    assert not db.session.info.get("query")
+
+    results = (
+        await EntTestObject.query(vc)
+        .where(EntTestObjectModel.firstname == firstname)
+        .gen()
+    )
+    assert len(results) == 2

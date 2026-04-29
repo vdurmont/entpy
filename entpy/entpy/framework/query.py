@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from hashlib import md5
 from typing import Any, ClassVar, Self, TypeVar
 from uuid import UUID
 
-from sqlalchemy import Result, Select, Table, func, select
+from sqlalchemy import Select, Table, func, select
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm.strategy_options import _AbstractLoad
 from sqlalchemy.sql.expression import ColumnElement
 from werkzeug.exceptions import NotFound
@@ -13,6 +15,8 @@ from entpy.framework.ent import Ent, EntObjectBase, EntPatternBase
 from entpy.framework.errors import EntNotFoundError, ExecutionError
 from entpy.framework.model import ModelMixin
 from entpy.framework.viewer_context import ViewerContext
+
+QUERY_CACHE_THRESHOLD = 100
 
 VC = TypeVar("VC")
 ENT = TypeVar("ENT")
@@ -85,12 +89,25 @@ class EntQuery[
             return self.query.where(self.model_type.soft_deleted_at.is_(None))
 
     @abstractmethod
-    async def _gen_ents(self, result: Result[tuple[TARGET]]) -> list[ENT | None]:
+    async def _gen_ents(self, rows: list[TARGET]) -> list[ENT | None]:
         pass
 
     @abstractmethod
-    async def _gen_ent(self, result: Result[tuple[TARGET]]) -> ENT | None:
+    async def _gen_ent(self, rows: list[TARGET]) -> ENT | None:
         pass
+
+    async def _gen_cached(
+        self, query: Select[tuple[TARGET]], for_update: bool = False
+    ) -> list[TARGET]:
+        compiled = str(query.compile(compile_kwargs={"literal_binds": True}))
+        key = md5(compiled.encode()).digest()
+        if not for_update and (cached := db.session.info.get("query", {}).get(key)):
+            return cached  # type: ignore[no-any-return]
+
+        rows = list(await db.session.scalars(query))
+        if len(rows) < QUERY_CACHE_THRESHOLD:
+            db.session.info.setdefault("query", {})[key] = rows
+        return rows
 
     async def gen(self, for_update: bool = False) -> list[ENT]:
         query = (
@@ -98,7 +115,7 @@ class EntQuery[
             if for_update
             else self._finalize_query()
         )
-        result = await db.session.execute(query)
+        result = await self._gen_cached(query, for_update)
         ents = await self._gen_ents(result)
         return list(filter(None, ents))
 
@@ -106,7 +123,7 @@ class EntQuery[
         query = self._finalize_query().limit(1)
         if for_update:
             query = query.with_for_update()
-        result = await db.session.execute(query)
+        result = await self._gen_cached(query, for_update)
         return await self._gen_ent(result)
 
     async def genx_first(self, for_update: bool = False) -> ENT:
@@ -142,7 +159,7 @@ class EntQuery[
             # We have just a few ents, let's load them and check privacy
             # to make sure our count is more accurate.
             fetch_query = self._finalize_query().limit(None).offset(None)
-            result = await db.session.execute(fetch_query)
+            result = await self._gen_cached(fetch_query)
             ents = await self._gen_ents(result)
             return len(list(filter(None, ents)))
 
@@ -162,16 +179,20 @@ class EntObjectQuery[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMixin
         self.query = select(self.model_type) if query is None else query
         self.include_soft_deleted = include_soft_deleted
 
-    async def _gen_ents(self, result: Result[tuple[ENTMODEL]]) -> list[ENT | None]:
-        models = result.scalars().all()
+    async def _gen_ents(self, rows: list[ENTMODEL]) -> list[ENT | None]:
         return [
             await self.ent_type._gen_from_model(self.vc, model)  # noqa: SLF001
-            for model in models
+            for model in rows
         ]
 
-    async def _gen_ent(self, result: Result[tuple[ENTMODEL]]) -> ENT | None:
-        model = result.scalar_one_or_none()
-        return await self.ent_type._gen_from_model(self.vc, model)  # noqa: SLF001
+    async def _gen_ent(self, rows: list[ENTMODEL]) -> ENT | None:
+        if len(rows) > 1:
+            raise MultipleResultsFound(
+                "Multiple rows were found when one or none was required"
+            )
+        if rows:
+            return await self.ent_type._gen_from_model(self.vc, rows[0])  # noqa: SLF001
+        return None
 
 
 class EntPatternQuery[
@@ -189,10 +210,9 @@ class EntPatternQuery[
         self.query = select(self.model_type.id) if query is None else query
         self.include_soft_deleted = include_soft_deleted
 
-    async def _gen_ents(self, result: Result[tuple[UUID]]) -> list[ENT | None]:
-        ent_ids = result.scalars().all()
+    async def _gen_ents(self, rows: list[UUID]) -> list[ENT | None]:
         ids_by_type = defaultdict(list)
-        for ent_id in ent_ids:
+        for ent_id in rows:
             ids_by_type[ent_id.bytes[6:8]].append(ent_id)
 
         all_ents = {}
@@ -206,11 +226,14 @@ class EntPatternQuery[
             ):
                 all_ents[ent.id] = ent
 
-        return [all_ents[ent_id] for ent_id in ent_ids if ent_id in all_ents]
+        return [all_ents[ent_id] for ent_id in rows if ent_id in all_ents]
 
-    async def _gen_ent(self, result: Result[tuple[UUID]]) -> ENT | None:
-        ent_id = result.scalar_one_or_none()
-        if not ent_id:
-            return None
-        ent_type = self.ent_type._get_child_type(ent_id.bytes[6:8])
-        return await ent_type.gen(self.vc, ent_id)
+    async def _gen_ent(self, rows: list[UUID]) -> ENT | None:
+        if len(rows) > 1:
+            raise MultipleResultsFound(
+                "Multiple rows were found when one or none was required"
+            )
+        if rows:
+            ent_type = self.ent_type._get_child_type(rows[0].bytes[6:8])
+            return await ent_type.gen(self.vc, rows[0])
+        return None
