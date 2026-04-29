@@ -225,7 +225,7 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
             model = await db.session.get(
                 cls.m, real_ent_id, with_for_update=for_update or None
             )
-        db.session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("models", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
@@ -238,7 +238,7 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         )
         if model is None:
             return None
-        db.session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("models", set()).add(model)
         return cls(vc=vc, model=model)
 
     @classmethod
@@ -260,6 +260,11 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     async def _gen_from_unique(
         cls, name: str, vc: VC, value: Any, for_update: bool = False
     ) -> Self | None:
+        if not for_update and (
+            cached := db.session.info.get("unique", {}).get((cls, name, value))
+        ):
+            return await cls._gen_from_model(vc, cached)
+
         query = (
             select(cls.m)
             .where(getattr(cls.m, name) == value)
@@ -270,7 +275,8 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         async with emulate_for_update(cls.m, name, value, for_update):
             result = await db.session.execute(query)
         model = result.scalar_one_or_none()
-        db.session.info.setdefault("cache", set()).add(model)
+        db.session.info.setdefault("models", set()).add(model)
+        db.session.info.setdefault("unique", {})[(cls, name, value)] = model
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod

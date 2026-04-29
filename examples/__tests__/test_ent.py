@@ -1,7 +1,8 @@
 import uuid
+from unittest.mock import patch
 
 import pytest
-from entpy import EntNotFoundError, ValidationError
+from entpy import EntNotFoundError, ValidationError, db
 from werkzeug.exceptions import NotFound
 
 from ent_test_object_schema import Status
@@ -126,6 +127,20 @@ async def test_gen_and_genx_from_unique_field(vc: ExampleViewerContext) -> None:
 
     with pytest.raises(EntNotFoundError):
         await EntTestObject.genx_from_username(vc, other_username)
+
+
+async def test_unique_gen_cache(vc: ExampleViewerContext) -> None:
+    ent = await EntTestObjectExample.gen_create(vc)
+
+    assert not db.session.info.get("unique")
+    result = await EntTestObject.genx_from_username(vc, ent.username)
+    assert result.id == ent.id
+    assert db.session.info.get("unique")
+
+    with patch("entpy.framework.ent.db.session.execute") as mock:
+        result = await EntTestObject.genx_from_username(vc, ent.username)
+        mock.assert_not_called()
+        assert result.id == ent.id
 
 
 async def test_enum_field(vc: ExampleViewerContext) -> None:
