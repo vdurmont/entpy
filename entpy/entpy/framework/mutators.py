@@ -93,6 +93,7 @@ class EntMutatorCreationAction[
         await db.session.flush()
         self.record_events()
         db.session.info.get("query", {}).clear()
+        db.session.info.get("unique", {}).clear()
         return ent
 
     async def gen_savex_or_403(self) -> ENT:
@@ -142,6 +143,7 @@ class EntMutatorUpdateAction[
             await db.session.refresh(self.model)
             self.record_events()
             db.session.info.get("query", {}).clear()
+            db.session.info.get("unique", {}).clear()
 
         return self.ent
 
@@ -183,6 +185,7 @@ class EntMutatorDeletionAction[
             await db.session.delete(model)
         await db.session.flush()
         db.session.info.get("query", {}).clear()
+        db.session.info.get("unique", {}).clear()
 
     async def gen_save_or_403(self) -> None:
         try:
