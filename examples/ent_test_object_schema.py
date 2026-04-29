@@ -99,5 +99,8 @@ class CustomValidator(FieldValidator[str | None]):
         if not value:
             return (True, None)
         if not re.match(r"^[a-z0-9_-]+$", value):
-            return (False, "Value must contain only lowercase letters, numbers, underscores, and hyphens")
+            return (
+                False,
+                "Value must contain only lowercase letters, numbers, underscores, and hyphens",
+            )
         return (True, None)

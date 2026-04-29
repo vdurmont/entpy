@@ -12,7 +12,8 @@ def vc() -> ExampleViewerContext:
 
 @pytest.fixture(autouse=True)
 async def setup_database():
-    await db.session.close()
+    await db.session.reset()
+    db.session.info.clear()
     await engine.dispose()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
