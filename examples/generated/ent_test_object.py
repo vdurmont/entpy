@@ -35,6 +35,7 @@ from entpy.framework.triggers import (
     CreatePatternUniqueTriggerPostgres,
     CreatePatternUniqueTriggerSqlite,
 )
+from entpy.framework.types import Uuid
 from entpy.types import DateTime
 from functools import cache
 from privacy import PrivacyMixin
@@ -52,7 +53,6 @@ from sqlalchemy import JSON
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import Time
-from sqlalchemy import UUID as DBUUID
 from sqlalchemy import event
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -77,7 +77,7 @@ class EntTestObjectModel(EntTestThingModel):
 
     firstname: Mapped[str] = mapped_column(String(100), nullable=False)
     required_sub_object_id: Mapped[UUID] = mapped_column(
-        DBUUID(),
+        Uuid(),
         ForeignKey("test_sub_object.id", deferrable=True, initially="DEFERRED"),
         nullable=False,
     )
@@ -98,7 +98,7 @@ class EntTestObjectModel(EntTestThingModel):
     )
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     context: Mapped[str | None] = mapped_column(Text(), nullable=True)
-    correlation_id: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
+    correlation_id: Mapped[UUID | None] = mapped_column(Uuid(), nullable=True)
     dob: Mapped[date | None] = mapped_column(Date(), nullable=True)
     duration: Mapped[timedelta | None] = mapped_column(Interval(), nullable=True)
     email: Mapped[str | None] = mapped_column(
@@ -107,30 +107,30 @@ class EntTestObjectModel(EntTestThingModel):
     end_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
     is_it_true: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
-        DBUUID(),
+        Uuid(),
         ForeignKey("test_sub_object.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
     optional_sub_object_no_ex_id: Mapped[UUID | None] = mapped_column(
-        DBUUID(),
+        Uuid(),
         ForeignKey("test_sub_object.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
     self_id: Mapped[UUID | None] = mapped_column(
-        DBUUID(),
+        Uuid(),
         ForeignKey("test_object.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
     some_json: Mapped[list[str] | None] = mapped_column(
         JSON().with_variant(JSONB(), "postgresql"), nullable=True
     )
-    some_pattern_id: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
+    some_pattern_id: Mapped[UUID | None] = mapped_column(Uuid(), nullable=True)
     start_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
     status: Mapped[Status | None] = mapped_column(
         DBEnum(Status, native_enum=True), nullable=True
     )
     status_code: Mapped[int | None] = mapped_column(Integer(), nullable=True)
-    trace_id: Mapped[UUID | None] = mapped_column(DBUUID(), nullable=True)
+    trace_id: Mapped[UUID | None] = mapped_column(Uuid(), nullable=True)
     validated_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
     when_is_it_cool: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
     obj5: Mapped["EntTestObject5Model"] = relationship(
