@@ -23,12 +23,12 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
+from entpy.framework.types import Uuid
 from functools import cache
 from privacy import PrivacyMixin
 from pydantic import Field as APIField
 from sentinels import Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
-from sqlalchemy import UUID as DBUUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from typing import TYPE_CHECKING
@@ -48,7 +48,7 @@ class EntTestObject4Model(EntOtherSchemaPatternModel):
     __table_args__ = {"schema": "other"}
 
     other_id: Mapped[UUID | None] = mapped_column(
-        DBUUID(),
+        Uuid(),
         ForeignKey("test_object3.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )

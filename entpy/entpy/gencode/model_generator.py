@@ -95,14 +95,14 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += f"mapped_column(Interval(){common_column_attributes})\n"
         elif isinstance(field, UuidField):
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += f"mapped_column(DBUUID(){common_column_attributes})\n"
+            fields_code += f"mapped_column(Uuid(){common_column_attributes})\n"
         elif isinstance(field, EdgeField):
             types_imports.append("from sqlalchemy import ForeignKey")
             edge_base_name = field.edge_class.__name__.removesuffix(
                 "Schema"
             ).removesuffix("Pattern")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += "mapped_column(DBUUID()"
+            fields_code += "mapped_column(Uuid()"
             if not field.edge_class.__name__.endswith("Pattern"):
                 # Cannot do FKs for Patterns
                 fields_code += f', ForeignKey("{field.edge_class.get_qualified_table_name()}.id", deferrable=True, initially="DEFERRED")'
@@ -157,7 +157,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
     return GeneratedContent(
         imports=[
             "from sqlalchemy.orm import Mapped, mapped_column",
-            "from sqlalchemy import UUID as DBUUID",
+            "from entpy.framework.types import Uuid",
             "from .ent_model import EntModel",
         ]
         + types_imports
