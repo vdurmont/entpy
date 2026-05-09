@@ -5,7 +5,6 @@ version = "0.0.1"
 description = "EntPy is a data access and privacy framework that augments SQLAlchemy, providing you a central place to safely access and manage your data."
 authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
 dependencies = [
-    "aiosqlite>=0.21.0",
     "alembic>=1.18.4",
     "email-validator>=2.0.0",
     "greenlet>=3.2.4",
@@ -13,7 +12,6 @@ dependencies = [
     "sentinels>=1.1.1",
     "sqlalchemy==2.0.43",
     "sqlalchemy-utils>=0.42.0",
-    "types-sqlalchemy-utils>=1.1.0",
     "werkzeug>=3.1.6",
 ]
 
@@ -22,6 +20,7 @@ dev = [
     "ruff==0.6.8",
     "mypy>=1.18.2",
     "asyncpg-stubs>=0.31.2",
+    "types-sqlalchemy-utils>=1.1.0",
 ]
 
 [tool.ruff]

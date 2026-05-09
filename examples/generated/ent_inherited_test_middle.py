@@ -57,6 +57,7 @@ class IEntInheritedTestMiddle(IEntInheritedTestTop):
     @classmethod
     @cache
     def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+
         return super()._get_edge_type(edge_name)
 
     @classmethod
@@ -68,7 +69,7 @@ class IEntInheritedTestMiddle(IEntInheritedTestTop):
 
     @classmethod
     @cache
-    def _get_child_type(  # type: ignore[override]
+    def _get_child_type(
         cls,
         uuid_type: bytes,
     ) -> type[IEntInheritedTestMiddle]:
@@ -97,6 +98,7 @@ class IEntInheritedTestMiddleMutator:
     def update(
         cls, vc: ExampleViewerContext, ent: IEntInheritedTestMiddle
     ) -> IEntInheritedTestMiddleMutatorUpdateAction:
+
         from .ent_inherited_test import EntInheritedTest
 
         if isinstance(ent, EntInheritedTest):
@@ -112,6 +114,7 @@ class IEntInheritedTestMiddleMutator:
     def hard_delete(
         cls, vc: ExampleViewerContext, ent: IEntInheritedTestMiddle
     ) -> IEntInheritedTestMiddleMutatorDeletionAction:
+
         from .ent_inherited_test import EntInheritedTest
 
         if isinstance(ent, EntInheritedTest):
@@ -127,6 +130,7 @@ class IEntInheritedTestMiddleMutator:
     def soft_delete(
         cls, vc: ExampleViewerContext, ent: IEntInheritedTestMiddle
     ) -> IEntInheritedTestMiddleMutatorDeletionAction:
+
         from .ent_inherited_test import EntInheritedTest
 
         if isinstance(ent, EntInheritedTest):

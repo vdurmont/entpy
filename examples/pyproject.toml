@@ -5,6 +5,7 @@ version = "0.0.1"
 description = "Examples for the EntPy framework"
 authors = [{name = "Vincent Durmont", email = "vdurmont@gmail.com"}]
 dependencies = [
+    "aiosqlite<0.22",  # Causes pytest to hang during shutdown
     "entpy",
 ]
 

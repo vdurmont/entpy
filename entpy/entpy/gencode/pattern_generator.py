@@ -117,7 +117,7 @@ if TYPE_CHECKING:
 
     @classmethod
     @cache
-    def _get_child_type(  {"# type: ignore[override]" if pattern.get_patterns() else ""}
+    def _get_child_type(
         cls,
         uuid_type: bytes,
     ) -> type[I{base_name}]:
