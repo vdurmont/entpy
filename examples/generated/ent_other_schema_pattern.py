@@ -45,6 +45,7 @@ class IEntOtherSchemaPattern(
     @classmethod
     @cache
     def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+
         return super()._get_edge_type(edge_name)
 
     @classmethod
@@ -85,6 +86,7 @@ class IEntOtherSchemaPatternMutator:
     def update(
         cls, vc: ExampleViewerContext, ent: IEntOtherSchemaPattern
     ) -> IEntOtherSchemaPatternMutatorUpdateAction:
+
         from .ent_test_object4 import EntTestObject4
 
         if isinstance(ent, EntTestObject4):
@@ -100,6 +102,7 @@ class IEntOtherSchemaPatternMutator:
     def hard_delete(
         cls, vc: ExampleViewerContext, ent: IEntOtherSchemaPattern
     ) -> IEntOtherSchemaPatternMutatorDeletionAction:
+
         from .ent_test_object4 import EntTestObject4
 
         if isinstance(ent, EntTestObject4):
@@ -115,6 +118,7 @@ class IEntOtherSchemaPatternMutator:
     def soft_delete(
         cls, vc: ExampleViewerContext, ent: IEntOtherSchemaPattern
     ) -> IEntOtherSchemaPatternMutatorDeletionAction:
+
         from .ent_test_object4 import EntTestObject4
 
         if isinstance(ent, EntTestObject4):

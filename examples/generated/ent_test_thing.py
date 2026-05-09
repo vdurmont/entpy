@@ -185,6 +185,7 @@ class IEntTestThingMutator:
     def update(
         cls, vc: ExampleViewerContext, ent: IEntTestThing
     ) -> IEntTestThingMutatorUpdateAction:
+
         from .ent_test_object2 import EntTestObject2
 
         if isinstance(ent, EntTestObject2):
@@ -205,6 +206,7 @@ class IEntTestThingMutator:
     def hard_delete(
         cls, vc: ExampleViewerContext, ent: IEntTestThing
     ) -> IEntTestThingMutatorDeletionAction:
+
         from .ent_test_object2 import EntTestObject2
 
         if isinstance(ent, EntTestObject2):
@@ -225,6 +227,7 @@ class IEntTestThingMutator:
     def soft_delete(
         cls, vc: ExampleViewerContext, ent: IEntTestThing
     ) -> IEntTestThingMutatorDeletionAction:
+
         from .ent_test_object2 import EntTestObject2
 
         if isinstance(ent, EntTestObject2):

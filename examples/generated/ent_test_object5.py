@@ -69,6 +69,7 @@ class EntTestObject5(
     @classmethod
     @cache
     def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+
         return super()._get_edge_type(edge_name)
 
     @classmethod

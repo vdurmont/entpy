@@ -68,6 +68,7 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
     @classmethod
     @cache
     def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+
         return super()._get_edge_type(edge_name)
 
     @classmethod
@@ -106,6 +107,7 @@ class IEntTestPatternMutator:
     def update(
         cls, vc: ExampleViewerContext, ent: IEntTestPattern
     ) -> IEntTestPatternMutatorUpdateAction:
+
         from .ent_test_object2 import EntTestObject2
 
         if isinstance(ent, EntTestObject2):
@@ -119,6 +121,7 @@ class IEntTestPatternMutator:
     def hard_delete(
         cls, vc: ExampleViewerContext, ent: IEntTestPattern
     ) -> IEntTestPatternMutatorDeletionAction:
+
         from .ent_test_object2 import EntTestObject2
 
         if isinstance(ent, EntTestObject2):
@@ -132,6 +135,7 @@ class IEntTestPatternMutator:
     def soft_delete(
         cls, vc: ExampleViewerContext, ent: IEntTestPattern
     ) -> IEntTestPatternMutatorDeletionAction:
+
         from .ent_test_object2 import EntTestObject2
 
         if isinstance(ent, EntTestObject2):
