@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from entpy import Ent
 
 from evc import ExampleViewerContext
@@ -65,3 +67,10 @@ UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x16\xd7": EntTestSubObject,
     b"\x01\x75": EntUser,
 }
+
+
+def decode_entity_type_from_id(
+    entity_id: UUID,
+) -> type[Ent[ExampleViewerContext, EntModel]] | None:
+    uuid_type = entity_id.bytes[6:8]
+    return UUID_TO_ENT.get(uuid_type)
