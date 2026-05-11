@@ -28,6 +28,8 @@ from .ent_pass_then_deny import EntPassThenDenyModel  # noqa: F401
 from .ent_pass_then_deny import EntPassThenDeny
 from .ent_privacy_parent import EntPrivacyParentModel  # noqa: F401
 from .ent_privacy_parent import EntPrivacyParent
+from .ent_pydantic_test import EntPydanticTestModel  # noqa: F401
+from .ent_pydantic_test import EntPydanticTest
 from .ent_single_rule import EntSingleRuleModel  # noqa: F401
 from .ent_single_rule import EntSingleRule
 from .ent_test_object2 import EntTestObject2Model  # noqa: F401
@@ -58,6 +60,7 @@ UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x20\x33": EntParent,
     b"\xd5\x27": EntPassThenDeny,
     b"\xfe\x82": EntPrivacyParent,
+    b"\xdc\x0f": EntPydanticTest,
     b"\x39\x63": EntSingleRule,
     b"\x7c\x9a": EntTestObject2,
     b"\x38\xe7": EntTestObject3,
