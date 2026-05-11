@@ -96,6 +96,8 @@ def run(
         _write_file(descriptor_output_path, code)
 
     models_list_code = f"""
+from uuid import UUID
+
 from entpy import Ent
 
 {vc}
@@ -105,6 +107,11 @@ from .ent_model import EntModel
 UUID_TO_ENT: dict[bytes, type[Ent[{vc.name}, EntModel]]] = {{
 {models_list_mapping}
 }}
+
+
+def decode_entity_type_from_id(entity_id: UUID) -> type[Ent[{vc.name}, EntModel]] | None:
+    uuid_type = entity_id.bytes[6:8]
+    return UUID_TO_ENT.get(uuid_type)
 """
     _write_file(output_path / "all_models.py", models_list_code)
 
