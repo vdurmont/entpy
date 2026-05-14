@@ -58,51 +58,6 @@ class EntUserAPIModel(APIEntity):
     secondary_email: str | None = APIField(None, examples=["john.backup@example.com"])
 
 
-class EntUser(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntUserModel]):
-    """
-    A user entity with email validation
-    """
-
-    m = EntUserModel
-    schema = EntUserSchema()
-
-    if TYPE_CHECKING:
-
-        @property
-        def email(self) -> str:
-            pass
-
-        @property
-        def name(self) -> str:
-            pass
-
-        @property
-        def contact_email(self) -> str | None:
-            pass
-
-        @property
-        def secondary_email(self) -> str | None:
-            pass
-
-    @classmethod
-    @cache
-    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
-
-        return super()._get_edge_type(edge_name)
-
-    @classmethod
-    def query(
-        cls,
-        vc: ExampleViewerContext,
-    ) -> EntUserQuery:
-        return EntUserQuery(vc=vc)
-
-
-class EntUserQuery(EntObjectQuery[ExampleViewerContext, EntUser, EntUserModel]):
-    ent_type = EntUser
-    model_type = EntUserModel
-
-
 class EntUserPending(EntPending[EntUserModel]):
     m = EntUserModel
 
@@ -123,6 +78,35 @@ class EntUserPending(EntPending[EntUserModel]):
         @property
         def secondary_email(self) -> str | None:
             pass
+
+
+class EntUser(
+    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntUserModel], EntUserPending
+):
+    """
+    A user entity with email validation
+    """
+
+    m = EntUserModel
+    schema = EntUserSchema()
+
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+
+        return super()._get_edge_type(edge_name)
+
+    @classmethod
+    def query(
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntUserQuery:
+        return EntUserQuery(vc=vc)
+
+
+class EntUserQuery(EntObjectQuery[ExampleViewerContext, EntUser, EntUserModel]):
+    ent_type = EntUser
+    model_type = EntUserModel
 
 
 class EntUserMutator:

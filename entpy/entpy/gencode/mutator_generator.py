@@ -1,12 +1,12 @@
-from entpy import DateField, IntervalField, Schema, TimeField
+from entpy import Schema
 from entpy.framework.fields.core import FieldWithDefault
+from entpy.gencode.base_generator import _generate_fields
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import ImportedObject
 from entpy.gencode.utils import to_snake_case as _to_snake_case
 
 
 def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedContent:
-    pending = _generate_pending(schema=schema, base_name=base_name)
     base = _generate_base(schema=schema, base_name=base_name, vc=vc)
     creation = _generate_creation(schema=schema, base_name=base_name, vc=vc)
     update = _generate_update(schema=schema, base_name=base_name, vc=vc)
@@ -15,14 +15,11 @@ def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedCon
         imports=[
             "from entpy.framework.mutators import EntMutatorCreationAction, EntMutatorUpdateAction, EntMutatorDeletionAction",
         ]
-        + pending.imports
         + base.imports
         + creation.imports
         + update.imports
         + deletion.imports,
-        code=pending.code
-        + "\n\n"
-        + base.code
+        code=base.code
         + "\n\n"
         + creation.code
         + "\n\n"
@@ -199,30 +196,16 @@ class {base_name}MutatorDeletionAction(  {"# type: ignore[misc]" if patterns els
     )
 
 
-def _generate_pending(schema: Schema, base_name: str) -> GeneratedContent:
-    fields = schema.get_all_fields()
-    imports = ["from entpy.framework.ent import EntPending"]
-
-    field_code = ""
-    for field in fields:
-        if isinstance(field, DateField):
-            imports.append("from datetime import date")
-        if isinstance(field, TimeField):
-            imports.append("from datetime import time")
-        if isinstance(field, IntervalField):
-            imports.append("from datetime import timedelta")
-        accessor_type = field.get_python_type() + (" | None" if field.nullable else "")
-        field_code += "        @property\n"
-        field_code += f"        def {field.name}(self) -> {accessor_type}:\n"
-        field_code += "            pass\n"
+def generate_pending(schema: Schema, base_name: str) -> GeneratedContent:
+    fields = _generate_fields(schema)
 
     return GeneratedContent(
-        imports=imports,
+        imports=["from entpy.framework.ent import EntPending"] + fields.imports,
         code=f"""
 class {base_name}Pending(EntPending[{base_name}Model]):
     m = {base_name}Model
 
     if TYPE_CHECKING:
-{field_code or "        pass"}
+{fields.code or "        pass"}
 """,
     )

@@ -156,77 +156,6 @@ class EntTestObject2APIModel(EntTestThingAPIModel, EntTestPatternAPIModel):
     some_field: str | None = APIField(None)
 
 
-class EntTestObject2(
-    PrivacyMixin,
-    EntObjectBase[ExampleViewerContext, EntTestObject2Model],
-    IEntTestThing,
-    IEntTestPattern,
-):
-    m = EntTestObject2Model
-    schema = EntTestObject2Schema()
-
-    if TYPE_CHECKING:
-
-        @property
-        def a_good_thing(self) -> str:
-            pass
-
-        @property
-        def obj5_id(self) -> UUID:
-            pass
-
-        @property
-        def a_pattern_validated_field(self) -> str | None:
-            pass
-
-        @property
-        def idempotency_key(self) -> UUID | None:
-            pass
-
-        @property
-        def limit(self) -> int | None:
-            pass
-
-        @property
-        def obj5_opt_id(self) -> UUID | None:
-            pass
-
-        @property
-        def some_field(self) -> str | None:
-            pass
-
-        @property
-        def thing_status(self) -> ThingStatus | None:
-            pass
-
-    @classmethod
-    @cache
-    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
-
-        return super()._get_edge_type(edge_name)
-
-    @classmethod
-    def _get_child_type(  # type: ignore[override]
-        cls,
-        uuid_type: bytes,
-    ) -> type[EntTestObject2]:
-        raise NotImplementedError("get_child_type() should only be called on patterns")
-
-    @classmethod
-    def query(  # type: ignore[override]
-        cls,
-        vc: ExampleViewerContext,
-    ) -> EntTestObject2Query:
-        return EntTestObject2Query(vc=vc)
-
-
-class EntTestObject2Query(
-    EntObjectQuery[ExampleViewerContext, EntTestObject2, EntTestObject2Model]
-):
-    ent_type = EntTestObject2
-    model_type = EntTestObject2Model
-
-
 class EntTestObject2Pending(EntPending[EntTestObject2Model]):
     m = EntTestObject2Model
 
@@ -263,6 +192,44 @@ class EntTestObject2Pending(EntPending[EntTestObject2Model]):
         @property
         def thing_status(self) -> ThingStatus | None:
             pass
+
+
+class EntTestObject2(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntTestObject2Model],
+    IEntTestThing,
+    IEntTestPattern,
+    EntTestObject2Pending,
+):
+    m = EntTestObject2Model
+    schema = EntTestObject2Schema()
+
+    @classmethod
+    @cache
+    def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+
+        return super()._get_edge_type(edge_name)
+
+    @classmethod
+    def _get_child_type(  # type: ignore[override]
+        cls,
+        uuid_type: bytes,
+    ) -> type[EntTestObject2]:
+        raise NotImplementedError("get_child_type() should only be called on patterns")
+
+    @classmethod
+    def query(  # type: ignore[override]
+        cls,
+        vc: ExampleViewerContext,
+    ) -> EntTestObject2Query:
+        return EntTestObject2Query(vc=vc)
+
+
+class EntTestObject2Query(
+    EntObjectQuery[ExampleViewerContext, EntTestObject2, EntTestObject2Model]
+):
+    ent_type = EntTestObject2
+    model_type = EntTestObject2Model
 
 
 class EntTestObject2Mutator:

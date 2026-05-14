@@ -14,9 +14,10 @@ def generate(
     vc: ImportedObject,
     privacy_mixin: ImportedObject | None = None,
 ) -> GeneratedContent:
+    is_schema = isinstance(descriptor, Schema)
     i = "I" if isinstance(descriptor, Pattern) else ""
     base_parent = None
-    if isinstance(descriptor, Schema):
+    if is_schema:
         base_parent = f"EntObjectBase[{vc.name}, {base_name}Model]"
     elif isinstance(descriptor, Pattern) and len(descriptor.get_patterns()) == 0:
         base_parent = f"EntPatternBase[{vc.name}, {base_name}Model]"
@@ -27,10 +28,16 @@ def generate(
             f"I{pattern.__class__.__name__.removesuffix('Pattern')}"
             for pattern in descriptor.get_patterns()
         ]
+        + ([f"{base_name}Pending"] if is_schema else [])
     )
     extends = ",".join(list(filter(None, extends_list)))
 
-    fields = _generate_fields(descriptor)
+    # For schemas, field properties are inherited from EntXxxPending
+    fields = (
+        GeneratedContent(code="", imports=[])
+        if is_schema
+        else _generate_fields(descriptor)
+    )
     edge_gens, edge_types = _generate_edge_gens(descriptor)
 
     unique_gens = _generate_unique_gens(
@@ -47,7 +54,7 @@ def generate(
     type_checking_imports = ["from entpy import Ent"]
 
     attributes = ""
-    if isinstance(descriptor, Schema):
+    if is_schema:
         attributes = "    schema = " + base_name + "Schema()"
 
     for pattern in descriptor.get_patterns():
@@ -58,7 +65,7 @@ def generate(
 
     child_types = ""
     # Make the type checker happy for ents which implement multiple patterns
-    if isinstance(descriptor, Schema) and len(descriptor.get_patterns()) > 1:
+    if is_schema and len(descriptor.get_patterns()) > 1:
         child_types = f"""@classmethod
     def _get_child_type(  # type: ignore[override]
         cls,
@@ -67,6 +74,24 @@ def generate(
         raise NotImplementedError("get_child_type() should only be called on patterns")
     """
 
+    m_line = f"    m = {base_name}Model"
+
+    # For schemas, field stubs come from EntXxxPending; only edge stubs needed
+    type_checking_block = ""
+    if is_schema:
+        if edge_gens.code.strip():
+            type_checking_block = f"""
+    if TYPE_CHECKING:
+{edge_gens.code}
+"""
+    else:
+        type_checking_block = f"""
+    if TYPE_CHECKING:
+{fields.code or "        pass"}
+
+{edge_gens.code}
+"""
+
     return GeneratedContent(
         imports=imports + fields.imports + edge_gens.imports,
         type_checking_imports=type_checking_imports
@@ -74,15 +99,10 @@ def generate(
         + edge_gens.type_checking_imports,
         code=f"""
 class {i}{base_name}({extends}):{get_description(descriptor)}
-    m = {base_name}Model
+{m_line}
 {attributes}
-
-    if TYPE_CHECKING:
-{fields.code or "        pass"}
-
+{type_checking_block}
 {unique_gens}
-
-{edge_gens.code}
 
     @classmethod
     @cache

@@ -49,13 +49,8 @@ class EntInheritedTestAPIModel(EntInheritedTestMiddleAPIModel):
     schema_field: str = APIField(..., examples=["schema value"])
 
 
-class EntInheritedTest(
-    PrivacyMixin,
-    EntObjectBase[ExampleViewerContext, EntInheritedTestModel],
-    IEntInheritedTestMiddle,
-):
+class EntInheritedTestPending(EntPending[EntInheritedTestModel]):
     m = EntInheritedTestModel
-    schema = EntInheritedTestSchema()
 
     if TYPE_CHECKING:
 
@@ -70,6 +65,16 @@ class EntInheritedTest(
         @property
         def schema_field(self) -> str:
             pass
+
+
+class EntInheritedTest(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntInheritedTestModel],
+    IEntInheritedTestMiddle,
+    EntInheritedTestPending,
+):
+    m = EntInheritedTestModel
+    schema = EntInheritedTestSchema()
 
     @classmethod
     @cache
@@ -90,24 +95,6 @@ class EntInheritedTestQuery(
 ):
     ent_type = EntInheritedTest
     model_type = EntInheritedTestModel
-
-
-class EntInheritedTestPending(EntPending[EntInheritedTestModel]):
-    m = EntInheritedTestModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def base_field(self) -> str:
-            pass
-
-        @property
-        def middle_field(self) -> int:
-            pass
-
-        @property
-        def schema_field(self) -> str:
-            pass
 
 
 class EntInheritedTestMutator:

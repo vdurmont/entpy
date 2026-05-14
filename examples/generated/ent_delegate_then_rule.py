@@ -62,11 +62,8 @@ class EntDelegateThenRuleAPIModel(APIEntity):
     privacy_parent: "EntPrivacyParentAPIModel" = APIField(...)
 
 
-class EntDelegateThenRule(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntDelegateThenRuleModel]
-):
+class EntDelegateThenRulePending(EntPending[EntDelegateThenRuleModel]):
     m = EntDelegateThenRuleModel
-    schema = EntDelegateThenRuleSchema()
 
     if TYPE_CHECKING:
 
@@ -77,6 +74,17 @@ class EntDelegateThenRule(
         @property
         def privacy_parent_id(self) -> UUID:
             pass
+
+
+class EntDelegateThenRule(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntDelegateThenRuleModel],
+    EntDelegateThenRulePending,
+):
+    m = EntDelegateThenRuleModel
+    schema = EntDelegateThenRuleSchema()
+
+    if TYPE_CHECKING:
 
         async def gen_privacy_parent(self) -> "EntPrivacyParent":
             pass
@@ -105,20 +113,6 @@ class EntDelegateThenRuleQuery(
 ):
     ent_type = EntDelegateThenRule
     model_type = EntDelegateThenRuleModel
-
-
-class EntDelegateThenRulePending(EntPending[EntDelegateThenRuleModel]):
-    m = EntDelegateThenRuleModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def name(self) -> str:
-            pass
-
-        @property
-        def privacy_parent_id(self) -> UUID:
-            pass
 
 
 class EntDelegateThenRuleMutator:

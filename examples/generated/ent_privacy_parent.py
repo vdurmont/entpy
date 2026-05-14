@@ -46,17 +46,23 @@ class EntPrivacyParentAPIModel(APIEntity):
     name: str = APIField(..., examples=["Privacy Parent"])
 
 
-class EntPrivacyParent(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntPrivacyParentModel]
-):
+class EntPrivacyParentPending(EntPending[EntPrivacyParentModel]):
     m = EntPrivacyParentModel
-    schema = EntPrivacyParentSchema()
 
     if TYPE_CHECKING:
 
         @property
         def name(self) -> str:
             pass
+
+
+class EntPrivacyParent(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntPrivacyParentModel],
+    EntPrivacyParentPending,
+):
+    m = EntPrivacyParentModel
+    schema = EntPrivacyParentSchema()
 
     @classmethod
     @cache
@@ -77,16 +83,6 @@ class EntPrivacyParentQuery(
 ):
     ent_type = EntPrivacyParent
     model_type = EntPrivacyParentModel
-
-
-class EntPrivacyParentPending(EntPending[EntPrivacyParentModel]):
-    m = EntPrivacyParentModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def name(self) -> str:
-            pass
 
 
 class EntPrivacyParentMutator:

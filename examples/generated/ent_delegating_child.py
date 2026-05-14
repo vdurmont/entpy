@@ -62,11 +62,8 @@ class EntDelegatingChildAPIModel(APIEntity):
     privacy_parent: "EntPrivacyParentAPIModel" = APIField(...)
 
 
-class EntDelegatingChild(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntDelegatingChildModel]
-):
+class EntDelegatingChildPending(EntPending[EntDelegatingChildModel]):
     m = EntDelegatingChildModel
-    schema = EntDelegatingChildSchema()
 
     if TYPE_CHECKING:
 
@@ -77,6 +74,17 @@ class EntDelegatingChild(
         @property
         def privacy_parent_id(self) -> UUID:
             pass
+
+
+class EntDelegatingChild(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntDelegatingChildModel],
+    EntDelegatingChildPending,
+):
+    m = EntDelegatingChildModel
+    schema = EntDelegatingChildSchema()
+
+    if TYPE_CHECKING:
 
         async def gen_privacy_parent(self) -> "EntPrivacyParent":
             pass
@@ -105,20 +113,6 @@ class EntDelegatingChildQuery(
 ):
     ent_type = EntDelegatingChild
     model_type = EntDelegatingChildModel
-
-
-class EntDelegatingChildPending(EntPending[EntDelegatingChildModel]):
-    m = EntDelegatingChildModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def name(self) -> str:
-            pass
-
-        @property
-        def privacy_parent_id(self) -> UUID:
-            pass
 
 
 class EntDelegatingChildMutator:

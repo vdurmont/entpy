@@ -62,9 +62,8 @@ class EntParentAPIModel(APIEntity):
     name: str = APIField(..., examples=["Vincent"])
 
 
-class EntParent(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntParentModel]):
+class EntParentPending(EntPending[EntParentModel]):
     m = EntParentModel
-    schema = EntParentSchema()
 
     if TYPE_CHECKING:
 
@@ -75,6 +74,15 @@ class EntParent(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntParentModel
         @property
         def name(self) -> str:
             pass
+
+
+class EntParent(
+    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntParentModel], EntParentPending
+):
+    m = EntParentModel
+    schema = EntParentSchema()
+
+    if TYPE_CHECKING:
 
         async def gen_grand_parent(self) -> "EntGrandParent":
             pass
@@ -101,20 +109,6 @@ class EntParent(PrivacyMixin, EntObjectBase[ExampleViewerContext, EntParentModel
 class EntParentQuery(EntObjectQuery[ExampleViewerContext, EntParent, EntParentModel]):
     ent_type = EntParent
     model_type = EntParentModel
-
-
-class EntParentPending(EntPending[EntParentModel]):
-    m = EntParentModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def grand_parent_id(self) -> UUID:
-            pass
-
-        @property
-        def name(self) -> str:
-            pass
 
 
 class EntParentMutator:

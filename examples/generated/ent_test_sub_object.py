@@ -46,17 +46,23 @@ class EntTestSubObjectAPIModel(APIEntity):
     email: str = APIField(..., examples=["vdurmont@gmail.com"])
 
 
-class EntTestSubObject(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntTestSubObjectModel]
-):
+class EntTestSubObjectPending(EntPending[EntTestSubObjectModel]):
     m = EntTestSubObjectModel
-    schema = EntTestSubObjectSchema()
 
     if TYPE_CHECKING:
 
         @property
         def email(self) -> str:
             pass
+
+
+class EntTestSubObject(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntTestSubObjectModel],
+    EntTestSubObjectPending,
+):
+    m = EntTestSubObjectModel
+    schema = EntTestSubObjectSchema()
 
     @classmethod
     @cache
@@ -77,16 +83,6 @@ class EntTestSubObjectQuery(
 ):
     ent_type = EntTestSubObject
     model_type = EntTestSubObjectModel
-
-
-class EntTestSubObjectPending(EntPending[EntTestSubObjectModel]):
-    m = EntTestSubObjectModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def email(self) -> str:
-            pass
 
 
 class EntTestSubObjectMutator:
