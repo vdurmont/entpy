@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_test_object5_schema import EntTestObject5Schema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -87,6 +88,20 @@ class EntTestObject5Query(
     model_type = EntTestObject5Model
 
 
+class EntTestObject5Pending(EntPending[EntTestObject5Model]):
+    m = EntTestObject5Model
+
+    if TYPE_CHECKING:
+
+        @property
+        def obj5_field(self) -> str:
+            pass
+
+        @property
+        def is_it_true(self) -> bool:
+            pass
+
+
 class EntTestObject5Mutator:
     @classmethod
     def create(
@@ -131,6 +146,7 @@ class EntTestObject5MutatorCreationAction(
 ):
     ent_type = EntTestObject5
     model_type = EntTestObject5Model
+    pending_type = EntTestObject5Pending
     schema = EntTestObject5Schema()
     vc: ExampleViewerContext
 
@@ -145,6 +161,7 @@ class EntTestObject5MutatorUpdateAction(
 ):
     ent_type = EntTestObject5
     model_type = EntTestObject5Model
+    pending_type = EntTestObject5Pending
     schema = EntTestObject5Schema()
     vc: ExampleViewerContext
     ent: EntTestObject5
@@ -159,6 +176,7 @@ class EntTestObject5MutatorDeletionAction(
     EntMutatorDeletionAction[ExampleViewerContext, EntTestObject5, EntTestObject5Model]
 ):
     ent_type = EntTestObject5
+    pending_type = EntTestObject5Pending
 
 
 class EntTestObject5Example:

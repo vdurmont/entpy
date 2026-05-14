@@ -17,6 +17,7 @@ from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorDeletionActio
 from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorUpdateAction
 from ent_test_object4_schema import EntTestObject4Schema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -105,6 +106,16 @@ class EntTestObject4Query(
     model_type = EntTestObject4Model
 
 
+class EntTestObject4Pending(EntPending[EntTestObject4Model]):
+    m = EntTestObject4Model
+
+    if TYPE_CHECKING:
+
+        @property
+        def other_id(self) -> UUID | None:
+            pass
+
+
 class EntTestObject4Mutator:
     @classmethod
     def create(
@@ -147,6 +158,7 @@ class EntTestObject4MutatorCreationAction(
 ):
     ent_type = EntTestObject4
     model_type = EntTestObject4Model
+    pending_type = EntTestObject4Pending
     schema = EntTestObject4Schema()
     vc: ExampleViewerContext
 
@@ -161,6 +173,7 @@ class EntTestObject4MutatorUpdateAction(
 ):
     ent_type = EntTestObject4
     model_type = EntTestObject4Model
+    pending_type = EntTestObject4Pending
     schema = EntTestObject4Schema()
     vc: ExampleViewerContext
     ent: EntTestObject4
@@ -175,6 +188,7 @@ class EntTestObject4MutatorDeletionAction(  # type: ignore[misc]
     IEntOtherSchemaPatternMutatorDeletionAction,
 ):
     ent_type = EntTestObject4
+    pending_type = EntTestObject4Pending
 
 
 class EntTestObject4Example:

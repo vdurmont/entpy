@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_single_rule_schema import EntSingleRuleSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -78,6 +79,16 @@ class EntSingleRuleQuery(
     model_type = EntSingleRuleModel
 
 
+class EntSingleRulePending(EntPending[EntSingleRuleModel]):
+    m = EntSingleRuleModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def name(self) -> str:
+            pass
+
+
 class EntSingleRuleMutator:
     @classmethod
     def create(
@@ -116,6 +127,7 @@ class EntSingleRuleMutatorCreationAction(
 ):
     ent_type = EntSingleRule
     model_type = EntSingleRuleModel
+    pending_type = EntSingleRulePending
     schema = EntSingleRuleSchema()
     vc: ExampleViewerContext
 
@@ -129,6 +141,7 @@ class EntSingleRuleMutatorUpdateAction(
 ):
     ent_type = EntSingleRule
     model_type = EntSingleRuleModel
+    pending_type = EntSingleRulePending
     schema = EntSingleRuleSchema()
     vc: ExampleViewerContext
     ent: EntSingleRule
@@ -142,6 +155,7 @@ class EntSingleRuleMutatorDeletionAction(
     EntMutatorDeletionAction[ExampleViewerContext, EntSingleRule, EntSingleRuleModel]
 ):
     ent_type = EntSingleRule
+    pending_type = EntSingleRulePending
 
 
 class EntSingleRuleExample:

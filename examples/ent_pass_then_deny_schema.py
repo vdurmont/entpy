@@ -3,6 +3,7 @@ from entpy import (
     Decision,
     EdgeDelegate,
     Ent,
+    EntPending,
     Field,
     PrivacyRule,
     Schema,
@@ -15,14 +16,18 @@ from evc import ExampleViewerContext
 class AlwaysPass(PrivacyRule):
     """A rule that always returns PASS."""
 
-    async def gen_evaluate(self, vc: ExampleViewerContext, ent: Ent) -> Decision:
+    async def gen_evaluate(
+        self, vc: ExampleViewerContext, ent: Ent, pending_ent: EntPending | None = None
+    ) -> Decision:
         return Decision.PASS
 
 
 class AlwaysDeny(PrivacyRule):
     """A rule that always returns DENY."""
 
-    async def gen_evaluate(self, vc: ExampleViewerContext, ent: Ent) -> Decision:
+    async def gen_evaluate(
+        self, vc: ExampleViewerContext, ent: Ent, pending_ent: EntPending | None = None
+    ) -> Decision:
         return Decision.DENY
 
 

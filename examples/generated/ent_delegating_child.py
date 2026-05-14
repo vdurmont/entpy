@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_delegating_child_schema import EntDelegatingChildSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -106,6 +107,20 @@ class EntDelegatingChildQuery(
     model_type = EntDelegatingChildModel
 
 
+class EntDelegatingChildPending(EntPending[EntDelegatingChildModel]):
+    m = EntDelegatingChildModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def name(self) -> str:
+            pass
+
+        @property
+        def privacy_parent_id(self) -> UUID:
+            pass
+
+
 class EntDelegatingChildMutator:
     @classmethod
     def create(
@@ -156,6 +171,7 @@ class EntDelegatingChildMutatorCreationAction(
 ):
     ent_type = EntDelegatingChild
     model_type = EntDelegatingChildModel
+    pending_type = EntDelegatingChildPending
     schema = EntDelegatingChildSchema()
     vc: ExampleViewerContext
 
@@ -172,6 +188,7 @@ class EntDelegatingChildMutatorUpdateAction(
 ):
     ent_type = EntDelegatingChild
     model_type = EntDelegatingChildModel
+    pending_type = EntDelegatingChildPending
     schema = EntDelegatingChildSchema()
     vc: ExampleViewerContext
     ent: EntDelegatingChild
@@ -188,6 +205,7 @@ class EntDelegatingChildMutatorDeletionAction(
     ]
 ):
     ent_type = EntDelegatingChild
+    pending_type = EntDelegatingChildPending
 
 
 class EntDelegatingChildExample:

@@ -6,7 +6,12 @@ from .framework.database import (
 )
 from .framework.decision import Decision  # noqa: F401
 from .framework.deny_is_soft_deleted import DenyIfSoftDeleted  # noqa: F401
-from .framework.ent import Ent, generate_ent_id, validate_ent_id  # noqa: F401
+from .framework.ent import (  # noqa: F401
+    Ent,
+    EntPending,
+    generate_ent_id,
+    validate_ent_id,
+)
 from .framework.errors import (  # noqa: F401
     EntNotFoundError,
     ExecutionError,
