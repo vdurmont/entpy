@@ -51,11 +51,8 @@ class EntTestObject5APIModel(APIEntity):
     is_it_true: bool = APIField(True)
 
 
-class EntTestObject5(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntTestObject5Model]
-):
+class EntTestObject5Pending(EntPending[EntTestObject5Model]):
     m = EntTestObject5Model
-    schema = EntTestObject5Schema()
 
     if TYPE_CHECKING:
 
@@ -66,6 +63,15 @@ class EntTestObject5(
         @property
         def is_it_true(self) -> bool:
             pass
+
+
+class EntTestObject5(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntTestObject5Model],
+    EntTestObject5Pending,
+):
+    m = EntTestObject5Model
+    schema = EntTestObject5Schema()
 
     @classmethod
     @cache
@@ -86,20 +92,6 @@ class EntTestObject5Query(
 ):
     ent_type = EntTestObject5
     model_type = EntTestObject5Model
-
-
-class EntTestObject5Pending(EntPending[EntTestObject5Model]):
-    m = EntTestObject5Model
-
-    if TYPE_CHECKING:
-
-        @property
-        def obj5_field(self) -> str:
-            pass
-
-        @property
-        def is_it_true(self) -> bool:
-            pass
 
 
 class EntTestObject5Mutator:

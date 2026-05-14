@@ -62,11 +62,8 @@ class EntMixedListAPIModel(APIEntity):
     privacy_parent: "EntPrivacyParentAPIModel" = APIField(...)
 
 
-class EntMixedList(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntMixedListModel]
-):
+class EntMixedListPending(EntPending[EntMixedListModel]):
     m = EntMixedListModel
-    schema = EntMixedListSchema()
 
     if TYPE_CHECKING:
 
@@ -77,6 +74,17 @@ class EntMixedList(
         @property
         def privacy_parent_id(self) -> UUID:
             pass
+
+
+class EntMixedList(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntMixedListModel],
+    EntMixedListPending,
+):
+    m = EntMixedListModel
+    schema = EntMixedListSchema()
+
+    if TYPE_CHECKING:
 
         async def gen_privacy_parent(self) -> "EntPrivacyParent":
             pass
@@ -105,20 +113,6 @@ class EntMixedListQuery(
 ):
     ent_type = EntMixedList
     model_type = EntMixedListModel
-
-
-class EntMixedListPending(EntPending[EntMixedListModel]):
-    m = EntMixedListModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def name(self) -> str:
-            pass
-
-        @property
-        def privacy_parent_id(self) -> UUID:
-            pass
 
 
 class EntMixedListMutator:

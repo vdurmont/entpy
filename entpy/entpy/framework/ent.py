@@ -58,6 +58,22 @@ def validate_ent_id(ent_id: UUID | str) -> UUID:
     return ent_id
 
 
+class EntMeta(type):
+    if not TYPE_CHECKING:
+        # Hide this from mypy otherwise it thinks any attribute is valid
+        def __getattr__(cls, name: str) -> Any:
+            if name.startswith("gen_from_"):
+                return partial(cls._gen_from_unique, name[9:])
+
+            if name.startswith("genx_or_404_from_"):
+                return partial(cls._genx_or_404_from_unique, name[17:])
+
+            if name.startswith("genx_from_"):
+                return partial(cls._genx_from_unique, name[10:])
+
+            raise AttributeError(f"'{cls.__name__}' object has no attribute '{name}'")
+
+
 class EntPending[ENTMODEL: ModelMixin]:
     model: ENTMODEL
     m: type[ENTMODEL]
@@ -83,7 +99,7 @@ class EntPending[ENTMODEL: ModelMixin]:
     else:
 
         def __getattr__(self, name: str) -> Any:
-            if name in self.model.__table__.columns:
+            if name in self.m.__table__.columns:
                 return getattr(self.model, name)
             raise AttributeError(
                 f"'{self.__class__.__name__}' object has no attribute '{name}'"
@@ -93,62 +109,21 @@ class EntPending[ENTMODEL: ModelMixin]:
         self.model = model
 
 
-class EntMeta(type):
-    if not TYPE_CHECKING:
-        # Hide this from mypy otherwise it thinks any attribute is valid
-        def __getattr__(cls, name: str) -> Any:
-            if name.startswith("gen_from_"):
-                return partial(cls._gen_from_unique, name[9:])
-
-            if name.startswith("genx_or_404_from_"):
-                return partial(cls._genx_or_404_from_unique, name[17:])
-
-            if name.startswith("genx_from_"):
-                return partial(cls._genx_from_unique, name[10:])
-
-            raise AttributeError(f"'{cls.__name__}' object has no attribute '{name}'")
-
-
-class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
-    model: ENTMODEL
-    m: type[ENTMODEL]
+class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
+    EntPending[ENTMODEL], metaclass=EntMeta
+):
     vc: VC
 
-    # Model fields are actually returned by __getattr__()
-    if TYPE_CHECKING:
+    if not TYPE_CHECKING:
 
-        @property
-        def id(self) -> UUID:
-            pass
-
-        @property
-        def created_at(self) -> datetime:
-            pass
-
-        @property
-        def updated_at(self) -> datetime:
-            pass
-
-        @property
-        def soft_deleted_at(self) -> datetime | None:
-            pass
-
-    else:
-        # Hide this from mypy otherwise it thinks any attribute is valid
         def __getattr__(self, name: str) -> Any:
             if name.startswith("gen_"):
                 return partial(self._gen_edge, name[4:])
-
-            if name in self.model.__table__.columns:
-                return getattr(self.model, name)
-
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{name}'"
-            )
+            return super().__getattr__(name)
 
     def __init__(self, vc: VC, model: ENTMODEL) -> None:
+        super().__init__(model)
         self.vc = vc
-        self.model = model
 
     @classmethod
     @abstractmethod

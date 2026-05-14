@@ -97,6 +97,12 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
         def thing_status(self) -> ThingStatus | None:
             pass
 
+        async def gen_obj5(self) -> "EntTestObject5":
+            pass
+
+        async def gen_obj5_opt(self) -> "EntTestObject5" | None:
+            pass
+
         @classmethod
         async def gen_from_idempotency_key(
             cls,
@@ -122,12 +128,6 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
             idempotency_key: UUID,
             for_update: bool = False,
         ) -> Self:
-            pass
-
-        async def gen_obj5(self) -> "EntTestObject5":
-            pass
-
-        async def gen_obj5_opt(self) -> "EntTestObject5" | None:
             pass
 
     @classmethod

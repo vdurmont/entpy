@@ -46,17 +46,23 @@ class EntGrandParentAPIModel(APIEntity):
     name: str = APIField(..., examples=["Anne"])
 
 
-class EntGrandParent(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntGrandParentModel]
-):
+class EntGrandParentPending(EntPending[EntGrandParentModel]):
     m = EntGrandParentModel
-    schema = EntGrandParentSchema()
 
     if TYPE_CHECKING:
 
         @property
         def name(self) -> str:
             pass
+
+
+class EntGrandParent(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntGrandParentModel],
+    EntGrandParentPending,
+):
+    m = EntGrandParentModel
+    schema = EntGrandParentSchema()
 
     @classmethod
     @cache
@@ -77,16 +83,6 @@ class EntGrandParentQuery(
 ):
     ent_type = EntGrandParent
     model_type = EntGrandParentModel
-
-
-class EntGrandParentPending(EntPending[EntGrandParentModel]):
-    m = EntGrandParentModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def name(self) -> str:
-            pass
 
 
 class EntGrandParentMutator:

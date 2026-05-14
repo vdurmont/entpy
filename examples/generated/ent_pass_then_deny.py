@@ -46,17 +46,23 @@ class EntPassThenDenyAPIModel(APIEntity):
     name: str = APIField(..., examples=["Pass Then Deny Entity"])
 
 
-class EntPassThenDeny(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntPassThenDenyModel]
-):
+class EntPassThenDenyPending(EntPending[EntPassThenDenyModel]):
     m = EntPassThenDenyModel
-    schema = EntPassThenDenySchema()
 
     if TYPE_CHECKING:
 
         @property
         def name(self) -> str:
             pass
+
+
+class EntPassThenDeny(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntPassThenDenyModel],
+    EntPassThenDenyPending,
+):
+    m = EntPassThenDenyModel
+    schema = EntPassThenDenySchema()
 
     @classmethod
     @cache
@@ -77,16 +83,6 @@ class EntPassThenDenyQuery(
 ):
     ent_type = EntPassThenDeny
     model_type = EntPassThenDenyModel
-
-
-class EntPassThenDenyPending(EntPending[EntPassThenDenyModel]):
-    m = EntPassThenDenyModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def name(self) -> str:
-            pass
 
 
 class EntPassThenDenyMutator:

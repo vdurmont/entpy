@@ -300,15 +300,8 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     when_is_it_cool: AwareDatetime | None = APIField(None)
 
 
-class EntTestObject(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntTestObjectModel], IEntTestThing
-):
-    """
-    This is an object we use to test all the ent framework features!
-    """
-
+class EntTestObjectPending(EntPending[EntTestObjectModel]):
     m = EntTestObjectModel
-    schema = EntTestObjectSchema()
 
     if TYPE_CHECKING:
 
@@ -442,6 +435,37 @@ class EntTestObject(
         def when_is_it_cool(self) -> datetime | None:
             pass
 
+
+class EntTestObject(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntTestObjectModel],
+    IEntTestThing,
+    EntTestObjectPending,
+):
+    """
+    This is an object we use to test all the ent framework features!
+    """
+
+    m = EntTestObjectModel
+    schema = EntTestObjectSchema()
+
+    if TYPE_CHECKING:
+
+        async def gen_required_sub_object(self) -> "EntTestSubObject":
+            pass
+
+        async def gen_optional_sub_object(self) -> "EntTestSubObject" | None:
+            pass
+
+        async def gen_optional_sub_object_no_ex(self) -> "EntTestSubObject" | None:
+            pass
+
+        async def gen_self(self) -> "EntTestObject" | None:
+            pass
+
+        async def gen_some_pattern(self) -> "IEntTestThing" | None:
+            pass
+
         @classmethod
         async def gen_from_username(
             cls, vc: ExampleViewerContext, username: str, for_update: bool = False
@@ -458,21 +482,6 @@ class EntTestObject(
         async def genx_or_404_from_username(
             cls, vc: ExampleViewerContext, username: str, for_update: bool = False
         ) -> Self:
-            pass
-
-        async def gen_required_sub_object(self) -> "EntTestSubObject":
-            pass
-
-        async def gen_optional_sub_object(self) -> "EntTestSubObject" | None:
-            pass
-
-        async def gen_optional_sub_object_no_ex(self) -> "EntTestSubObject" | None:
-            pass
-
-        async def gen_self(self) -> "EntTestObject" | None:
-            pass
-
-        async def gen_some_pattern(self) -> "IEntTestThing" | None:
             pass
 
     @classmethod
@@ -513,140 +522,6 @@ class EntTestObjectQuery(
 ):
     ent_type = EntTestObject
     model_type = EntTestObjectModel
-
-
-class EntTestObjectPending(EntPending[EntTestObjectModel]):
-    m = EntTestObjectModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def a_good_thing(self) -> str:
-            pass
-
-        @property
-        def firstname(self) -> str:
-            pass
-
-        @property
-        def obj5_id(self) -> UUID:
-            pass
-
-        @property
-        def required_sub_object_id(self) -> UUID:
-            pass
-
-        @property
-        def username(self) -> str:
-            pass
-
-        @property
-        def contact_email(self) -> str | None:
-            pass
-
-        @property
-        def lastname(self) -> str | None:
-            pass
-
-        @property
-        def retry_count(self) -> int | None:
-            pass
-
-        @property
-        def sadness(self) -> Status | None:
-            pass
-
-        @property
-        def a_pattern_validated_field(self) -> str | None:
-            pass
-
-        @property
-        def city(self) -> str | None:
-            pass
-
-        @property
-        def context(self) -> str | None:
-            pass
-
-        @property
-        def correlation_id(self) -> UUID | None:
-            pass
-
-        @property
-        def dob(self) -> date | None:
-            pass
-
-        @property
-        def duration(self) -> timedelta | None:
-            pass
-
-        @property
-        def email(self) -> str | None:
-            pass
-
-        @property
-        def end_time(self) -> time | None:
-            pass
-
-        @property
-        def idempotency_key(self) -> UUID | None:
-            pass
-
-        @property
-        def is_it_true(self) -> bool | None:
-            pass
-
-        @property
-        def obj5_opt_id(self) -> UUID | None:
-            pass
-
-        @property
-        def optional_sub_object_id(self) -> UUID | None:
-            pass
-
-        @property
-        def optional_sub_object_no_ex_id(self) -> UUID | None:
-            pass
-
-        @property
-        def self_id(self) -> UUID | None:
-            pass
-
-        @property
-        def some_json(self) -> list[str] | None:
-            pass
-
-        @property
-        def some_pattern_id(self) -> UUID | None:
-            pass
-
-        @property
-        def start_time(self) -> time | None:
-            pass
-
-        @property
-        def status(self) -> Status | None:
-            pass
-
-        @property
-        def status_code(self) -> int | None:
-            pass
-
-        @property
-        def thing_status(self) -> ThingStatus | None:
-            pass
-
-        @property
-        def trace_id(self) -> UUID | None:
-            pass
-
-        @property
-        def validated_field(self) -> str | None:
-            pass
-
-        @property
-        def when_is_it_cool(self) -> datetime | None:
-            pass
 
 
 class EntTestObjectMutator:

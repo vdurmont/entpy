@@ -46,17 +46,23 @@ class EntSingleRuleAPIModel(APIEntity):
     name: str = APIField(..., examples=["Single Rule Entity"])
 
 
-class EntSingleRule(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntSingleRuleModel]
-):
+class EntSingleRulePending(EntPending[EntSingleRuleModel]):
     m = EntSingleRuleModel
-    schema = EntSingleRuleSchema()
 
     if TYPE_CHECKING:
 
         @property
         def name(self) -> str:
             pass
+
+
+class EntSingleRule(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntSingleRuleModel],
+    EntSingleRulePending,
+):
+    m = EntSingleRuleModel
+    schema = EntSingleRuleSchema()
 
     @classmethod
     @cache
@@ -77,16 +83,6 @@ class EntSingleRuleQuery(
 ):
     ent_type = EntSingleRule
     model_type = EntSingleRuleModel
-
-
-class EntSingleRulePending(EntPending[EntSingleRuleModel]):
-    m = EntSingleRuleModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def name(self) -> str:
-            pass
 
 
 class EntSingleRuleMutator:

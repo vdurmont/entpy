@@ -62,11 +62,8 @@ class EntDelegatingGrandchildAPIModel(APIEntity):
     name: str = APIField(..., examples=["Delegating Grandchild"])
 
 
-class EntDelegatingGrandchild(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntDelegatingGrandchildModel]
-):
+class EntDelegatingGrandchildPending(EntPending[EntDelegatingGrandchildModel]):
     m = EntDelegatingGrandchildModel
-    schema = EntDelegatingGrandchildSchema()
 
     if TYPE_CHECKING:
 
@@ -77,6 +74,17 @@ class EntDelegatingGrandchild(
         @property
         def name(self) -> str:
             pass
+
+
+class EntDelegatingGrandchild(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntDelegatingGrandchildModel],
+    EntDelegatingGrandchildPending,
+):
+    m = EntDelegatingGrandchildModel
+    schema = EntDelegatingGrandchildSchema()
+
+    if TYPE_CHECKING:
 
         async def gen_delegating_child(self) -> "EntDelegatingChild":
             pass
@@ -107,20 +115,6 @@ class EntDelegatingGrandchildQuery(
 ):
     ent_type = EntDelegatingGrandchild
     model_type = EntDelegatingGrandchildModel
-
-
-class EntDelegatingGrandchildPending(EntPending[EntDelegatingGrandchildModel]):
-    m = EntDelegatingGrandchildModel
-
-    if TYPE_CHECKING:
-
-        @property
-        def delegating_child_id(self) -> UUID:
-            pass
-
-        @property
-        def name(self) -> str:
-            pass
 
 
 class EntDelegatingGrandchildMutator:

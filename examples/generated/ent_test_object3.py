@@ -59,17 +59,25 @@ class EntTestObject3APIModel(APIEntity):
     other: "EntTestObject4APIModel | None" = APIField(None)
 
 
-class EntTestObject3(
-    PrivacyMixin, EntObjectBase[ExampleViewerContext, EntTestObject3Model]
-):
+class EntTestObject3Pending(EntPending[EntTestObject3Model]):
     m = EntTestObject3Model
-    schema = EntTestObject3Schema()
 
     if TYPE_CHECKING:
 
         @property
         def other_id(self) -> UUID | None:
             pass
+
+
+class EntTestObject3(
+    PrivacyMixin,
+    EntObjectBase[ExampleViewerContext, EntTestObject3Model],
+    EntTestObject3Pending,
+):
+    m = EntTestObject3Model
+    schema = EntTestObject3Schema()
+
+    if TYPE_CHECKING:
 
         async def gen_other(self) -> "EntTestObject4" | None:
             pass
@@ -98,16 +106,6 @@ class EntTestObject3Query(
 ):
     ent_type = EntTestObject3
     model_type = EntTestObject3Model
-
-
-class EntTestObject3Pending(EntPending[EntTestObject3Model]):
-    m = EntTestObject3Model
-
-    if TYPE_CHECKING:
-
-        @property
-        def other_id(self) -> UUID | None:
-            pass
 
 
 class EntTestObject3Mutator:
