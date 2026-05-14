@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_pass_then_deny_schema import EntPassThenDenySchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -78,6 +79,16 @@ class EntPassThenDenyQuery(
     model_type = EntPassThenDenyModel
 
 
+class EntPassThenDenyPending(EntPending[EntPassThenDenyModel]):
+    m = EntPassThenDenyModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def name(self) -> str:
+            pass
+
+
 class EntPassThenDenyMutator:
     @classmethod
     def create(
@@ -120,6 +131,7 @@ class EntPassThenDenyMutatorCreationAction(
 ):
     ent_type = EntPassThenDeny
     model_type = EntPassThenDenyModel
+    pending_type = EntPassThenDenyPending
     schema = EntPassThenDenySchema()
     vc: ExampleViewerContext
 
@@ -133,6 +145,7 @@ class EntPassThenDenyMutatorUpdateAction(
 ):
     ent_type = EntPassThenDeny
     model_type = EntPassThenDenyModel
+    pending_type = EntPassThenDenyPending
     schema = EntPassThenDenySchema()
     vc: ExampleViewerContext
     ent: EntPassThenDeny
@@ -148,6 +161,7 @@ class EntPassThenDenyMutatorDeletionAction(
     ]
 ):
     ent_type = EntPassThenDeny
+    pending_type = EntPassThenDenyPending
 
 
 class EntPassThenDenyExample:

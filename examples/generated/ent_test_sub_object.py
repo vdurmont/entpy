@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_test_sub_object_schema import EntTestSubObjectSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -78,6 +79,16 @@ class EntTestSubObjectQuery(
     model_type = EntTestSubObjectModel
 
 
+class EntTestSubObjectPending(EntPending[EntTestSubObjectModel]):
+    m = EntTestSubObjectModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def email(self) -> str:
+            pass
+
+
 class EntTestSubObjectMutator:
     @classmethod
     def create(
@@ -122,6 +133,7 @@ class EntTestSubObjectMutatorCreationAction(
 ):
     ent_type = EntTestSubObject
     model_type = EntTestSubObjectModel
+    pending_type = EntTestSubObjectPending
     schema = EntTestSubObjectSchema()
     vc: ExampleViewerContext
 
@@ -137,6 +149,7 @@ class EntTestSubObjectMutatorUpdateAction(
 ):
     ent_type = EntTestSubObject
     model_type = EntTestSubObjectModel
+    pending_type = EntTestSubObjectPending
     schema = EntTestSubObjectSchema()
     vc: ExampleViewerContext
     ent: EntTestSubObject
@@ -152,6 +165,7 @@ class EntTestSubObjectMutatorDeletionAction(
     ]
 ):
     ent_type = EntTestSubObject
+    pending_type = EntTestSubObjectPending
 
 
 class EntTestSubObjectExample:

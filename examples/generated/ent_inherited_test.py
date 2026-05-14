@@ -17,6 +17,7 @@ from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorDeletionAct
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorUpdateAction
 from ent_inherited_test_schema import EntInheritedTestSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -91,6 +92,24 @@ class EntInheritedTestQuery(
     model_type = EntInheritedTestModel
 
 
+class EntInheritedTestPending(EntPending[EntInheritedTestModel]):
+    m = EntInheritedTestModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def base_field(self) -> str:
+            pass
+
+        @property
+        def middle_field(self) -> int:
+            pass
+
+        @property
+        def schema_field(self) -> str:
+            pass
+
+
 class EntInheritedTestMutator:
     @classmethod
     def create(
@@ -143,6 +162,7 @@ class EntInheritedTestMutatorCreationAction(
 ):
     ent_type = EntInheritedTest
     model_type = EntInheritedTestModel
+    pending_type = EntInheritedTestPending
     schema = EntInheritedTestSchema()
     vc: ExampleViewerContext
 
@@ -161,6 +181,7 @@ class EntInheritedTestMutatorUpdateAction(
 ):
     ent_type = EntInheritedTest
     model_type = EntInheritedTestModel
+    pending_type = EntInheritedTestPending
     schema = EntInheritedTestSchema()
     vc: ExampleViewerContext
     ent: EntInheritedTest
@@ -179,6 +200,7 @@ class EntInheritedTestMutatorDeletionAction(  # type: ignore[misc]
     IEntInheritedTestMiddleMutatorDeletionAction,
 ):
     ent_type = EntInheritedTest
+    pending_type = EntInheritedTestPending
 
 
 class EntInheritedTestExample:

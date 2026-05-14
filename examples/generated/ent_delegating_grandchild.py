@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_delegating_grandchild_schema import EntDelegatingGrandchildSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -108,6 +109,20 @@ class EntDelegatingGrandchildQuery(
     model_type = EntDelegatingGrandchildModel
 
 
+class EntDelegatingGrandchildPending(EntPending[EntDelegatingGrandchildModel]):
+    m = EntDelegatingGrandchildModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def delegating_child_id(self) -> UUID:
+            pass
+
+        @property
+        def name(self) -> str:
+            pass
+
+
 class EntDelegatingGrandchildMutator:
     @classmethod
     def create(
@@ -158,6 +173,7 @@ class EntDelegatingGrandchildMutatorCreationAction(
 ):
     ent_type = EntDelegatingGrandchild
     model_type = EntDelegatingGrandchildModel
+    pending_type = EntDelegatingGrandchildPending
     schema = EntDelegatingGrandchildSchema()
     vc: ExampleViewerContext
 
@@ -174,6 +190,7 @@ class EntDelegatingGrandchildMutatorUpdateAction(
 ):
     ent_type = EntDelegatingGrandchild
     model_type = EntDelegatingGrandchildModel
+    pending_type = EntDelegatingGrandchildPending
     schema = EntDelegatingGrandchildSchema()
     vc: ExampleViewerContext
     ent: EntDelegatingGrandchild
@@ -190,6 +207,7 @@ class EntDelegatingGrandchildMutatorDeletionAction(
     ]
 ):
     ent_type = EntDelegatingGrandchild
+    pending_type = EntDelegatingGrandchildPending
 
 
 class EntDelegatingGrandchildExample:

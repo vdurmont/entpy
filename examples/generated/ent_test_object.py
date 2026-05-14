@@ -24,6 +24,7 @@ from ent_test_object_schema import Status
 from ent_test_thing_pattern import ThingStatus
 from entpy import FieldWithDynamicExample
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -514,6 +515,140 @@ class EntTestObjectQuery(
     model_type = EntTestObjectModel
 
 
+class EntTestObjectPending(EntPending[EntTestObjectModel]):
+    m = EntTestObjectModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def a_good_thing(self) -> str:
+            pass
+
+        @property
+        def firstname(self) -> str:
+            pass
+
+        @property
+        def obj5_id(self) -> UUID:
+            pass
+
+        @property
+        def required_sub_object_id(self) -> UUID:
+            pass
+
+        @property
+        def username(self) -> str:
+            pass
+
+        @property
+        def contact_email(self) -> str | None:
+            pass
+
+        @property
+        def lastname(self) -> str | None:
+            pass
+
+        @property
+        def retry_count(self) -> int | None:
+            pass
+
+        @property
+        def sadness(self) -> Status | None:
+            pass
+
+        @property
+        def a_pattern_validated_field(self) -> str | None:
+            pass
+
+        @property
+        def city(self) -> str | None:
+            pass
+
+        @property
+        def context(self) -> str | None:
+            pass
+
+        @property
+        def correlation_id(self) -> UUID | None:
+            pass
+
+        @property
+        def dob(self) -> date | None:
+            pass
+
+        @property
+        def duration(self) -> timedelta | None:
+            pass
+
+        @property
+        def email(self) -> str | None:
+            pass
+
+        @property
+        def end_time(self) -> time | None:
+            pass
+
+        @property
+        def idempotency_key(self) -> UUID | None:
+            pass
+
+        @property
+        def is_it_true(self) -> bool | None:
+            pass
+
+        @property
+        def obj5_opt_id(self) -> UUID | None:
+            pass
+
+        @property
+        def optional_sub_object_id(self) -> UUID | None:
+            pass
+
+        @property
+        def optional_sub_object_no_ex_id(self) -> UUID | None:
+            pass
+
+        @property
+        def self_id(self) -> UUID | None:
+            pass
+
+        @property
+        def some_json(self) -> list[str] | None:
+            pass
+
+        @property
+        def some_pattern_id(self) -> UUID | None:
+            pass
+
+        @property
+        def start_time(self) -> time | None:
+            pass
+
+        @property
+        def status(self) -> Status | None:
+            pass
+
+        @property
+        def status_code(self) -> int | None:
+            pass
+
+        @property
+        def thing_status(self) -> ThingStatus | None:
+            pass
+
+        @property
+        def trace_id(self) -> UUID | None:
+            pass
+
+        @property
+        def validated_field(self) -> str | None:
+            pass
+
+        @property
+        def when_is_it_cool(self) -> datetime | None:
+            pass
+
+
 class EntTestObjectMutator:
     @classmethod
     def create(
@@ -618,6 +753,7 @@ class EntTestObjectMutatorCreationAction(
 ):
     ent_type = EntTestObject
     model_type = EntTestObjectModel
+    pending_type = EntTestObjectPending
     schema = EntTestObjectSchema()
     vc: ExampleViewerContext
 
@@ -663,6 +799,7 @@ class EntTestObjectMutatorUpdateAction(
 ):
     ent_type = EntTestObject
     model_type = EntTestObjectModel
+    pending_type = EntTestObjectPending
     schema = EntTestObjectSchema()
     vc: ExampleViewerContext
     ent: EntTestObject
@@ -707,6 +844,7 @@ class EntTestObjectMutatorDeletionAction(  # type: ignore[misc]
     IEntTestThingMutatorDeletionAction,
 ):
     ent_type = EntTestObject
+    pending_type = EntTestObjectPending
 
 
 class EntTestObjectExample:

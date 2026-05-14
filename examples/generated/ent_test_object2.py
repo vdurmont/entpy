@@ -24,6 +24,7 @@ from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
 from entpy import FieldWithDynamicExample
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -226,6 +227,44 @@ class EntTestObject2Query(
     model_type = EntTestObject2Model
 
 
+class EntTestObject2Pending(EntPending[EntTestObject2Model]):
+    m = EntTestObject2Model
+
+    if TYPE_CHECKING:
+
+        @property
+        def a_good_thing(self) -> str:
+            pass
+
+        @property
+        def obj5_id(self) -> UUID:
+            pass
+
+        @property
+        def a_pattern_validated_field(self) -> str | None:
+            pass
+
+        @property
+        def idempotency_key(self) -> UUID | None:
+            pass
+
+        @property
+        def limit(self) -> int | None:
+            pass
+
+        @property
+        def obj5_opt_id(self) -> UUID | None:
+            pass
+
+        @property
+        def some_field(self) -> str | None:
+            pass
+
+        @property
+        def thing_status(self) -> ThingStatus | None:
+            pass
+
+
 class EntTestObject2Mutator:
     @classmethod
     def create(
@@ -282,6 +321,7 @@ class EntTestObject2MutatorCreationAction(
 ):
     ent_type = EntTestObject2
     model_type = EntTestObject2Model
+    pending_type = EntTestObject2Pending
     schema = EntTestObject2Schema()
     vc: ExampleViewerContext
 
@@ -304,6 +344,7 @@ class EntTestObject2MutatorUpdateAction(
 ):
     ent_type = EntTestObject2
     model_type = EntTestObject2Model
+    pending_type = EntTestObject2Pending
     schema = EntTestObject2Schema()
     vc: ExampleViewerContext
     ent: EntTestObject2
@@ -326,6 +367,7 @@ class EntTestObject2MutatorDeletionAction(  # type: ignore[misc]
     IEntTestPatternMutatorDeletionAction,
 ):
     ent_type = EntTestObject2
+    pending_type = EntTestObject2Pending
 
 
 class EntTestObject2Example:

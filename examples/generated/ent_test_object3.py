@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_test_object3_schema import EntTestObject3Schema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -99,6 +100,16 @@ class EntTestObject3Query(
     model_type = EntTestObject3Model
 
 
+class EntTestObject3Pending(EntPending[EntTestObject3Model]):
+    m = EntTestObject3Model
+
+    if TYPE_CHECKING:
+
+        @property
+        def other_id(self) -> UUID | None:
+            pass
+
+
 class EntTestObject3Mutator:
     @classmethod
     def create(
@@ -141,6 +152,7 @@ class EntTestObject3MutatorCreationAction(
 ):
     ent_type = EntTestObject3
     model_type = EntTestObject3Model
+    pending_type = EntTestObject3Pending
     schema = EntTestObject3Schema()
     vc: ExampleViewerContext
 
@@ -154,6 +166,7 @@ class EntTestObject3MutatorUpdateAction(
 ):
     ent_type = EntTestObject3
     model_type = EntTestObject3Model
+    pending_type = EntTestObject3Pending
     schema = EntTestObject3Schema()
     vc: ExampleViewerContext
     ent: EntTestObject3
@@ -167,6 +180,7 @@ class EntTestObject3MutatorDeletionAction(
     EntMutatorDeletionAction[ExampleViewerContext, EntTestObject3, EntTestObject3Model]
 ):
     ent_type = EntTestObject3
+    pending_type = EntTestObject3Pending
 
 
 class EntTestObject3Example:

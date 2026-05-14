@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_mixed_list_schema import EntMixedListSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -106,6 +107,20 @@ class EntMixedListQuery(
     model_type = EntMixedListModel
 
 
+class EntMixedListPending(EntPending[EntMixedListModel]):
+    m = EntMixedListModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def name(self) -> str:
+            pass
+
+        @property
+        def privacy_parent_id(self) -> UUID:
+            pass
+
+
 class EntMixedListMutator:
     @classmethod
     def create(
@@ -150,6 +165,7 @@ class EntMixedListMutatorCreationAction(
 ):
     ent_type = EntMixedList
     model_type = EntMixedListModel
+    pending_type = EntMixedListPending
     schema = EntMixedListSchema()
     vc: ExampleViewerContext
 
@@ -164,6 +180,7 @@ class EntMixedListMutatorUpdateAction(
 ):
     ent_type = EntMixedList
     model_type = EntMixedListModel
+    pending_type = EntMixedListPending
     schema = EntMixedListSchema()
     vc: ExampleViewerContext
     ent: EntMixedList
@@ -178,6 +195,7 @@ class EntMixedListMutatorDeletionAction(
     EntMutatorDeletionAction[ExampleViewerContext, EntMixedList, EntMixedListModel]
 ):
     ent_type = EntMixedList
+    pending_type = EntMixedListPending
 
 
 class EntMixedListExample:

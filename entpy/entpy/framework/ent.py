@@ -58,6 +58,41 @@ def validate_ent_id(ent_id: UUID | str) -> UUID:
     return ent_id
 
 
+class EntPending[ENTMODEL: ModelMixin]:
+    model: ENTMODEL
+    m: type[ENTMODEL]
+
+    if TYPE_CHECKING:
+
+        @property
+        def id(self) -> UUID:
+            pass
+
+        @property
+        def created_at(self) -> datetime:
+            pass
+
+        @property
+        def updated_at(self) -> datetime:
+            pass
+
+        @property
+        def soft_deleted_at(self) -> datetime | None:
+            pass
+
+    else:
+
+        def __getattr__(self, name: str) -> Any:
+            if name in self.model.__table__.columns:
+                return getattr(self.model, name)
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{name}'"
+            )
+
+    def __init__(self, model: ENTMODEL) -> None:
+        self.model = model
+
+
 class EntMeta(type):
     if not TYPE_CHECKING:
         # Hide this from mypy otherwise it thinks any attribute is valid
@@ -127,6 +162,7 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](metaclass=EntMeta):
         self,
         vc: VC,
         action: Action,
+        pending_ent: "EntPending | None" = None,
         default_to_deny: bool = True,
         log_on_deny: bool = True,
     ) -> Decision:
@@ -288,6 +324,7 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         self,
         vc: VC,
         action: Action,
+        pending_ent: "EntPending | None" = None,
         default_to_deny: bool = True,
         log_on_deny: bool = True,
     ) -> Decision:
@@ -299,7 +336,7 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         # Evaluate each rule/delegate in order
         for item in all_rules:
             if isinstance(item, PrivacyRule):
-                decision = await item.gen_evaluate_cached(vc, self)
+                decision = await item.gen_evaluate_cached(vc, self, pending_ent)
                 if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug(
                         "Rule %s denied %s of %s %s for %s",
@@ -315,7 +352,7 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
                     vc, getattr(self, f"{item.edge_name}_id")
                 )
                 decision = await delegate.gen_evaluate_privacy(
-                    vc, action, default_to_deny=False
+                    vc, action, pending_ent, default_to_deny=False
                 )
                 if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug(

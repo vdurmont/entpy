@@ -1,4 +1,5 @@
 import logging
+from copy import copy
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import UUID
@@ -8,7 +9,7 @@ from werkzeug.exceptions import BadRequest, Forbidden
 from entpy.framework.action import Action
 from entpy.framework.database import db
 from entpy.framework.decision import Decision
-from entpy.framework.ent import EntObjectBase, generate_ent_id
+from entpy.framework.ent import EntObjectBase, EntPending, generate_ent_id
 from entpy.framework.errors import PrivacyError, ValidationError
 from entpy.framework.model import ModelMixin
 from entpy.framework.schema import Schema
@@ -24,6 +25,7 @@ log = logging.getLogger(__name__)
 class EntMutatorAction[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMixin]:
     ent_type: type[ENT]
     model_type: type[ENTMODEL]
+    pending_type: type[EntPending[ENTMODEL]]
     model: ENTMODEL
     schema: Schema
     vc: VC
@@ -85,7 +87,10 @@ class EntMutatorCreationAction[
         self._validate()
         db.session.add(self.model)
         ent = self.ent_type(vc=self.vc, model=self.model)
-        decision = await ent.gen_evaluate_privacy(vc=self.vc, action=Action.CREATE)
+        pending_ent = self.pending_type(model=self.model)
+        decision = await ent.gen_evaluate_privacy(
+            vc=self.vc, action=Action.CREATE, pending_ent=pending_ent
+        )
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context {self.vc} is not authorized to CREATE {self.ent_type.__name__} with ID {ent.id}"
@@ -127,7 +132,13 @@ class EntMutatorUpdateAction[
                 super().__setattr__(name, value)
 
     async def gen_savex(self) -> ENT:
-        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=Action.UPDATE)
+        pending_model = copy(self.model)
+        for name, value in self._updates.items():
+            setattr(pending_model, name, value)
+        pending_ent = self.pending_type(model=pending_model)
+        decision = await self.ent.gen_evaluate_privacy(
+            vc=self.vc, action=Action.UPDATE, pending_ent=pending_ent
+        )
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context {self.vc} is not authorized to UPDATE {self.ent_type.__name__} with ID {self.ent.id}"
@@ -162,6 +173,7 @@ class EntMutatorDeletionAction[
     ENTMODEL: ModelMixin,
 ]:
     ent_type: type[ENT]
+    pending_type: type[EntPending[ENTMODEL]]
     ent: ENT
 
     def __init__(self, vc: VC, ent: ENT, is_soft_delete: bool) -> None:
@@ -172,7 +184,10 @@ class EntMutatorDeletionAction[
     async def gen_save(self) -> None:
         model = self.ent.model
         action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
-        decision = await self.ent.gen_evaluate_privacy(vc=self.vc, action=action)
+        pending_ent = self.pending_type(model=model)
+        decision = await self.ent.gen_evaluate_privacy(
+            vc=self.vc, action=action, pending_ent=pending_ent
+        )
         if decision != Decision.ALLOW:
             raise PrivacyError(
                 f"Current viewer context {self.vc} is not authorized to {action.value} {self.ent_type.__name__} with ID {self.ent.id}"

@@ -1,4 +1,4 @@
-from entpy import Decision, Ent, PrivacyRule
+from entpy import Decision, Ent, EntPending, PrivacyRule
 
 from evc import (
     ExampleOmniscientViewerContext,
@@ -8,7 +8,9 @@ from evc import (
 
 
 class AllowIfTestViewerContext(PrivacyRule):
-    async def gen_evaluate(self, vc: ExampleViewerContext, ent: Ent) -> Decision:
+    async def gen_evaluate(
+        self, vc: ExampleViewerContext, ent: Ent, pending_ent: EntPending | None = None
+    ) -> Decision:
         return (
             Decision.ALLOW
             if isinstance(vc, ExampleTestViewerContext)
@@ -17,7 +19,9 @@ class AllowIfTestViewerContext(PrivacyRule):
 
 
 class AllowIfOmniscientViewerContext(PrivacyRule):
-    async def gen_evaluate(self, vc: ExampleViewerContext, ent: Ent) -> Decision:
+    async def gen_evaluate(
+        self, vc: ExampleViewerContext, ent: Ent, pending_ent: EntPending | None = None
+    ) -> Decision:
         return (
             Decision.ALLOW
             if isinstance(vc, ExampleOmniscientViewerContext)

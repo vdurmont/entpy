@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_user_schema import EntUserSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -102,6 +103,28 @@ class EntUserQuery(EntObjectQuery[ExampleViewerContext, EntUser, EntUserModel]):
     model_type = EntUserModel
 
 
+class EntUserPending(EntPending[EntUserModel]):
+    m = EntUserModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def email(self) -> str:
+            pass
+
+        @property
+        def name(self) -> str:
+            pass
+
+        @property
+        def contact_email(self) -> str | None:
+            pass
+
+        @property
+        def secondary_email(self) -> str | None:
+            pass
+
+
 class EntUserMutator:
     @classmethod
     def create(
@@ -150,6 +173,7 @@ class EntUserMutatorCreationAction(
 ):
     ent_type = EntUser
     model_type = EntUserModel
+    pending_type = EntUserPending
     schema = EntUserSchema()
     vc: ExampleViewerContext
 
@@ -166,6 +190,7 @@ class EntUserMutatorUpdateAction(
 ):
     ent_type = EntUser
     model_type = EntUserModel
+    pending_type = EntUserPending
     schema = EntUserSchema()
     vc: ExampleViewerContext
     ent: EntUser
@@ -182,6 +207,7 @@ class EntUserMutatorDeletionAction(
     EntMutatorDeletionAction[ExampleViewerContext, EntUser, EntUserModel]
 ):
     ent_type = EntUser
+    pending_type = EntUserPending
 
 
 class EntUserExample:

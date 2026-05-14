@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_privacy_parent_schema import EntPrivacyParentSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -78,6 +79,16 @@ class EntPrivacyParentQuery(
     model_type = EntPrivacyParentModel
 
 
+class EntPrivacyParentPending(EntPending[EntPrivacyParentModel]):
+    m = EntPrivacyParentModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def name(self) -> str:
+            pass
+
+
 class EntPrivacyParentMutator:
     @classmethod
     def create(
@@ -122,6 +133,7 @@ class EntPrivacyParentMutatorCreationAction(
 ):
     ent_type = EntPrivacyParent
     model_type = EntPrivacyParentModel
+    pending_type = EntPrivacyParentPending
     schema = EntPrivacyParentSchema()
     vc: ExampleViewerContext
 
@@ -137,6 +149,7 @@ class EntPrivacyParentMutatorUpdateAction(
 ):
     ent_type = EntPrivacyParent
     model_type = EntPrivacyParentModel
+    pending_type = EntPrivacyParentPending
     schema = EntPrivacyParentSchema()
     vc: ExampleViewerContext
     ent: EntPrivacyParent
@@ -152,6 +165,7 @@ class EntPrivacyParentMutatorDeletionAction(
     ]
 ):
     ent_type = EntPrivacyParent
+    pending_type = EntPrivacyParentPending
 
 
 class EntPrivacyParentExample:

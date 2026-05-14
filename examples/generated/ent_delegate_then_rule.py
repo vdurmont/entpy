@@ -13,6 +13,7 @@ from evc import ExampleViewerContext
 from .ent_model import EntModel
 from ent_delegate_then_rule_schema import EntDelegateThenRuleSchema
 from entpy.framework.ent import EntObjectBase
+from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -106,6 +107,20 @@ class EntDelegateThenRuleQuery(
     model_type = EntDelegateThenRuleModel
 
 
+class EntDelegateThenRulePending(EntPending[EntDelegateThenRuleModel]):
+    m = EntDelegateThenRuleModel
+
+    if TYPE_CHECKING:
+
+        @property
+        def name(self) -> str:
+            pass
+
+        @property
+        def privacy_parent_id(self) -> UUID:
+            pass
+
+
 class EntDelegateThenRuleMutator:
     @classmethod
     def create(
@@ -156,6 +171,7 @@ class EntDelegateThenRuleMutatorCreationAction(
 ):
     ent_type = EntDelegateThenRule
     model_type = EntDelegateThenRuleModel
+    pending_type = EntDelegateThenRulePending
     schema = EntDelegateThenRuleSchema()
     vc: ExampleViewerContext
 
@@ -172,6 +188,7 @@ class EntDelegateThenRuleMutatorUpdateAction(
 ):
     ent_type = EntDelegateThenRule
     model_type = EntDelegateThenRuleModel
+    pending_type = EntDelegateThenRulePending
     schema = EntDelegateThenRuleSchema()
     vc: ExampleViewerContext
     ent: EntDelegateThenRule
@@ -188,6 +205,7 @@ class EntDelegateThenRuleMutatorDeletionAction(
     ]
 ):
     ent_type = EntDelegateThenRule
+    pending_type = EntDelegateThenRulePending
 
 
 class EntDelegateThenRuleExample:
