@@ -1,3 +1,5 @@
+from typing import TypeVar
+
 from entpy import Decision, Ent, EntPending, PrivacyRule
 
 from evc import (
@@ -6,10 +8,13 @@ from evc import (
     ExampleViewerContext,
 )
 
+T = TypeVar("T", bound=Ent)
+P = TypeVar("P", bound=EntPending)
 
-class AllowIfTestViewerContext(PrivacyRule):
+
+class AllowIfTestViewerContext(PrivacyRule[ExampleViewerContext, T, P]):
     async def gen_evaluate(
-        self, vc: ExampleViewerContext, ent: Ent, pending_ent: EntPending | None = None
+        self, vc: ExampleViewerContext, ent: T, pending_ent: P | None = None
     ) -> Decision:
         return (
             Decision.ALLOW
@@ -18,9 +23,9 @@ class AllowIfTestViewerContext(PrivacyRule):
         )
 
 
-class AllowIfOmniscientViewerContext(PrivacyRule):
+class AllowIfOmniscientViewerContext(PrivacyRule[ExampleViewerContext, T, P]):
     async def gen_evaluate(
-        self, vc: ExampleViewerContext, ent: Ent, pending_ent: EntPending | None = None
+        self, vc: ExampleViewerContext, ent: T, pending_ent: P | None = None
     ) -> Decision:
         return (
             Decision.ALLOW
