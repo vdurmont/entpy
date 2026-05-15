@@ -15,16 +15,17 @@ from .ent_test_pattern import EntTestPatternModel
 from .ent_test_pattern import IEntTestPattern
 from .ent_test_pattern import IEntTestPatternMutatorDeletionAction
 from .ent_test_pattern import IEntTestPatternMutatorUpdateAction
+from .ent_test_pattern import IEntTestPatternPending
 from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
+from .ent_test_thing import IEntTestThingPending
 from ent_test_object2_schema import EntTestObject2Schema
 from ent_test_thing_pattern import ThingStatus
 from entpy import FieldWithDynamicExample
 from entpy.framework.ent import EntObjectBase
-from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -156,41 +157,13 @@ class EntTestObject2APIModel(EntTestThingAPIModel, EntTestPatternAPIModel):
     some_field: str | None = APIField(None)
 
 
-class EntTestObject2Pending(EntPending[EntTestObject2Model]):
+class EntTestObject2Pending(IEntTestThingPending, IEntTestPatternPending):
     m = EntTestObject2Model
 
     if TYPE_CHECKING:
 
         @property
-        def a_good_thing(self) -> str:
-            pass
-
-        @property
-        def obj5_id(self) -> UUID:
-            pass
-
-        @property
-        def a_pattern_validated_field(self) -> str | None:
-            pass
-
-        @property
-        def idempotency_key(self) -> UUID | None:
-            pass
-
-        @property
-        def limit(self) -> int | None:
-            pass
-
-        @property
-        def obj5_opt_id(self) -> UUID | None:
-            pass
-
-        @property
         def some_field(self) -> str | None:
-            pass
-
-        @property
-        def thing_status(self) -> ThingStatus | None:
             pass
 
 

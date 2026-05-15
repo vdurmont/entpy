@@ -16,6 +16,7 @@ from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
+from .ent_test_thing import IEntTestThingPending
 from datetime import date
 from datetime import time
 from datetime import timedelta
@@ -24,7 +25,6 @@ from ent_test_object_schema import Status
 from ent_test_thing_pattern import ThingStatus
 from entpy import FieldWithDynamicExample
 from entpy.framework.ent import EntObjectBase
-from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -300,26 +300,10 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     when_is_it_cool: AwareDatetime | None = APIField(None)
 
 
-class EntTestObjectPending(EntPending[EntTestObjectModel]):
+class EntTestObjectPending(IEntTestThingPending):
     m = EntTestObjectModel
 
     if TYPE_CHECKING:
-
-        @property
-        def a_good_thing(self) -> str:
-            pass
-
-        @property
-        def firstname(self) -> str:
-            pass
-
-        @property
-        def obj5_id(self) -> UUID:
-            pass
-
-        @property
-        def required_sub_object_id(self) -> UUID:
-            pass
 
         @property
         def username(self) -> str:
@@ -328,7 +312,7 @@ class EntTestObjectPending(EntPending[EntTestObjectModel]):
             """
 
         @property
-        def contact_email(self) -> str | None:
+        def firstname(self) -> str:
             pass
 
         @property
@@ -336,15 +320,11 @@ class EntTestObjectPending(EntPending[EntTestObjectModel]):
             pass
 
         @property
-        def retry_count(self) -> int | None:
+        def email(self) -> str | None:
             pass
 
         @property
-        def sadness(self) -> Status | None:
-            pass
-
-        @property
-        def a_pattern_validated_field(self) -> str | None:
+        def contact_email(self) -> str | None:
             pass
 
         @property
@@ -352,39 +332,15 @@ class EntTestObjectPending(EntPending[EntTestObjectModel]):
             pass
 
         @property
-        def context(self) -> str | None:
+        def self_id(self) -> UUID | None:
             pass
 
         @property
-        def correlation_id(self) -> UUID | None:
+        def some_pattern_id(self) -> UUID | None:
             pass
 
         @property
-        def dob(self) -> date | None:
-            pass
-
-        @property
-        def duration(self) -> timedelta | None:
-            pass
-
-        @property
-        def email(self) -> str | None:
-            pass
-
-        @property
-        def end_time(self) -> time | None:
-            pass
-
-        @property
-        def idempotency_key(self) -> UUID | None:
-            pass
-
-        @property
-        def is_it_true(self) -> bool | None:
-            pass
-
-        @property
-        def obj5_opt_id(self) -> UUID | None:
+        def required_sub_object_id(self) -> UUID:
             pass
 
         @property
@@ -396,19 +352,7 @@ class EntTestObjectPending(EntPending[EntTestObjectModel]):
             pass
 
         @property
-        def self_id(self) -> UUID | None:
-            pass
-
-        @property
-        def some_json(self) -> list[str] | None:
-            pass
-
-        @property
-        def some_pattern_id(self) -> UUID | None:
-            pass
-
-        @property
-        def start_time(self) -> time | None:
+        def context(self) -> str | None:
             pass
 
         @property
@@ -416,15 +360,23 @@ class EntTestObjectPending(EntPending[EntTestObjectModel]):
             pass
 
         @property
+        def sadness(self) -> Status | None:
+            pass
+
+        @property
+        def when_is_it_cool(self) -> datetime | None:
+            pass
+
+        @property
         def status_code(self) -> int | None:
             pass
 
         @property
-        def thing_status(self) -> ThingStatus | None:
+        def retry_count(self) -> int | None:
             pass
 
         @property
-        def trace_id(self) -> UUID | None:
+        def some_json(self) -> list[str] | None:
             pass
 
         @property
@@ -432,7 +384,31 @@ class EntTestObjectPending(EntPending[EntTestObjectModel]):
             pass
 
         @property
-        def when_is_it_cool(self) -> datetime | None:
+        def is_it_true(self) -> bool | None:
+            pass
+
+        @property
+        def correlation_id(self) -> UUID | None:
+            pass
+
+        @property
+        def trace_id(self) -> UUID | None:
+            pass
+
+        @property
+        def start_time(self) -> time | None:
+            pass
+
+        @property
+        def end_time(self) -> time | None:
+            pass
+
+        @property
+        def dob(self) -> date | None:
+            pass
+
+        @property
+        def duration(self) -> timedelta | None:
             pass
 
 

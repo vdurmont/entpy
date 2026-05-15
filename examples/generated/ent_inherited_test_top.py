@@ -12,6 +12,7 @@ from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
 from .ent_model import EntModel
 from entpy.framework.ent import EntPatternBase
+from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
@@ -39,9 +40,7 @@ class EntInheritedTestTopAPIModel(APIEntity):
     base_field: str = APIField(..., examples=["base value"])
 
 
-class IEntInheritedTestTop(
-    EntPatternBase[ExampleViewerContext, EntInheritedTestTopModel]
-):
+class IEntInheritedTestTopPending(EntPending[EntInheritedTestTopModel]):
     m = EntInheritedTestTopModel
 
     if TYPE_CHECKING:
@@ -49,6 +48,13 @@ class IEntInheritedTestTop(
         @property
         def base_field(self) -> str:
             pass
+
+
+class IEntInheritedTestTop(
+    EntPatternBase[ExampleViewerContext, EntInheritedTestTopModel],
+    IEntInheritedTestTopPending,
+):
+    m = EntInheritedTestTopModel
 
     @classmethod
     @cache
@@ -140,6 +146,7 @@ class IEntInheritedTestTopMutator:
 
 
 class IEntInheritedTestTopMutatorUpdateAction(ABC):
+    pending_type = IEntInheritedTestTopPending
     vc: ExampleViewerContext
     ent: IEntInheritedTestTop
     if TYPE_CHECKING:
@@ -155,6 +162,7 @@ class IEntInheritedTestTopMutatorUpdateAction(ABC):
 
 
 class IEntInheritedTestTopMutatorDeletionAction(ABC):
+    pending_type = IEntInheritedTestTopPending
     vc: ExampleViewerContext
     ent: IEntInheritedTestTop
 

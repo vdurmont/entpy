@@ -1,6 +1,7 @@
 from entpy import Pattern, Schema
 from entpy.framework.fields.edge_field import EdgeField
 from entpy.gencode.api_model_generator import generate as generate_api_model
+from entpy.gencode.base_generator import _generate_fields
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
@@ -19,6 +20,7 @@ def generate(
 
     model = generate_model(descriptor=pattern, base_name=base_name)
     api_model = generate_api_model(descriptor=pattern, base_name=base_name)
+    pending_content = _generate_pending(pattern=pattern, base_name=base_name)
 
     child_types = _generate_child_types(children_schema_classes=children_schema_classes)
 
@@ -70,6 +72,7 @@ def generate(
         ]
         + model.imports
         + api_model.imports
+        + pending_content.imports
         + base_content.imports
         + query_content.imports
         + mutator_content.imports
@@ -81,6 +84,7 @@ def generate(
     type_checking_imports = (
         model.type_checking_imports
         + api_model.type_checking_imports
+        + pending_content.type_checking_imports
         + base_content.type_checking_imports
         + query_content.type_checking_imports
         + mutator_content.type_checking_imports
@@ -113,6 +117,8 @@ if TYPE_CHECKING:
 
 {api_model.code}
 
+{pending_content.code}
+
 {base_content.code}
 
     @classmethod
@@ -140,6 +146,38 @@ class I{base_name}Example:
 
         return await {example_base_name}Example.gen_create(vc=vc, created_at=created_at{example_arguments_assignment})
 """  # noqa: E501
+
+
+def _generate_pending(pattern: Pattern, base_name: str) -> GeneratedContent:
+    parent_patterns = pattern.get_patterns()
+    if parent_patterns:
+        parent_classes = ", ".join(
+            f"I{p.__class__.__name__.removesuffix('Pattern')}Pending"
+            for p in parent_patterns
+        )
+        parent_imports = []
+        for p in parent_patterns:
+            parent_base = p.__class__.__name__.removesuffix("Pattern")
+            parent_imports.append(
+                f"from .{to_snake_case(parent_base)} import I{parent_base}Pending"
+            )
+        extends = parent_classes
+    else:
+        extends = f"EntPending[{base_name}Model]"
+        parent_imports = ["from entpy.framework.ent import EntPending"]
+
+    fields = _generate_fields(pattern, fields=pattern.get_fields())
+
+    return GeneratedContent(
+        imports=parent_imports + fields.imports,
+        code=f"""
+class I{base_name}Pending({extends}):
+    m = {base_name}Model
+
+    if TYPE_CHECKING:
+{fields.code or "        pass"}
+""",
+    )
 
 
 def _generate_edges(pattern: Pattern) -> GeneratedContent:
@@ -323,6 +361,7 @@ def _generate_update_action(
 
     return f"""
 class I{base_name}MutatorUpdateAction({parent_class}):
+    pending_type = I{base_name}Pending
     vc: {vc.name}
     ent: I{base_name}
     if TYPE_CHECKING:
@@ -353,6 +392,7 @@ def _generate_delete_action(
 
     return f"""
 class I{base_name}MutatorDeletionAction({parent_class}):
+    pending_type = I{base_name}Pending
     vc: {vc.name}
     ent: I{base_name}
 

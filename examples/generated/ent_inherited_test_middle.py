@@ -15,6 +15,7 @@ from .ent_inherited_test_top import EntInheritedTestTopModel
 from .ent_inherited_test_top import IEntInheritedTestTop
 from .ent_inherited_test_top import IEntInheritedTestTopMutatorDeletionAction
 from .ent_inherited_test_top import IEntInheritedTestTopMutatorUpdateAction
+from .ent_inherited_test_top import IEntInheritedTestTopPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from evc import ExampleViewerContext
@@ -41,18 +42,18 @@ class EntInheritedTestMiddleAPIModel(EntInheritedTestTopAPIModel):
     middle_field: int = APIField(..., examples=[42])
 
 
-class IEntInheritedTestMiddle(IEntInheritedTestTop):
+class IEntInheritedTestMiddlePending(IEntInheritedTestTopPending):
     m = EntInheritedTestMiddleModel
 
     if TYPE_CHECKING:
 
         @property
-        def base_field(self) -> str:
-            pass
-
-        @property
         def middle_field(self) -> int:
             pass
+
+
+class IEntInheritedTestMiddle(IEntInheritedTestTop, IEntInheritedTestMiddlePending):
+    m = EntInheritedTestMiddleModel
 
     @classmethod
     @cache
@@ -146,6 +147,7 @@ class IEntInheritedTestMiddleMutator:
 class IEntInheritedTestMiddleMutatorUpdateAction(
     IEntInheritedTestTopMutatorUpdateAction
 ):
+    pending_type = IEntInheritedTestMiddlePending
     vc: ExampleViewerContext
     ent: IEntInheritedTestMiddle
     if TYPE_CHECKING:
@@ -163,6 +165,7 @@ class IEntInheritedTestMiddleMutatorUpdateAction(
 class IEntInheritedTestMiddleMutatorDeletionAction(
     IEntInheritedTestTopMutatorDeletionAction
 ):
+    pending_type = IEntInheritedTestMiddlePending
     vc: ExampleViewerContext
     ent: IEntInheritedTestMiddle
 

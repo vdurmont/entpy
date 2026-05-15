@@ -15,9 +15,9 @@ from .ent_other_schema_pattern import EntOtherSchemaPatternModel
 from .ent_other_schema_pattern import IEntOtherSchemaPattern
 from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorDeletionAction
 from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorUpdateAction
+from .ent_other_schema_pattern import IEntOtherSchemaPatternPending
 from ent_test_object4_schema import EntTestObject4Schema
 from entpy.framework.ent import EntObjectBase
-from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -63,7 +63,7 @@ class EntTestObject4APIModel(EntOtherSchemaPatternAPIModel):
     other: "EntTestObject3APIModel | None" = APIField(None)
 
 
-class EntTestObject4Pending(EntPending[EntTestObject4Model]):
+class EntTestObject4Pending(IEntOtherSchemaPatternPending):
     m = EntTestObject4Model
 
     if TYPE_CHECKING:

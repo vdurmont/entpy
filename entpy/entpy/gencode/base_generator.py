@@ -21,6 +21,7 @@ def generate(
         base_parent = f"EntObjectBase[{vc.name}, {base_name}Model]"
     elif isinstance(descriptor, Pattern) and len(descriptor.get_patterns()) == 0:
         base_parent = f"EntPatternBase[{vc.name}, {base_name}Model]"
+    is_pattern = isinstance(descriptor, Pattern)
     extends_list = (
         ([privacy_mixin.name] if privacy_mixin else [])
         + [base_parent]
@@ -29,13 +30,14 @@ def generate(
             for pattern in descriptor.get_patterns()
         ]
         + ([f"{base_name}Pending"] if is_schema else [])
+        + ([f"I{base_name}Pending"] if is_pattern else [])
     )
     extends = ",".join(list(filter(None, extends_list)))
 
-    # For schemas, field properties are inherited from EntXxxPending
+    # Field properties are inherited from pending classes
     fields = (
         GeneratedContent(code="", imports=[])
-        if is_schema
+        if is_schema or is_pattern
         else _generate_fields(descriptor)
     )
     edge_gens, edge_types = _generate_edge_gens(descriptor)
@@ -76,20 +78,11 @@ def generate(
 
     m_line = f"    m = {base_name}Model"
 
-    # For schemas, field stubs come from EntXxxPending; only edge stubs needed
+    # Field stubs come from pending classes; only edge/unique stubs needed here
     type_checking_block = ""
-    if is_schema:
-        if edge_gens.code.strip() or unique_gens.strip():
-            type_checking_block = f"""
-    if TYPE_CHECKING:
-{edge_gens.code}
-{unique_gens}
-"""
-    else:
+    if edge_gens.code.strip() or unique_gens.strip():
         type_checking_block = f"""
     if TYPE_CHECKING:
-{fields.code or "        pass"}
-
 {edge_gens.code}
 {unique_gens}
 """
@@ -123,8 +116,10 @@ class {i}{base_name}({extends}):{get_description(descriptor)}
     )
 
 
-def _generate_fields(schema: Descriptor) -> GeneratedContent:
-    fields = schema.get_all_fields()
+def _generate_fields(
+    schema: Descriptor, fields: list | None = None
+) -> GeneratedContent:
+    fields = fields if fields is not None else schema.get_all_fields()
     field_code = ""
     imports = ["from typing import Any, TYPE_CHECKING"]
 

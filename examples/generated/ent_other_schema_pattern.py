@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from .ent_model import EntModel
 from entpy.framework.ent import EntPatternBase
+from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
@@ -34,13 +35,18 @@ class EntOtherSchemaPatternAPIModel(APIEntity):
     pass
 
 
-class IEntOtherSchemaPattern(
-    EntPatternBase[ExampleViewerContext, EntOtherSchemaPatternModel]
-):
+class IEntOtherSchemaPatternPending(EntPending[EntOtherSchemaPatternModel]):
     m = EntOtherSchemaPatternModel
 
     if TYPE_CHECKING:
         pass
+
+
+class IEntOtherSchemaPattern(
+    EntPatternBase[ExampleViewerContext, EntOtherSchemaPatternModel],
+    IEntOtherSchemaPatternPending,
+):
+    m = EntOtherSchemaPatternModel
 
     @classmethod
     @cache
@@ -132,6 +138,7 @@ class IEntOtherSchemaPatternMutator:
 
 
 class IEntOtherSchemaPatternMutatorUpdateAction(ABC):
+    pending_type = IEntOtherSchemaPatternPending
     vc: ExampleViewerContext
     ent: IEntOtherSchemaPattern
     if TYPE_CHECKING:
@@ -147,6 +154,7 @@ class IEntOtherSchemaPatternMutatorUpdateAction(ABC):
 
 
 class IEntOtherSchemaPatternMutatorDeletionAction(ABC):
+    pending_type = IEntOtherSchemaPatternPending
     vc: ExampleViewerContext
     ent: IEntOtherSchemaPattern
 
