@@ -11,6 +11,7 @@ from typing import Self, TYPE_CHECKING
 
 from .ent_model import EntModel
 from entpy.framework.ent import EntPatternBase
+from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
@@ -38,7 +39,7 @@ class EntTestPatternAPIModel(APIEntity):
     limit: int | None = APIField(None)
 
 
-class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel]):
+class IEntTestPatternPending(EntPending[EntTestPatternModel]):
     m = EntTestPatternModel
 
     if TYPE_CHECKING:
@@ -46,6 +47,14 @@ class IEntTestPattern(EntPatternBase[ExampleViewerContext, EntTestPatternModel])
         @property
         def limit(self) -> int | None:
             pass
+
+
+class IEntTestPattern(
+    EntPatternBase[ExampleViewerContext, EntTestPatternModel], IEntTestPatternPending
+):
+    m = EntTestPatternModel
+
+    if TYPE_CHECKING:
 
         @classmethod
         async def gen_from_limit(
@@ -147,6 +156,7 @@ class IEntTestPatternMutator:
 
 
 class IEntTestPatternMutatorUpdateAction(ABC):
+    pending_type = IEntTestPatternPending
     vc: ExampleViewerContext
     ent: IEntTestPattern
     if TYPE_CHECKING:
@@ -162,6 +172,7 @@ class IEntTestPatternMutatorUpdateAction(ABC):
 
 
 class IEntTestPatternMutatorDeletionAction(ABC):
+    pending_type = IEntTestPatternPending
     vc: ExampleViewerContext
     ent: IEntTestPattern
 

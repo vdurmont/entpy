@@ -197,12 +197,27 @@ class {base_name}MutatorDeletionAction(  {"# type: ignore[misc]" if patterns els
 
 
 def generate_pending(schema: Schema, base_name: str) -> GeneratedContent:
-    fields = _generate_fields(schema)
+    patterns = schema.get_patterns()
+    if patterns:
+        parent_classes = ", ".join(
+            f"I{p.__class__.__name__.removesuffix('Pattern')}Pending" for p in patterns
+        )
+        parent_imports = [
+            f"from .{_to_snake_case(p.__class__.__name__.removesuffix('Pattern'))} "
+            f"import I{p.__class__.__name__.removesuffix('Pattern')}Pending"
+            for p in patterns
+        ]
+        extends = parent_classes
+        fields = _generate_fields(schema, fields=schema.get_fields())
+    else:
+        extends = f"EntPending[{base_name}Model]"
+        parent_imports = ["from entpy.framework.ent import EntPending"]
+        fields = _generate_fields(schema)
 
     return GeneratedContent(
-        imports=["from entpy.framework.ent import EntPending"] + fields.imports,
+        imports=parent_imports + fields.imports,
         code=f"""
-class {base_name}Pending(EntPending[{base_name}Model]):
+class {base_name}Pending({extends}):
     m = {base_name}Model
 
     if TYPE_CHECKING:

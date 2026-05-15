@@ -15,9 +15,9 @@ from .ent_inherited_test_middle import EntInheritedTestMiddleModel
 from .ent_inherited_test_middle import IEntInheritedTestMiddle
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorDeletionAction
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorUpdateAction
+from .ent_inherited_test_middle import IEntInheritedTestMiddlePending
 from ent_inherited_test_schema import EntInheritedTestSchema
 from entpy.framework.ent import EntObjectBase
-from entpy.framework.ent import EntPending
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
     EntMutatorUpdateAction,
@@ -49,18 +49,10 @@ class EntInheritedTestAPIModel(EntInheritedTestMiddleAPIModel):
     schema_field: str = APIField(..., examples=["schema value"])
 
 
-class EntInheritedTestPending(EntPending[EntInheritedTestModel]):
+class EntInheritedTestPending(IEntInheritedTestMiddlePending):
     m = EntInheritedTestModel
 
     if TYPE_CHECKING:
-
-        @property
-        def base_field(self) -> str:
-            pass
-
-        @property
-        def middle_field(self) -> int:
-            pass
 
         @property
         def schema_field(self) -> str:

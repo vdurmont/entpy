@@ -14,6 +14,7 @@ from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 from .ent_model import EntModel
 from ent_test_thing_pattern import ThingStatus
 from entpy.framework.ent import EntPatternBase
+from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.framework.types import Uuid
@@ -68,25 +69,13 @@ class EntTestThingAPIModel(APIEntity):
     thing_status: ThingStatus | None = APIField(None)
 
 
-class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
+class IEntTestThingPending(EntPending[EntTestThingModel]):
     m = EntTestThingModel
 
     if TYPE_CHECKING:
 
         @property
-        def a_good_thing(self) -> str:
-            pass
-
-        @property
         def obj5_id(self) -> UUID:
-            pass
-
-        @property
-        def a_pattern_validated_field(self) -> str | None:
-            pass
-
-        @property
-        def idempotency_key(self) -> UUID | None:
             pass
 
         @property
@@ -94,8 +83,28 @@ class IEntTestThing(EntPatternBase[ExampleViewerContext, EntTestThingModel]):
             pass
 
         @property
+        def a_good_thing(self) -> str:
+            pass
+
+        @property
         def thing_status(self) -> ThingStatus | None:
             pass
+
+        @property
+        def idempotency_key(self) -> UUID | None:
+            pass
+
+        @property
+        def a_pattern_validated_field(self) -> str | None:
+            pass
+
+
+class IEntTestThing(
+    EntPatternBase[ExampleViewerContext, EntTestThingModel], IEntTestThingPending
+):
+    m = EntTestThingModel
+
+    if TYPE_CHECKING:
 
         async def gen_obj5(self) -> "EntTestObject5":
             pass
@@ -246,6 +255,7 @@ class IEntTestThingMutator:
 
 
 class IEntTestThingMutatorUpdateAction(ABC):
+    pending_type = IEntTestThingPending
     vc: ExampleViewerContext
     ent: IEntTestThing
     if TYPE_CHECKING:
@@ -266,6 +276,7 @@ class IEntTestThingMutatorUpdateAction(ABC):
 
 
 class IEntTestThingMutatorDeletionAction(ABC):
+    pending_type = IEntTestThingPending
     vc: ExampleViewerContext
     ent: IEntTestThing
 
