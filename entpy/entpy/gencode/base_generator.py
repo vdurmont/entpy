@@ -79,10 +79,11 @@ def generate(
     # For schemas, field stubs come from EntXxxPending; only edge stubs needed
     type_checking_block = ""
     if is_schema:
-        if edge_gens.code.strip():
+        if edge_gens.code.strip() or unique_gens.strip():
             type_checking_block = f"""
     if TYPE_CHECKING:
 {edge_gens.code}
+{unique_gens}
 """
     else:
         type_checking_block = f"""
@@ -90,6 +91,7 @@ def generate(
 {fields.code or "        pass"}
 
 {edge_gens.code}
+{unique_gens}
 """
 
     return GeneratedContent(
@@ -102,7 +104,6 @@ class {i}{base_name}({extends}):{get_description(descriptor)}
 {m_line}
 {attributes}
 {type_checking_block}
-{unique_gens}
 
     @classmethod
     @cache
