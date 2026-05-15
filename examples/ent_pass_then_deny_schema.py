@@ -1,3 +1,5 @@
+from typing import TypeVar
+
 from entpy import (
     Action,
     Decision,
@@ -12,21 +14,24 @@ from entpy import (
 
 from evc import ExampleViewerContext
 
+T = TypeVar("T", bound=Ent)
+P = TypeVar("P", bound=EntPending)
 
-class AlwaysPass(PrivacyRule):
+
+class AlwaysPass(PrivacyRule[ExampleViewerContext, T, P]):
     """A rule that always returns PASS."""
 
     async def gen_evaluate(
-        self, vc: ExampleViewerContext, ent: Ent, pending_ent: EntPending | None = None
+        self, vc: ExampleViewerContext, ent: T, pending_ent: P | None = None
     ) -> Decision:
         return Decision.PASS
 
 
-class AlwaysDeny(PrivacyRule):
+class AlwaysDeny(PrivacyRule[ExampleViewerContext, T, P]):
     """A rule that always returns DENY."""
 
     async def gen_evaluate(
-        self, vc: ExampleViewerContext, ent: Ent, pending_ent: EntPending | None = None
+        self, vc: ExampleViewerContext, ent: T, pending_ent: P | None = None
     ) -> Decision:
         return Decision.DENY
 

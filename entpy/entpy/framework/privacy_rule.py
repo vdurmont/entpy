@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from entpy.framework.database import db
 from entpy.framework.decision import Decision
@@ -9,14 +9,11 @@ if TYPE_CHECKING:
     from entpy.framework.ent import Ent, EntPending
     from entpy.framework.viewer_context import ViewerContext
 
-VC = TypeVar("VC")
-T = TypeVar("T")
 
-
-class PrivacyRule[VC: ViewerContext, T: Ent](ABC):
+class PrivacyRule[VC: ViewerContext, T: Ent, P: EntPending](ABC):
     @abstractmethod
     async def gen_evaluate(
-        self, vc: VC, ent: T, pending_ent: "EntPending | None" = None
+        self, vc: VC, ent: T, pending_ent: P | None = None
     ) -> Decision:
         pass
 
@@ -29,7 +26,7 @@ class PrivacyRule[VC: ViewerContext, T: Ent](ABC):
         self,
         vc: VC,
         ent: T,
-        pending_ent: "EntPending | None" = None,
+        pending_ent: P | None = None,
     ) -> Decision:
         ent_key = self.cache_key(ent)
         if ent_key is None:
