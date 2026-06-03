@@ -28,7 +28,6 @@ from entpy.framework.types import Uuid
 from functools import cache
 from privacy import PrivacyMixin
 from pydantic import Field as APIField
-from sentinels import Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
@@ -197,12 +196,6 @@ class EntTestObject4Example:
         other_id: UUID | None = None,
     ) -> EntTestObject4:
         # TODO make sure we only use this in test mode
-
-        if isinstance(other_id, Sentinel) or other_id is None:
-            from .ent_test_object3 import EntTestObject3Example
-
-            other_id_ent = await EntTestObject3Example.gen_create(vc)
-            other_id = other_id_ent.id
 
         return await EntTestObject4Mutator.create(
             vc=vc, created_at=created_at, other_id=other_id

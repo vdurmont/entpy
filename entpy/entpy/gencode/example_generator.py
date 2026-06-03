@@ -64,7 +64,11 @@ def generate(schema: Schema, base_name: str, vc: ImportedObject) -> GeneratedCon
                     + f" if isinstance({field.name}, Sentinel) else {field.name}\n\n"
                 )
 
-        if isinstance(field, EdgeField) and field.should_generate_example:
+        if (
+            isinstance(field, EdgeField)
+            and field.should_generate_example
+            and not field.nullable
+        ):
             edge_base_name = field.edge_class.__name__.removesuffix(
                 "Schema"
             ).removesuffix("Pattern")

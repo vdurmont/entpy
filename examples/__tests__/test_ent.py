@@ -82,19 +82,18 @@ async def test_edges_work_well(vc: ExampleViewerContext) -> None:
     req_edge = await ent.gen_required_sub_object()
     assert req_edge is not None, "We should be able to load the required edge"
 
-    # Check optional, but example generated
-    assert ent.optional_sub_object_id is not None, "Example generates a sub object"
+    # Check optional edges are not generated
+    assert ent.optional_sub_object_id is None, (
+        "Nullable edge should not generate an example"
+    )
     opt_edge = await ent.gen_optional_sub_object()
-    assert opt_edge is not None, "We should be able to load the optional edge"
+    assert opt_edge is None, "Nullable edge should not generate an example"
 
-    # Check optional, but example cancelled
     assert ent.optional_sub_object_no_ex_id is None, (
-        "Example does not generate a sub object"
+        "Nullable edge should not generate an example"
     )
     opt_edge_2 = await ent.gen_optional_sub_object_no_ex()
-    assert opt_edge_2 is None, (
-        "We should not be able to load the optional edge with no example"
-    )
+    assert opt_edge_2 is None, "Nullable edge should not generate an example"
 
 
 async def test_pattern_fields_are_written_properly(

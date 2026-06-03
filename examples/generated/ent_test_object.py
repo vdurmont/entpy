@@ -824,20 +824,6 @@ class EntTestObjectExample:
 
         is_it_true = False if isinstance(is_it_true, Sentinel) else is_it_true
 
-        if isinstance(obj5_opt_id, Sentinel) or obj5_opt_id is None:
-            from .ent_test_object5 import EntTestObject5Example
-
-            obj5_opt_id_ent = await EntTestObject5Example.gen_create(vc)
-            obj5_opt_id = obj5_opt_id_ent.id
-
-        if (
-            isinstance(optional_sub_object_id, Sentinel)
-            or optional_sub_object_id is None
-        ):
-            from .ent_test_sub_object import EntTestSubObjectExample
-
-            optional_sub_object_id_ent = await EntTestSubObjectExample.gen_create(vc)
-            optional_sub_object_id = optional_sub_object_id_ent.id
         some_json = ["hello", "world"] if isinstance(some_json, Sentinel) else some_json
 
         start_time = (

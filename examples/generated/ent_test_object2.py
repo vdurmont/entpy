@@ -362,12 +362,6 @@ class EntTestObject2Example:
             if generator:
                 limit = generator()
 
-        if isinstance(obj5_opt_id, Sentinel) or obj5_opt_id is None:
-            from .ent_test_object5 import EntTestObject5Example
-
-            obj5_opt_id_ent = await EntTestObject5Example.gen_create(vc)
-            obj5_opt_id = obj5_opt_id_ent.id
-
         return await EntTestObject2Mutator.create(
             vc=vc,
             created_at=created_at,
