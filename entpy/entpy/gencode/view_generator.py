@@ -1,5 +1,6 @@
 from entpy import (
     BoolField,
+    BytesField,
     DatetimeField,
     EdgeField,
     EnumField,
@@ -109,6 +110,9 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
             column_type = "DateTime()"
         elif isinstance(field, BoolField):
             column_type = "Boolean()"
+        elif isinstance(field, BytesField):
+            imports.append("from sqlalchemy import LargeBinary")
+            column_type = "LargeBinary()"
         elif isinstance(field, EdgeField):
             column_type = "DBUUID()"
         elif isinstance(field, EnumField):
