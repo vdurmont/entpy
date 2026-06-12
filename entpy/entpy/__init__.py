@@ -19,6 +19,7 @@ from .framework.errors import (  # noqa: F401
     ValidationError,
 )
 from .framework.fields.bool_field import BoolField  # noqa: F401
+from .framework.fields.bytes_field import BytesField  # noqa: F401
 from .framework.fields.core import Field, FieldWithDynamicExample  # noqa: F401
 from .framework.fields.date_field import DateField  # noqa: F401
 from .framework.fields.datetime_field import DatetimeField  # noqa: F401

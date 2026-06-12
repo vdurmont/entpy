@@ -2,11 +2,13 @@ import re
 import uuid
 from datetime import UTC, date, datetime, time, timedelta
 from enum import Enum
+from secrets import token_bytes
 
 from entpy import (
     Action,
     AllowAll,
     BoolField,
+    BytesField,
     DateField,
     DatetimeField,
     EdgeDelegate,
@@ -78,6 +80,8 @@ class EntTestObjectSchema(Schema):
             TimeField("end_time").dynamic_example(lambda: time(17, 30, 0)),
             DateField("dob").example(date(2000, 1, 1)),
             IntervalField("duration").example(timedelta(seconds=123.456)),
+            BytesField("image").example(bytes.fromhex("5035203120310A310A00")),
+            BytesField("secret_hash").unique().dynamic_example(lambda: token_bytes(16)),
         ]
 
     def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:

@@ -51,6 +51,7 @@ from sqlalchemy import Index, text
 from sqlalchemy import Integer
 from sqlalchemy import Interval
 from sqlalchemy import JSON
+from sqlalchemy import LargeBinary
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import Time
@@ -106,6 +107,7 @@ class EntTestObjectModel(EntTestThingModel):
         String(255, collation="nocase"), nullable=True
     )
     end_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
+    image: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
     is_it_true: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
         Uuid(),
@@ -117,6 +119,7 @@ class EntTestObjectModel(EntTestThingModel):
         ForeignKey("test_sub_object.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
+    secret_hash: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
     self_id: Mapped[UUID | None] = mapped_column(
         Uuid(),
         ForeignKey("test_object.id", deferrable=True, initially="DEFERRED"),
@@ -209,6 +212,13 @@ Index(
     postgresql_where=text("soft_deleted_at IS NULL"),
     sqlite_where=text("soft_deleted_at IS NULL"),
 )
+Index(
+    None,
+    EntTestObjectModel.secret_hash,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
 
 
 event.listen(
@@ -286,9 +296,13 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     duration: timedelta | None = APIField(None, examples=[timedelta(seconds=123.456)])
     email: str | None = APIField(None, examples=["test@example.com"])
     end_time: time | None = APIField(None)
+    image: bytes | None = APIField(
+        None, examples=[bytes.fromhex("5035203120310a310a00")]
+    )
     is_it_true: bool | None = APIField(None, examples=[False])
     optional_sub_object: "EntTestSubObjectAPIModel | None" = APIField(None)
     optional_sub_object_no_ex: "EntTestSubObjectAPIModel | None" = APIField(None)
+    secret_hash: bytes | None = APIField(None)
     self: "EntTestObjectAPIModel | None" = APIField(None)
     some_json: list[str] | None = APIField(None, examples=[["hello", "world"]])
     some_pattern: "EntTestThingAPIModel | None" = APIField(None)
@@ -411,6 +425,14 @@ class EntTestObjectPending(IEntTestThingPending):
         def duration(self) -> timedelta | None:
             pass
 
+        @property
+        def image(self) -> bytes | None:
+            pass
+
+        @property
+        def secret_hash(self) -> bytes | None:
+            pass
+
 
 class EntTestObject(
     PrivacyMixin,
@@ -457,6 +479,24 @@ class EntTestObject(
         @classmethod
         async def genx_or_404_from_username(
             cls, vc: ExampleViewerContext, username: str, for_update: bool = False
+        ) -> Self:
+            pass
+
+        @classmethod
+        async def gen_from_secret_hash(
+            cls, vc: ExampleViewerContext, secret_hash: bytes, for_update: bool = False
+        ) -> Self | None:
+            pass
+
+        @classmethod
+        async def genx_from_secret_hash(
+            cls, vc: ExampleViewerContext, secret_hash: bytes, for_update: bool = False
+        ) -> Self:
+            pass
+
+        @classmethod
+        async def genx_or_404_from_secret_hash(
+            cls, vc: ExampleViewerContext, secret_hash: bytes, for_update: bool = False
         ) -> Self:
             pass
 
@@ -523,10 +563,12 @@ class EntTestObjectMutator:
         email: str | None = None,
         end_time: time | None = None,
         idempotency_key: UUID | None = None,
+        image: bytes | None = None,
         is_it_true: bool | None = None,
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
+        secret_hash: bytes | None = None,
         self_id: UUID | None = None,
         some_json: list[str] | None = None,
         some_pattern_id: UUID | None = None,
@@ -564,10 +606,12 @@ class EntTestObjectMutator:
             email=email,
             end_time=end_time,
             idempotency_key=idempotency_key,
+            image=image,
             is_it_true=is_it_true,
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
+            secret_hash=secret_hash,
             self_id=self_id,
             some_json=some_json,
             some_pattern_id=some_pattern_id,
@@ -628,10 +672,12 @@ class EntTestObjectMutatorCreationAction(
         email: str | None = None
         end_time: time | None = None
         idempotency_key: UUID | None = None
+        image: bytes | None = None
         is_it_true: bool | None = None
         obj5_opt_id: UUID | None = None
         optional_sub_object_id: UUID | None = None
         optional_sub_object_no_ex_id: UUID | None = None
+        secret_hash: bytes | None = None
         self_id: UUID | None = None
         some_json: list[str] | None = None
         some_pattern_id: UUID | None = None
@@ -674,10 +720,12 @@ class EntTestObjectMutatorUpdateAction(
         email: str | None = None
         end_time: time | None = None
         idempotency_key: UUID | None = None
+        image: bytes | None = None
         is_it_true: bool | None = None
         obj5_opt_id: UUID | None = None
         optional_sub_object_id: UUID | None = None
         optional_sub_object_no_ex_id: UUID | None = None
+        secret_hash: bytes | None = None
         self_id: UUID | None = None
         some_json: list[str] | None = None
         some_pattern_id: UUID | None = None
@@ -722,10 +770,12 @@ class EntTestObjectExample:
         email: str | Sentinel = NOTHING,
         end_time: time | Sentinel = NOTHING,
         idempotency_key: UUID | Sentinel = NOTHING,
+        image: bytes | Sentinel = NOTHING,
         is_it_true: bool | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
+        secret_hash: bytes | Sentinel = NOTHING,
         self_id: UUID | None = None,
         some_json: list[str] | Sentinel = NOTHING,
         some_pattern_id: UUID | None = None,
@@ -822,7 +872,23 @@ class EntTestObjectExample:
             if generator:
                 idempotency_key = generator()
 
+        image = (
+            bytes.fromhex("5035203120310a310a00")
+            if isinstance(image, Sentinel)
+            else image
+        )
+
         is_it_true = False if isinstance(is_it_true, Sentinel) else is_it_true
+
+        if isinstance(secret_hash, Sentinel):
+            field = _get_field("secret_hash")
+            if not isinstance(field, FieldWithDynamicExample):
+                raise TypeError(
+                    "Internal ent error: Field {field.name} must support dynamic examples."
+                )
+            generator = field.get_example_generator()
+            if generator:
+                secret_hash = generator()
 
         some_json = ["hello", "world"] if isinstance(some_json, Sentinel) else some_json
 
@@ -877,10 +943,12 @@ class EntTestObjectExample:
             email=email,
             end_time=end_time,
             idempotency_key=idempotency_key,
+            image=image,
             is_it_true=is_it_true,
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
+            secret_hash=secret_hash,
             self_id=self_id,
             some_json=some_json,
             some_pattern_id=some_pattern_id,
