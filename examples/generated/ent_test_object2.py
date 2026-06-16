@@ -224,7 +224,6 @@ class EntTestObject2Mutator:
         idempotency_key: UUID | None = None,
         limit: int | None = None,
         obj5_opt_id: UUID | None = None,
-        some_deprecated_field: str | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
         id: UUID | None = None,
@@ -242,7 +241,6 @@ class EntTestObject2Mutator:
             idempotency_key=idempotency_key,
             limit=limit,
             obj5_opt_id=obj5_opt_id,
-            some_deprecated_field=some_deprecated_field,
             some_field=some_field,
             thing_status=thing_status,
         )
@@ -283,7 +281,6 @@ class EntTestObject2MutatorCreationAction(
         idempotency_key: UUID | None = None
         limit: int | None = None
         obj5_opt_id: UUID | None = None
-        some_deprecated_field: str | None = None
         some_field: str | None = None
         thing_status: ThingStatus | None = None
 
@@ -308,7 +305,6 @@ class EntTestObject2MutatorUpdateAction(
         idempotency_key: UUID | None = None
         limit: int | None = None
         obj5_opt_id: UUID | None = None
-        some_deprecated_field: str | None = None
         some_field: str | None = None
         thing_status: ThingStatus | None = None
 
@@ -334,7 +330,6 @@ class EntTestObject2Example:
         idempotency_key: UUID | Sentinel = NOTHING,
         limit: int | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
-        some_deprecated_field: str | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
     ) -> EntTestObject2:
@@ -384,7 +379,6 @@ class EntTestObject2Example:
             idempotency_key=idempotency_key,
             limit=limit,
             obj5_opt_id=obj5_opt_id,
-            some_deprecated_field=some_deprecated_field,
             some_field=some_field,
             thing_status=thing_status,
         ).gen_savex()

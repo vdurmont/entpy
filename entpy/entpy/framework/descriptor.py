@@ -27,7 +27,7 @@ class Descriptor(ABC):
 
     def get_all_fields(self) -> list[Field]:
         # First gather all the fields
-        fields = self.get_fields()
+        fields = [f for f in self.get_fields() if not f.is_deprecated]
         for pattern in self.get_patterns():
             fields += pattern.get_all_fields()
         return _sort_fields(fields)
