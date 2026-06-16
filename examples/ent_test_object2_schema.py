@@ -17,7 +17,10 @@ class EntTestObject2Schema(Schema):
         return [EntTestThingPattern(), EntTestPatternPattern()]
 
     def get_fields(self) -> list[Field]:
-        return [StringField("some_field", 100)]
+        return [
+            StringField("some_field", 100),
+            StringField("some_deprecated_field", 100).deprecated(),
+        ]
 
     def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         return [AllowAll()]

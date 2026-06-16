@@ -19,6 +19,7 @@ class Field(ABC, Generic[T]):
     is_immutable: bool = False
     description: str | None = None
     is_internal: bool = False
+    is_deprecated: bool = False
     _validators: list[FieldValidator[T]]
 
     def __init__(self, name: str, actual_name: str | None = None):
@@ -31,6 +32,8 @@ class Field(ABC, Generic[T]):
         raise NotImplementedError("Subclasses must implement get_python_type")
 
     def not_null(self) -> Self:
+        if self.is_deprecated:
+            raise ValueError("Cannot mark a deprecated field as non-nullable")
         self.nullable = False
         return self
 
@@ -53,6 +56,12 @@ class Field(ABC, Generic[T]):
 
     def internal(self) -> Self:
         self.is_internal = True
+        return self
+
+    def deprecated(self) -> Self:
+        if not self.nullable:
+            raise ValueError("Cannot mark a non-nullable field as deprecated")
+        self.is_deprecated = True
         return self
 
     def validators(self, validators: list[FieldValidator[T]]) -> Self:

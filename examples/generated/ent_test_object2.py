@@ -59,6 +59,9 @@ privacy_logger = logging.getLogger("entpy.privacy")
 class EntTestObject2Model(EntTestThingModel, EntTestPatternModel):
     __tablename__ = "test_object2"
 
+    some_deprecated_field: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, _omit_from_statements=True
+    )
     some_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
     obj5: Mapped["EntTestObject5Model"] = relationship(
         "EntTestObject5Model",
@@ -154,6 +157,7 @@ event.listen(
 
 
 class EntTestObject2APIModel(EntTestThingAPIModel, EntTestPatternAPIModel):
+    some_deprecated_field: str | None = APIField(None)
     some_field: str | None = APIField(None)
 
 
@@ -164,6 +168,10 @@ class EntTestObject2Pending(IEntTestThingPending, IEntTestPatternPending):
 
         @property
         def some_field(self) -> str | None:
+            pass
+
+        @property
+        def some_deprecated_field(self) -> str | None:
             pass
 
 
@@ -216,6 +224,7 @@ class EntTestObject2Mutator:
         idempotency_key: UUID | None = None,
         limit: int | None = None,
         obj5_opt_id: UUID | None = None,
+        some_deprecated_field: str | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
         id: UUID | None = None,
@@ -233,6 +242,7 @@ class EntTestObject2Mutator:
             idempotency_key=idempotency_key,
             limit=limit,
             obj5_opt_id=obj5_opt_id,
+            some_deprecated_field=some_deprecated_field,
             some_field=some_field,
             thing_status=thing_status,
         )
@@ -273,6 +283,7 @@ class EntTestObject2MutatorCreationAction(
         idempotency_key: UUID | None = None
         limit: int | None = None
         obj5_opt_id: UUID | None = None
+        some_deprecated_field: str | None = None
         some_field: str | None = None
         thing_status: ThingStatus | None = None
 
@@ -297,6 +308,7 @@ class EntTestObject2MutatorUpdateAction(
         idempotency_key: UUID | None = None
         limit: int | None = None
         obj5_opt_id: UUID | None = None
+        some_deprecated_field: str | None = None
         some_field: str | None = None
         thing_status: ThingStatus | None = None
 
@@ -322,6 +334,7 @@ class EntTestObject2Example:
         idempotency_key: UUID | Sentinel = NOTHING,
         limit: int | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
+        some_deprecated_field: str | None = None,
         some_field: str | None = None,
         thing_status: ThingStatus | None = None,
     ) -> EntTestObject2:
@@ -371,6 +384,7 @@ class EntTestObject2Example:
             idempotency_key=idempotency_key,
             limit=limit,
             obj5_opt_id=obj5_opt_id,
+            some_deprecated_field=some_deprecated_field,
             some_field=some_field,
             thing_status=thing_status,
         ).gen_savex()
