@@ -38,6 +38,8 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             default = field.generate_sql_default()
             if default:
                 common_column_attributes += f", server_default={default}"
+        if field.is_deprecated:
+            common_column_attributes += ", _omit_from_statements=True"
 
         mapped_type = (
             field.get_python_type() + " | None"
