@@ -201,15 +201,15 @@ def _generate_unique_gens(
         if field.is_unique:
             unique_gens += f"""
         @classmethod
-        async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> Self | None:
+        async def gen_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False, include_soft_deleted: bool = False) -> Self | None:
             pass
 
         @classmethod
-        async def genx_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> Self:
+        async def genx_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False, include_soft_deleted: bool = False) -> Self:
             pass
 
         @classmethod
-        async def genx_or_404_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False) -> Self:
+        async def genx_or_404_from_{field.name}(cls, vc: {vc.name}, {field.name}: {field.get_python_type()}, for_update: bool = False, include_soft_deleted: bool = False) -> Self:
             pass
 """  # noqa: E501
     return unique_gens
