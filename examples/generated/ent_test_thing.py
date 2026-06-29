@@ -118,6 +118,7 @@ class IEntTestThing(
             vc: ExampleViewerContext,
             idempotency_key: UUID,
             for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self | None:
             pass
 
@@ -127,6 +128,7 @@ class IEntTestThing(
             vc: ExampleViewerContext,
             idempotency_key: UUID,
             for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self:
             pass
 
@@ -136,6 +138,7 @@ class IEntTestThing(
             vc: ExampleViewerContext,
             idempotency_key: UUID,
             for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self:
             pass
 

@@ -146,23 +146,37 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
     @classmethod
     @abstractmethod
     async def gen(
-        cls, vc: VC, ent_id: UUID | str, for_update: bool = False
+        cls,
+        vc: VC,
+        ent_id: UUID | str,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self | None:
         pass
 
     @classmethod
-    async def genx(cls, vc: VC, ent_id: UUID | str, for_update: bool = False) -> Self:
-        ent = await cls.gen(vc, ent_id, for_update)
+    async def genx(
+        cls,
+        vc: VC,
+        ent_id: UUID | str,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
+    ) -> Self:
+        ent = await cls.gen(vc, ent_id, for_update, include_soft_deleted)
         if not ent:
             raise EntNotFoundError(f"No {cls.__name__} found for id = '{ent_id}'")
         return ent
 
     @classmethod
     async def genx_or_404(
-        cls, vc: VC, ent_id: UUID | str, for_update: bool = False
+        cls,
+        vc: VC,
+        ent_id: UUID | str,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self:
         try:
-            return await cls.genx(vc, ent_id, for_update)
+            return await cls.genx(vc, ent_id, for_update, include_soft_deleted)
         except EntNotFoundError as e:
             raise NotFound from e
         except UnknownTypeError as e:
@@ -173,25 +187,44 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
     @classmethod
     @abstractmethod
     async def _gen_from_unique(
-        cls, name: str, vc: VC, value: Any, for_update: bool = False
+        cls,
+        name: str,
+        vc: VC,
+        value: Any,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self | None:
         pass
 
     @classmethod
     async def _genx_from_unique(
-        cls, name: str, vc: VC, value: Any, for_update: bool = False
+        cls,
+        name: str,
+        vc: VC,
+        value: Any,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self | None:
-        ent = await cls._gen_from_unique(name, vc, value, for_update)
+        ent = await cls._gen_from_unique(
+            name, vc, value, for_update, include_soft_deleted
+        )
         if not ent:
             raise EntNotFoundError(f"No {cls.__name__} found for {name} = '{value}'")
         return ent
 
     @classmethod
     async def _genx_or_404_from_unique(
-        cls, name: str, vc: VC, value: Any, for_update: bool = False
+        cls,
+        name: str,
+        vc: VC,
+        value: Any,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self | None:
         try:
-            return await cls._genx_from_unique(name, vc, value, for_update)
+            return await cls._genx_from_unique(
+                name, vc, value, for_update, include_soft_deleted
+            )
         except EntNotFoundError as e:
             raise NotFound from e
 
@@ -229,13 +262,19 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
 
     @classmethod
     async def gen(
-        cls, vc: VC, ent_id: UUID | str, for_update: bool = False
+        cls,
+        vc: VC,
+        ent_id: UUID | str,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self | None:
         real_ent_id = validate_ent_id(ent_id)
         async with emulate_for_update(cls.m, "id", real_ent_id, for_update):
             model = await db.session.get(
                 cls.m, real_ent_id, with_for_update=for_update or None
             )
+        if not model or (not include_soft_deleted and model.soft_deleted_at):
+            return None
         db.session.info.setdefault("models", set()).add(model)
         return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
@@ -269,20 +308,23 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
 
     @classmethod
     async def _gen_from_unique(
-        cls, name: str, vc: VC, value: Any, for_update: bool = False
+        cls,
+        name: str,
+        vc: VC,
+        value: Any,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self | None:
         if not for_update and (
             cached := db.session.info.get("unique", {}).get((cls, name, value))
         ):
             return await cls._gen_from_model(vc, cached)
 
-        query = (
-            select(cls.m)
-            .where(getattr(cls.m, name) == value)
-            .where(cls.m.soft_deleted_at.is_(None))
-        )
+        query = select(cls.m).where(getattr(cls.m, name) == value)
         if for_update:
             query = query.with_for_update()
+        if not include_soft_deleted:
+            query = query.where(cls.m.soft_deleted_at.is_(None))
         async with emulate_for_update(cls.m, name, value, for_update):
             result = await db.session.execute(query)
         model = result.scalar_one_or_none()
@@ -382,15 +424,24 @@ class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL])
 
     @classmethod
     async def gen(
-        cls, vc: VC, ent_id: UUID | str, for_update: bool = False
+        cls,
+        vc: VC,
+        ent_id: UUID | str,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self | None:
         real_ent_id = validate_ent_id(ent_id)
         ent_type = cls._get_child_type(real_ent_id.bytes[6:8])
-        return await ent_type.gen(vc, ent_id, for_update)
+        return await ent_type.gen(vc, ent_id, for_update, include_soft_deleted)
 
     @classmethod
     async def _gen_from_unique(
-        cls, name: str, vc: VC, value: Any, for_update: bool = False
+        cls,
+        name: str,
+        vc: VC,
+        value: Any,
+        for_update: bool = False,
+        include_soft_deleted: bool = False,
     ) -> Self | None:
         query = select(cls.m.id).where(getattr(cls.m, name) == value)
         result = await db.session.execute(query)
@@ -398,7 +449,7 @@ class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL])
         if ent_id is None:
             return None
         ent_type = cls._get_child_type(ent_id.bytes[6:8])
-        return await ent_type.gen(vc, ent_id, for_update)
+        return await ent_type.gen(vc, ent_id, for_update, include_soft_deleted)
 
     @classmethod
     @abstractmethod

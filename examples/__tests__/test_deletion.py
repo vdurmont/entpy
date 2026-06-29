@@ -42,9 +42,13 @@ async def test_soft_delete_with_super_vc(vc: ExampleViewerContext) -> None:
     obj = await EntTestObjectExample.gen_create(vc)
     await EntTestObjectMutator.soft_delete(vc, obj).gen_save()
 
-    # Can still read with test vc
+    # Cannot read with test vc by default
     test_vc = ExampleTestViewerContext()
     res = await EntTestObject.gen(test_vc, obj.id)
+    assert res is None, "Ent should be soft deleted"
+
+    # Can still read with test vc if include_soft_deleted is True
+    res = await EntTestObject.gen(test_vc, obj.id, include_soft_deleted=True)
     assert res is not None, "Soft deleted Ent should be readable by test vc"
     assert res.soft_deleted_at is not None
 

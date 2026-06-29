@@ -466,37 +466,61 @@ class EntTestObject(
 
         @classmethod
         async def gen_from_username(
-            cls, vc: ExampleViewerContext, username: str, for_update: bool = False
+            cls,
+            vc: ExampleViewerContext,
+            username: str,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self | None:
             pass
 
         @classmethod
         async def genx_from_username(
-            cls, vc: ExampleViewerContext, username: str, for_update: bool = False
+            cls,
+            vc: ExampleViewerContext,
+            username: str,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self:
             pass
 
         @classmethod
         async def genx_or_404_from_username(
-            cls, vc: ExampleViewerContext, username: str, for_update: bool = False
+            cls,
+            vc: ExampleViewerContext,
+            username: str,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self:
             pass
 
         @classmethod
         async def gen_from_secret_hash(
-            cls, vc: ExampleViewerContext, secret_hash: bytes, for_update: bool = False
+            cls,
+            vc: ExampleViewerContext,
+            secret_hash: bytes,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self | None:
             pass
 
         @classmethod
         async def genx_from_secret_hash(
-            cls, vc: ExampleViewerContext, secret_hash: bytes, for_update: bool = False
+            cls,
+            vc: ExampleViewerContext,
+            secret_hash: bytes,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self:
             pass
 
         @classmethod
         async def genx_or_404_from_secret_hash(
-            cls, vc: ExampleViewerContext, secret_hash: bytes, for_update: bool = False
+            cls,
+            vc: ExampleViewerContext,
+            secret_hash: bytes,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
         ) -> Self:
             pass
 
