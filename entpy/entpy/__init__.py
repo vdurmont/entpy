@@ -18,6 +18,7 @@ from .framework.errors import (  # noqa: F401
     PrivacyError,
     ValidationError,
 )
+from .framework.fields.big_int_field import BigIntField  # noqa: F401
 from .framework.fields.bool_field import BoolField  # noqa: F401
 from .framework.fields.bytes_field import BytesField  # noqa: F401
 from .framework.fields.core import Field, FieldWithDynamicExample  # noqa: F401
