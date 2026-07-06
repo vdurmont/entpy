@@ -43,6 +43,7 @@ from privacy import PrivacyMixin
 from pydantic import AwareDatetime
 from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
+from sqlalchemy import BigInteger
 from sqlalchemy import Boolean
 from sqlalchemy import Date
 from sqlalchemy import Enum as DBEnum
@@ -98,6 +99,7 @@ class EntTestObjectModel(EntTestThingModel):
     sadness: Mapped[Status | None] = mapped_column(
         DBEnum(Status, native_enum=True), nullable=True, server_default=Status.SAD.value
     )
+    big_number: Mapped[int | None] = mapped_column(BigInteger(), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     context: Mapped[str | None] = mapped_column(Text(), nullable=True)
     correlation_id: Mapped[UUID | None] = mapped_column(Uuid(), nullable=True)
@@ -290,6 +292,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     lastname: str | None = APIField("Doe")
     retry_count: int | None = APIField(0)
     sadness: Status | None = APIField(Status.SAD)
+    big_number: int | None = APIField(None, examples=[9000000000])
     context: str | None = APIField(None, examples=["This is some good context."])
     correlation_id: UUID | None = APIField(None)
     dob: date | None = APIField(None, examples=[date.fromisoformat("2000-01-01")])
@@ -387,6 +390,10 @@ class EntTestObjectPending(IEntTestThingPending):
 
         @property
         def retry_count(self) -> int | None:
+            pass
+
+        @property
+        def big_number(self) -> int | None:
             pass
 
         @property
@@ -579,6 +586,7 @@ class EntTestObjectMutator:
         retry_count: int | None = None,
         sadness: Status | None = None,
         a_pattern_validated_field: str | None = None,
+        big_number: int | None = None,
         city: str | None = None,
         context: str | None = None,
         correlation_id: UUID | None = None,
@@ -622,6 +630,7 @@ class EntTestObjectMutator:
             retry_count=retry_count,
             sadness=sadness,
             a_pattern_validated_field=a_pattern_validated_field,
+            big_number=big_number,
             city=city,
             context=context,
             correlation_id=correlation_id,
@@ -688,6 +697,7 @@ class EntTestObjectMutatorCreationAction(
         retry_count: int | None = None
         sadness: Status | None = None
         a_pattern_validated_field: str | None = None
+        big_number: int | None = None
         city: str | None = None
         context: str | None = None
         correlation_id: UUID | None = None
@@ -737,6 +747,7 @@ class EntTestObjectMutatorUpdateAction(
         retry_count: int | None = None
         sadness: Status | None = None
         a_pattern_validated_field: str | None = None
+        big_number: int | None = None
         city: str | None = None
         correlation_id: UUID | None = None
         dob: date | None = None
@@ -786,6 +797,7 @@ class EntTestObjectExample:
         retry_count: int | None = None,
         sadness: Status | None = None,
         a_pattern_validated_field: str | Sentinel = NOTHING,
+        big_number: int | Sentinel = NOTHING,
         city: str | Sentinel = NOTHING,
         context: str | Sentinel = NOTHING,
         correlation_id: UUID | None = None,
@@ -861,6 +873,8 @@ class EntTestObjectExample:
             if isinstance(a_pattern_validated_field, Sentinel)
             else a_pattern_validated_field
         )
+
+        big_number = 9000000000 if isinstance(big_number, Sentinel) else big_number
 
         city = "Los Angeles" if isinstance(city, Sentinel) else city
 
@@ -959,6 +973,7 @@ class EntTestObjectExample:
             retry_count=retry_count,
             sadness=sadness,
             a_pattern_validated_field=a_pattern_validated_field,
+            big_number=big_number,
             city=city,
             context=context,
             correlation_id=correlation_id,

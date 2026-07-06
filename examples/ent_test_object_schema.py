@@ -7,6 +7,7 @@ from secrets import token_bytes
 from entpy import (
     Action,
     AllowAll,
+    BigIntField,
     BoolField,
     BytesField,
     DateField,
@@ -71,6 +72,7 @@ class EntTestObjectSchema(Schema):
             ),
             IntField("status_code").example(404),
             IntField("retry_count").default(0),
+            BigIntField("big_number").example(9_000_000_000),
             JsonField("some_json", "list[str]").example(["hello", "world"]),
             StringField("validated_field", 100).validators([CustomValidator()]),
             BoolField("is_it_true").example(False),

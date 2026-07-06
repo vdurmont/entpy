@@ -16,6 +16,7 @@ from entpy import (
     UuidField,
 )
 from entpy.framework.descriptor import Descriptor
+from entpy.framework.fields.big_int_field import BigIntField
 from entpy.framework.fields.bytes_field import BytesField
 from entpy.framework.fields.core import FieldWithDefault
 from entpy.gencode.generated_content import GeneratedContent
@@ -47,7 +48,11 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             else field.get_python_type()
         )
 
-        if isinstance(field, BoolField):
+        if isinstance(field, BigIntField):
+            types_imports.append("from sqlalchemy import BigInteger")
+            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
+            fields_code += f"mapped_column(BigInteger(){common_column_attributes})\n"
+        elif isinstance(field, BoolField):
             types_imports.append("from sqlalchemy import Boolean")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(Boolean(){common_column_attributes})\n"

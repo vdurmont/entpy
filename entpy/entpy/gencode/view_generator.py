@@ -1,4 +1,5 @@
 from entpy import (
+    BigIntField,
     BoolField,
     BytesField,
     DatetimeField,
@@ -108,6 +109,9 @@ def _generate_columns(pattern: Pattern) -> GeneratedContent:
                 common_column_attributes += f", server_default={default}"
         if isinstance(field, DatetimeField):
             column_type = "DateTime()"
+        elif isinstance(field, BigIntField):
+            imports.append("from sqlalchemy import BigInteger")
+            column_type = "BigInteger()"
         elif isinstance(field, BoolField):
             column_type = "Boolean()"
         elif isinstance(field, BytesField):
