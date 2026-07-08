@@ -1,12 +1,15 @@
 from .ent_child import EntChildExample
+from .ent_credential import EntCredentialExample
 from .ent_delegate_then_rule import EntDelegateThenRuleExample
 from .ent_delegating_child import EntDelegatingChildExample
 from .ent_delegating_grandchild import EntDelegatingGrandchildExample
 from .ent_grand_parent import EntGrandParentExample
+from .ent_guarded import EntGuardedExample
 from .ent_inherited_test import EntInheritedTestExample
 from .ent_mixed_list import EntMixedListExample
 from .ent_parent import EntParentExample
 from .ent_pass_then_deny import EntPassThenDenyExample
+from .ent_policy import EntPolicyExample
 from .ent_privacy_parent import EntPrivacyParentExample
 from .ent_single_rule import EntSingleRuleExample
 from .ent_test_object2 import EntTestObject2Example
@@ -20,14 +23,17 @@ from .ent_user import EntUserExample
 
 examples = [
     EntChildExample,
+    EntCredentialExample,
     EntDelegateThenRuleExample,
     EntDelegatingChildExample,
     EntDelegatingGrandchildExample,
     EntGrandParentExample,
+    EntGuardedExample,
     EntInheritedTestExample,
     EntMixedListExample,
     EntParentExample,
     EntPassThenDenyExample,
+    EntPolicyExample,
     EntPrivacyParentExample,
     EntSingleRuleExample,
     EntTestObject2Example,
