@@ -85,6 +85,10 @@ class EntMutatorCreationAction[
                 super().__setattr__(name, value)
 
     async def gen_savex(self) -> ENT:
+        for descriptor in self.schema.get_patterns() + [self.schema]:
+            for trigger in descriptor.get_triggers():
+                self.model = await trigger.gen_on_create(self.vc, self.model)
+
         self._validate()
         db.session.add(self.model)
         ent = self.ent_type(vc=self.vc, model=self.model)
@@ -136,6 +140,14 @@ class EntMutatorUpdateAction[
         pending_model = copy(self.model)
         for name, value in self._updates.items():
             setattr(pending_model, name, value)
+
+        if self._updates:
+            for descriptor in self.schema.get_patterns() + [self.schema]:
+                for trigger in descriptor.get_triggers():
+                    pending_model = await trigger.gen_on_update(
+                        self.vc, copy(self.model), pending_model
+                    )
+
         pending_ent = self.pending_type(model=pending_model)
         decision = await self.ent.gen_evaluate_privacy(
             vc=self.vc, action=Action.UPDATE, pending_ent=pending_ent
@@ -146,8 +158,10 @@ class EntMutatorUpdateAction[
             )
 
         if self._updates:
-            for name, value in self._updates.items():
-                setattr(self.model, name, value)
+            for column in self.model.__table__.columns:
+                new_value = getattr(pending_model, column.name)
+                if getattr(self.model, column.name) != new_value:
+                    setattr(self.model, column.name, new_value)
             self._validate()
 
             db.session.add(self.model)
@@ -185,6 +199,12 @@ class EntMutatorDeletionAction[
     async def gen_save(self) -> None:
         model = self.ent.model
         action = Action.SOFT_DELETE if self.is_soft_delete else Action.HARD_DELETE
+
+        schema = self.ent.schema
+        for descriptor in [schema] + schema.get_patterns():
+            for trigger in descriptor.get_triggers():
+                await trigger.gen_on_delete(self.vc, model, self.is_soft_delete)
+
         pending_ent = self.pending_type(model=model)
         decision = await self.ent.gen_evaluate_privacy(
             vc=self.vc, action=action, pending_ent=pending_ent

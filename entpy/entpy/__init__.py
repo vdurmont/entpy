@@ -35,6 +35,7 @@ from .framework.fields.text_field import TextField  # noqa: F401
 from .framework.fields.time_field import TimeField  # noqa: F401
 from .framework.fields.uuid_field import UuidField  # noqa: F401
 from .framework.fields.validator import FieldValidator  # noqa: F401
+from .framework.hooks import EntTrigger  # noqa: F401
 from .framework.pattern import Pattern  # noqa: F401
 from .framework.privacy_rule import EdgeDelegate, PrivacyRule  # noqa: F401
 from .framework.query import EntQuery  # noqa: F401

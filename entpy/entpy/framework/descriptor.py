@@ -6,6 +6,7 @@ from entpy.framework.composite_index import CompositeIndex
 from entpy.framework.fields.core import Field, FieldWithDefault
 
 if TYPE_CHECKING:
+    from entpy.framework.hooks import EntTrigger
     from entpy.framework.pattern import Pattern
 
 
@@ -42,6 +43,9 @@ class Descriptor(ABC):
         return indexs
 
     def get_event_fields(self) -> list[str]:
+        return []
+
+    def get_triggers(self) -> list["EntTrigger"]:
         return []
 
     def get_description(self) -> str:
