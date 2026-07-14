@@ -48,6 +48,13 @@ def generate_ent_id(schema: type["Schema"], created_at: datetime) -> UUID:
     )
 
 
+def generate_id_comp(timestamp: datetime, high: bool = False) -> UUID:
+    return UUID(
+        bytes=struct.pack("!Q", int(timestamp.timestamp() * 1000))[2:]
+        + (b"\xff" * 10 if high else b"\x00" * 10)
+    )
+
+
 def validate_ent_id(ent_id: UUID | str) -> UUID:
     # Convert str to UUID if needed
     if isinstance(ent_id, str):
