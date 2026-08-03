@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import event, func
+from sqlalchemy.exc import InterfaceError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession
 from sqlalchemy.ext.asyncio.scoping import async_scoped_session
 from sqlalchemy.orm import Session
@@ -144,14 +145,34 @@ class PostgresEvents(DatabaseEvents):
         await conn.execution_options(isolation_level="AUTOCOMMIT")
         raw_conn = await conn.get_raw_connection()
         raw_conn.detach()
+
+        for table in self.queues:
+            raw_conn._connection.add_listener(table, self.callback)
+
         return conn
+
+    @asynccontextmanager
+    async def connection(self) -> AsyncGenerator[AsyncConnection, None]:
+        if self.conn is None:
+            self.conn = await self.connect()
+
+        try:
+            yield self.conn
+        except InterfaceError:
+            log.warning("Connection error, reconnecting", exc_info=True)
+            conn, self.conn = self.conn, None
+            try:
+                await conn.close()
+                self.conn = await self.connect()
+            except Exception:
+                log.exception("Error reconnecting")
+            raise
 
     async def listen(self, table: str) -> None:
         async with self.lock:
-            if self.conn is None:
-                self.conn = await self.connect()
-            conn = await self.conn.get_raw_connection()
-            await conn._connection.add_listener(table, self.callback)
+            async with self.connection() as conn:
+                raw_conn = await conn.get_raw_connection()
+                await raw_conn._connection.add_listener(table, self.callback)
 
     async def callback(
         self, _conn: "Connection", _pid: int, channel: str, payload: str
@@ -160,9 +181,8 @@ class PostgresEvents(DatabaseEvents):
 
     async def notify(self, table: str, payload: str) -> None:
         async with self.lock:
-            if self.conn is None:
-                self.conn = await self.connect()
-            await self.conn.execute(func.pg_notify(table, payload))
+            async with self.connection() as conn:
+                await conn.execute(func.pg_notify(table, payload))
 
 
 class InProcessEvents(DatabaseEvents):
