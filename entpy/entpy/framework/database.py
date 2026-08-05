@@ -28,11 +28,16 @@ log = logging.getLogger(__name__)
 class Database:
     _session: async_scoped_session | AsyncSession | None = None
     events: "DatabaseEvents"
+    encryption_key: bytes
 
     def init_entpy(
-        self, engine: AsyncEngine, session: async_scoped_session | AsyncSession
+        self,
+        engine: AsyncEngine,
+        session: async_scoped_session | AsyncSession,
+        encryption_key: bytes,
     ) -> None:
         self._session = session
+        self.encryption_key = encryption_key
         if engine.dialect.name == "postgresql":
             self.events = PostgresEvents(engine)
         else:

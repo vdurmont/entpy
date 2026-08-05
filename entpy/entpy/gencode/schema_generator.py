@@ -1,6 +1,7 @@
 import re
 
 from entpy import Action, EdgeDelegate, EdgeField, PrivacyRule, Schema
+from entpy.framework.fields.bytes_field import BytesField
 from entpy.framework.fields.core import (
     FieldWithDefault,
     FieldWithDynamicExample,
@@ -38,6 +39,7 @@ def generate(
     _validate_field_name_format(schema)
     _validate_privacy_config(schema)
     _validate_examples(schema)
+    _validate_encrypted_fields(schema)
 
     model_content = generate_model(descriptor=schema, base_name=base_name)
     api_model_content = generate_api_model(descriptor=schema, base_name=base_name)
@@ -284,6 +286,23 @@ def _validate_examples(schema: Schema) -> None:
             raise ValueError(
                 f"Non-nullable field '{field.name}' must have an example or default."
             )
+
+
+def _validate_encrypted_fields(schema: Schema) -> None:
+    for field in schema.get_all_fields():
+        if isinstance(field, BytesField) and field.is_encrypted:
+            if field.is_unique:
+                raise ValueError(
+                    f"Encrypted field '{field.name}' cannot enforce uniqueness."
+                )
+            if field.is_indexed:
+                raise ValueError(
+                    f"Encrypted field '{field.name}' cannot be queried, indexing does not make sense."
+                )
+            if field.name in schema.get_event_fields():
+                raise ValueError(
+                    f"Encrypted field '{field.name}' cannot be used in event fields."
+                )
 
 
 def _get_patterns_imports(schema: Schema) -> list[str]:

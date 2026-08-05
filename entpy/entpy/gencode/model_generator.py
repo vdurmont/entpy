@@ -58,8 +58,8 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += f"mapped_column(Boolean(){common_column_attributes})\n"
         elif isinstance(field, BytesField):
             types_imports.append("from sqlalchemy import LargeBinary")
-            fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += f"mapped_column(LargeBinary(){common_column_attributes})\n"
+            fields_code += f"    {"_" if field.is_encrypted else ""}{field.name}: Mapped[{mapped_type}] = "
+            fields_code += f'mapped_column("{field.name}", LargeBinary(){common_column_attributes})\n'
         elif isinstance(field, DateField):
             types_imports.append("from sqlalchemy import Date")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
@@ -144,6 +144,25 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
                 )
                 fields_code += f'relationship("{edge_base_name}Model", primaryjoin="{base_name}Model.{field.name} == {edge_base_name}Model.id")\n'
 
+    encryption_imports = set()
+    if isinstance(descriptor, Schema):
+        for field in descriptor.get_all_fields():
+            if isinstance(field, BytesField) and field.is_encrypted:
+                encryption_imports.add(
+                    "from entpy.framework.crypto import decrypt_field, encrypt_field"
+                )
+                mapped_type = (
+                    field.get_python_type() + " | None"
+                    if field.nullable
+                    else field.get_python_type()
+                )
+                fields_code += "    @property\n"
+                fields_code += f"    def {field.name}(self) -> {mapped_type}:\n"
+                fields_code += f'        return decrypt_field(self.id, "{field.name}", self._{field.name}) if self._{field.name} else None\n'
+                fields_code += f"    @{field.name}.setter\n"
+                fields_code += f"    def {field.name}(self, value: {mapped_type}):\n"
+                fields_code += f'        self._{field.name} = encrypt_field(self.id, "{field.name}", value) if value else None\n'
+
     indexes = (
         _generate_indexes(schema=descriptor, base_name=base_name)
         if isinstance(descriptor, Schema)
@@ -172,6 +191,7 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             "from entpy.framework.types import Uuid",
             "from .ent_model import EntModel",
         ]
+        + list(encryption_imports)
         + types_imports
         + indexes.imports
         + extends.imports

@@ -88,6 +88,7 @@ class EntTestObjectSchema(Schema):
             IntervalField("duration").example(timedelta(seconds=123.456)),
             BytesField("image").example(bytes.fromhex("5035203120310A310A00")),
             BytesField("secret_hash").unique().dynamic_example(lambda: token_bytes(16)),
+            BytesField("encrypt").encrypt().dynamic_example(lambda: token_bytes(16)),
         ]
 
     def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:

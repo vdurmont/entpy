@@ -24,6 +24,7 @@ from ent_test_object_schema import EntTestObjectSchema
 from ent_test_object_schema import Status
 from ent_test_thing_pattern import ThingStatus
 from entpy import FieldWithDynamicExample
+from entpy.framework.crypto import decrypt_field, encrypt_field
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
     EntMutatorCreationAction,
@@ -108,8 +109,11 @@ class EntTestObjectModel(EntTestThingModel):
     email: Mapped[str | None] = mapped_column(
         String(255, collation="nocase"), nullable=True
     )
+    _encrypt: Mapped[bytes | None] = mapped_column(
+        "encrypt", LargeBinary(), nullable=True
+    )
     end_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
-    image: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
+    image: Mapped[bytes | None] = mapped_column("image", LargeBinary(), nullable=True)
     is_it_true: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
         Uuid(),
@@ -122,7 +126,9 @@ class EntTestObjectModel(EntTestThingModel):
         nullable=True,
     )
     preprocessed_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    secret_hash: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
+    secret_hash: Mapped[bytes | None] = mapped_column(
+        "secret_hash", LargeBinary(), nullable=True
+    )
     self_id: Mapped[UUID | None] = mapped_column(
         Uuid(),
         ForeignKey("test_object.id", deferrable=True, initially="DEFERRED"),
@@ -164,6 +170,16 @@ class EntTestObjectModel(EntTestThingModel):
         "EntTestObjectModel",
         primaryjoin="EntTestObjectModel.self_id == EntTestObjectModel.id",
     )
+
+    @property
+    def encrypt(self) -> bytes | None:
+        return (
+            decrypt_field(self.id, "encrypt", self._encrypt) if self._encrypt else None
+        )
+
+    @encrypt.setter
+    def encrypt(self, value: bytes | None):
+        self._encrypt = encrypt_field(self.id, "encrypt", value) if value else None
 
 
 Index(
@@ -335,6 +351,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     dob: date | None = APIField(None, examples=[date.fromisoformat("2000-01-01")])
     duration: timedelta | None = APIField(None, examples=[timedelta(seconds=123.456)])
     email: str | None = APIField(None, examples=["test@example.com"])
+    encrypt: bytes | None = APIField(None)
     end_time: time | None = APIField(None)
     image: bytes | None = APIField(
         None, examples=[bytes.fromhex("5035203120310a310a00")]
@@ -480,6 +497,10 @@ class EntTestObjectPending(IEntTestThingPending):
 
         @property
         def secret_hash(self) -> bytes | None:
+            pass
+
+        @property
+        def encrypt(self) -> bytes | None:
             pass
 
 
@@ -636,6 +657,7 @@ class EntTestObjectMutator:
         dob: date | None = None,
         duration: timedelta | None = None,
         email: str | None = None,
+        encrypt: bytes | None = None,
         end_time: time | None = None,
         idempotency_key: UUID | None = None,
         image: bytes | None = None,
@@ -682,6 +704,7 @@ class EntTestObjectMutator:
             dob=dob,
             duration=duration,
             email=email,
+            encrypt=encrypt,
             end_time=end_time,
             idempotency_key=idempotency_key,
             image=image,
@@ -751,6 +774,7 @@ class EntTestObjectMutatorCreationAction(
         dob: date | None = None
         duration: timedelta | None = None
         email: str | None = None
+        encrypt: bytes | None = None
         end_time: time | None = None
         idempotency_key: UUID | None = None
         image: bytes | None = None
@@ -802,6 +826,7 @@ class EntTestObjectMutatorUpdateAction(
         dob: date | None = None
         duration: timedelta | None = None
         email: str | None = None
+        encrypt: bytes | None = None
         end_time: time | None = None
         idempotency_key: UUID | None = None
         image: bytes | None = None
@@ -855,6 +880,7 @@ class EntTestObjectExample:
         dob: date | Sentinel = NOTHING,
         duration: timedelta | Sentinel = NOTHING,
         email: str | Sentinel = NOTHING,
+        encrypt: bytes | Sentinel = NOTHING,
         end_time: time | Sentinel = NOTHING,
         idempotency_key: UUID | Sentinel = NOTHING,
         image: bytes | Sentinel = NOTHING,
@@ -952,6 +978,16 @@ class EntTestObjectExample:
 
         email = "test@example.com" if isinstance(email, Sentinel) else email
 
+        if isinstance(encrypt, Sentinel):
+            field = _get_field("encrypt")
+            if not isinstance(field, FieldWithDynamicExample):
+                raise TypeError(
+                    "Internal ent error: Field {field.name} must support dynamic examples."
+                )
+            generator = field.get_example_generator()
+            if generator:
+                encrypt = generator()
+
         if isinstance(end_time, Sentinel):
             field = _get_field("end_time")
             if not isinstance(field, FieldWithDynamicExample):
@@ -1043,6 +1079,7 @@ class EntTestObjectExample:
             dob=dob,
             duration=duration,
             email=email,
+            encrypt=encrypt,
             end_time=end_time,
             idempotency_key=idempotency_key,
             image=image,
