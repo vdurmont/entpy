@@ -1,3 +1,5 @@
+from secrets import token_bytes
+
 from sqlalchemy import MetaData, event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
@@ -29,7 +31,7 @@ Base = declarative_base(metadata=metadata)
 
 
 session = SessionLocal()
-init_entpy(engine, session)
+init_entpy(engine, session, token_bytes(16))
 
 
 async def init_db() -> None:

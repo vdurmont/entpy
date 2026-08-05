@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Self
+
 from entpy.framework.fields.core import (
     Field,
     FieldWithDynamicExample,
@@ -12,6 +14,12 @@ class BytesField(
     FieldWithExample[bytes],
     FieldWithDynamicExample[bytes],
 ):
+    is_encrypted: bool = False
+
+    def encrypt(self) -> Self:
+        self.is_encrypted = True
+        return self
+
     def get_python_type(self) -> str:
         return "bytes"
 
