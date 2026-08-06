@@ -74,22 +74,32 @@ def run(
                 vc=vc,
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
             )
-            view_code = generate_view(
-                pattern_class=descriptor_class,
-                children_schema_classes=children,
-                base_import=base_model_import,
+            # A non-queryable pattern has no view: nothing queries across its
+            # implementations, so there is no union to build or to import for
+            # its side effect of mapping the pattern model.
+            view_path = descriptor_output_path.with_stem(
+                f"{descriptor_output_path.stem}_view"
             )
-            _write_file(
-                descriptor_output_path.with_stem(f"{descriptor_output_path.stem}_view"),
-                view_code,
-            )
-            models_list_imports += (
-                "\nfrom ."
-                + descriptor_output_path.stem
-                + "_view import "
-                + descriptor_output_path.stem
-                + "_view  # noqa: F401"
-            )
+            if descriptor_class().is_queryable():
+                view_code = generate_view(
+                    pattern_class=descriptor_class,
+                    children_schema_classes=children,
+                    base_import=base_model_import,
+                )
+                _write_file(view_path, view_code)
+                models_list_imports += (
+                    "\nfrom ."
+                    + descriptor_output_path.stem
+                    + "_view import "
+                    + descriptor_output_path.stem
+                    + "_view  # noqa: F401"
+                )
+            else:
+                # A pattern flipped from queryable leaves its old view module
+                # behind otherwise, since generation only ever writes files.
+                # (Dropping the database view itself is still a migration the
+                # caller owns.)
+                view_path.unlink(missing_ok=True)
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
 

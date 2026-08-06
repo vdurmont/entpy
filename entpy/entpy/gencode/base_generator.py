@@ -78,6 +78,22 @@ def generate(
 
     m_line = f"    m = {base_name}Model"
 
+    # A non-queryable pattern has no view to query, so it leaves the abstract
+    # EntPatternBase.query() unimplemented. I{base_name} is never instantiated
+    # directly -- _get_child_type() always resolves to a concrete schema, which
+    # has its own query() -- so the class staying abstract is the accurate
+    # description of it.
+    query_method = ""
+    if not (isinstance(descriptor, Pattern) and not descriptor.is_queryable()):
+        query_method = f"""
+    @classmethod
+    def query(  {"# type: ignore[override]" if descriptor.get_patterns() else ""}
+        cls,
+        vc: {vc.name},
+    ) -> {i}{base_name}Query:
+        return {i}{base_name}Query(vc=vc)
+"""
+
     # Field stubs come from pending classes; only edge/unique stubs needed here
     type_checking_block = ""
     if edge_gens.code.strip() or unique_gens.strip():
@@ -105,14 +121,7 @@ class {i}{base_name}({extends}):{get_description(descriptor)}
         return super()._get_edge_type(edge_name)
 
     {child_types}
-
-    @classmethod
-    def query(  {"# type: ignore[override]" if descriptor.get_patterns() else ""}
-        cls,
-        vc: {vc.name},
-    ) -> {i}{base_name}Query:
-        return {i}{base_name}Query(vc=vc)
-""",
+{query_method}""",
     )
 
 
