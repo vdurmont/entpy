@@ -18,6 +18,8 @@ from .ent_test_object4 import EntTestObject4Example
 from .ent_test_object5 import EntTestObject5Example
 from .ent_test_object import EntTestObjectExample
 from .ent_test_sub_object import EntTestSubObjectExample
+from .ent_unqueryable_child import EntUnqueryableChildExample
+from .ent_unqueryable_sibling import EntUnqueryableSiblingExample
 from .ent_user import EntUserExample
 
 
@@ -42,5 +44,7 @@ examples = [
     EntTestObject5Example,
     EntTestObjectExample,
     EntTestSubObjectExample,
+    EntUnqueryableChildExample,
+    EntUnqueryableSiblingExample,
     EntUserExample,
 ]

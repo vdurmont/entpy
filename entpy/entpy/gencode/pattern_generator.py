@@ -29,12 +29,16 @@ def generate(
         base_name=base_name,
         vc=vc,
     )
-    query_content = generate_query(
-        descriptor=pattern,
-        base_name=base_name,
-        vc=vc,
-        threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
-    )
+    if pattern.is_queryable():
+        query_content = generate_query(
+            descriptor=pattern,
+            base_name=base_name,
+            vc=vc,
+            threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
+        )
+    else:
+        _check_no_unique_across_implementations(pattern=pattern, base_name=base_name)
+        query_content = GeneratedContent(code="")
 
     mutator_content = _generate_mutator(
         pattern=pattern,
@@ -146,6 +150,25 @@ class I{base_name}Example:
 
         return await {example_base_name}Example.gen_create(vc=vc, created_at=created_at{example_arguments_assignment})
 """  # noqa: E501
+
+
+def _check_no_unique_across_implementations(pattern: Pattern, base_name: str) -> None:
+    """Uniqueness across a pattern's implementations is enforced against its
+    view: the unique triggers are DDL over the view's table name, and
+    `_gen_from_unique` selects from the pattern model, which only exists once
+    the view maps it. A non-queryable pattern has no view, so these would
+    generate code that fails at migration or lookup time rather than here."""
+    unique_fields = [field.name for field in pattern.get_fields() if field.is_unique]
+    unique_indexes = [
+        index.field_names for index in pattern.get_composite_indexes() if index.unique
+    ]
+    if unique_fields or unique_indexes:
+        raise ValueError(
+            f"{base_name}Pattern is not queryable, so it cannot declare unique "
+            "fields or unique composite indexes: both are enforced through the "
+            "view that is_queryable() removes. "
+            f"Unique fields: {unique_fields}. Unique indexes: {unique_indexes}."
+        )
 
 
 def _generate_pending(pattern: Pattern, base_name: str) -> GeneratedContent:

@@ -158,6 +158,22 @@ Descriptors can be `Schemas`, which are essentially concrete classes, or `Patter
 
 At the minimum, a descriptor will require you to implement the `get_fields` function where you return the list of fields that this object has.
 
+### Non-queryable patterns
+
+By default a pattern is queryable: EntPy generates a database view unioning every implementing table and an `I<Name>.query()` returning an `EntPatternQuery` over it. That view is rebuilt whenever an implementation is added or its columns change.
+
+A pattern that nobody queries polymorphically can opt out:
+
+```python
+class EntMyPattern(Pattern):
+    def is_queryable(self) -> bool:
+        return False
+```
+
+The pattern still contributes its fields, privacy rules and mutator surface to its implementations, and `I<Name>.gen()` still resolves an id to the right concrete ent. Only the view and `query()` go away, so cross-implementation reads go through the concrete schemas instead.
+
+Uniqueness across implementations (`unique()` on a pattern field, or a unique `CompositeIndex`) is enforced through that view, so a non-queryable pattern cannot declare either; gencode rejects it.
+
 ## Fields
 
 Fields have a set of common attributes, such as:
