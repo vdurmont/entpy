@@ -41,6 +41,7 @@ privacy_logger = logging.getLogger("entpy.privacy")
 
 class EntUnqueryableSiblingModel(EntUnqueryableModel):
     __tablename__ = "unqueryable_sibling"
+    __table_args__ = {"schema": "other"}
 
     other_note: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
