@@ -134,9 +134,20 @@ privacy_logger = logging.getLogger("entpy.privacy")
 
 
 def _validate_table_schemas(schema: Schema) -> None:
-    """Validate that the schema and all patterns have the same table schema."""
+    """Validate that the schema and all patterns have the same table schema.
+
+    A pattern's table schema reaches generated code in two places: the view's
+    schema, and ``__table_args__`` on the pattern model, which implementations
+    inherit unless they declare their own. A pattern that declares no schema
+    and generates no view touches neither, so it may span implementations that
+    live in different database schemas -- an interface-only pattern over, say,
+    a public table and a secret one.
+    """
     for pattern in schema.get_patterns():
-        if pattern.get_table_schema() != schema.get_table_schema():
+        pattern_table_schema = pattern.get_table_schema()
+        if pattern_table_schema is None and not pattern.is_queryable():
+            continue
+        if pattern_table_schema != schema.get_table_schema():
             raise ValueError(
                 f"Pattern {pattern.__class__.__name__} has a different table schema than the schema"
             )

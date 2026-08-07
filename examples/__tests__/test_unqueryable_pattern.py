@@ -55,6 +55,22 @@ def test_no_query_is_generated() -> None:
     assert getattr(IEntUnqueryable.query, "__isabstractmethod__", False) is True
 
 
+def test_the_pattern_may_span_database_schemas() -> None:
+    # The two implementations live in different database schemas. A pattern's
+    # table schema only reaches generated code through the view and through
+    # __table_args__ on the pattern model, and this pattern has neither, so
+    # nothing forces them to agree.
+    from generated.ent_unqueryable import EntUnqueryableModel
+    from generated.ent_unqueryable_child import EntUnqueryableChildModel
+    from generated.ent_unqueryable_sibling import EntUnqueryableSiblingModel
+
+    assert EntUnqueryableSiblingModel.__table__.schema == "other"
+    assert EntUnqueryableChildModel.__table__.schema is None
+    # The abstract pattern model declares no schema of its own, which is what
+    # stops it from pulling an implementation into the wrong one.
+    assert "__table_args__" not in vars(EntUnqueryableModel)
+
+
 async def test_the_pattern_still_reaches_its_implementations(
     vc: ExampleViewerContext,
 ) -> None:
