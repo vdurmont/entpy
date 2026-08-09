@@ -30,6 +30,7 @@ from .framework.fields.enum_field import EnumField  # noqa: F401
 from .framework.fields.int_field import IntField  # noqa: F401
 from .framework.fields.interval_field import IntervalField  # noqa: F401
 from .framework.fields.json_field import JsonField  # noqa: F401
+from .framework.fields.preprocessor import FieldPreprocessor  # noqa: F401
 from .framework.fields.string_field import StringField  # noqa: F401
 from .framework.fields.text_field import TextField  # noqa: F401
 from .framework.fields.time_field import TimeField  # noqa: F401

@@ -84,7 +84,14 @@ class EntMutatorCreationAction[
             else:
                 super().__setattr__(name, value)
 
+    def _preprocess(self) -> None:
+        for field in self.schema.get_all_fields():
+            if (value := getattr(self.model, field.name)) is not None:
+                setattr(self.model, field.name, field.preprocess(value))
+
     async def gen_savex(self) -> ENT:
+        self._preprocess()
+
         for descriptor in self.schema.get_patterns() + [self.schema]:
             for trigger in descriptor.get_triggers():
                 self.model = await trigger.gen_on_create(self.vc, self.model)
@@ -136,7 +143,15 @@ class EntMutatorUpdateAction[
             else:
                 super().__setattr__(name, value)
 
+    def _preprocess(self) -> None:
+        fields = {field.name: field for field in self.schema.get_all_fields()}
+        for name, value in self._updates.items():
+            if value is not None and (field := fields.get(name)):
+                self._updates[name] = field.preprocess(value)
+
     async def gen_savex(self) -> ENT:
+        self._preprocess()
+
         pending_model = copy(self.model)
         for name, value in self._updates.items():
             setattr(pending_model, name, value)

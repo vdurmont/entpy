@@ -4,6 +4,7 @@ from typing import Self
 
 from entpy.framework.fields.core import (
     Field,
+    FieldPreprocessor,
     FieldValidator,
     FieldWithDefault,
     FieldWithDynamicExample,
@@ -18,6 +19,7 @@ class StringField(
         super().__init__(name=name)
         self.length = length
         self.case_sensitive = case_sensitive
+        self._preprocessors.append(RemoveNullBytesPreprocessor())
         self._validators.append(MaxLengthValidator(length))
 
     def get_python_type(self) -> str:
@@ -34,6 +36,19 @@ class StringField(
         if self._default_value is not None:
             return f'"{self._default_value}"'
         return None
+
+
+class RemoveNullBytesPreprocessor(FieldPreprocessor[str]):
+    """
+    Drops NUL bytes from a string. Postgres rejects them outright in a text
+    column, so a value carrying one is a bad decode or an injection attempt
+    rather than something the caller meant to store.
+
+    Applied to every `StringField` and `TextField` by default.
+    """
+
+    def preprocess(self, value: str) -> str:
+        return value.replace("\x00", "")
 
 
 class MaxLengthValidator(FieldValidator[str | None]):

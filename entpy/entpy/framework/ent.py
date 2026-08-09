@@ -2,7 +2,7 @@ import logging
 import struct
 from abc import abstractmethod
 from datetime import datetime
-from functools import partial
+from functools import cache, partial
 from secrets import token_bytes
 from typing import TYPE_CHECKING, Any, Self, TypeVar
 from uuid import UUID
@@ -26,6 +26,9 @@ from entpy.framework.viewer_context import ViewerContext
 VC = TypeVar("VC")
 ENTMODEL = TypeVar("ENTMODEL")
 if TYPE_CHECKING:
+    from entpy.framework.descriptor import Descriptor
+    from entpy.framework.fields.core import Field
+    from entpy.framework.pattern import Pattern
     from entpy.framework.query import EntQuery
     from entpy.framework.schema import Schema
 
@@ -138,6 +141,33 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
         cls, edge_name: str
     ) -> tuple[type["Ent[ViewerContext, ModelMixin]"], bool]:
         raise ValueError(f"Unknown edge for {cls.__name__}: {edge_name}")
+
+    @classmethod
+    @abstractmethod
+    def _get_descriptor(cls) -> "Descriptor":
+        pass
+
+    @classmethod
+    @cache
+    def _get_field(cls, name: str) -> "Field | None":
+        # get_all_fields() rebuilds the descriptor's fields on every call, so
+        # this is cached: a unique lookup is a read path.
+        for field in cls._get_descriptor().get_all_fields():
+            if field.name == name:
+                return field
+        return None
+
+    @classmethod
+    def _preprocess_unique_value(cls, name: str, value: Any) -> Any:
+        """
+        Normalize a `gen_from_xxxx` lookup value the same way a write to that
+        field would be, so a field can be read back with the input it was
+        written with.
+        """
+        if value is None:
+            return value
+        field = cls._get_field(name)
+        return field.preprocess(value) if field else value
 
     @abstractmethod
     async def gen_evaluate_privacy(
@@ -268,6 +298,10 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
     schema: "Schema"
 
     @classmethod
+    def _get_descriptor(cls) -> "Descriptor":
+        return cls.schema
+
+    @classmethod
     async def gen(
         cls,
         vc: VC,
@@ -322,6 +356,7 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         for_update: bool = False,
         include_soft_deleted: bool = False,
     ) -> Self | None:
+        value = cls._preprocess_unique_value(name, value)
         if not for_update and (
             cached := db.session.info.get("unique", {}).get((cls, name, value))
         ):
@@ -416,6 +451,12 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
 
 
 class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
+    descriptor: "Pattern"
+
+    @classmethod
+    def _get_descriptor(cls) -> "Descriptor":
+        return cls.descriptor
+
     @classmethod
     @abstractmethod
     def _get_child_type(cls, uuid_type: bytes) -> type[Self]:
@@ -450,6 +491,7 @@ class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL])
         for_update: bool = False,
         include_soft_deleted: bool = False,
     ) -> Self | None:
+        value = cls._preprocess_unique_value(name, value)
         query = select(cls.m.id).where(getattr(cls.m, name) == value)
         result = await db.session.execute(query)
         ent_id = result.scalar_one_or_none()

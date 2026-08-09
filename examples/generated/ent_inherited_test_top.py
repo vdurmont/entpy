@@ -11,9 +11,11 @@ from typing import TYPE_CHECKING
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
 from .ent_model import EntModel
+from ent_inherited_test_top_pattern import EntInheritedTestTopPattern
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
+from entpy.framework.pattern import Pattern
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -55,6 +57,7 @@ class IEntInheritedTestTop(
     IEntInheritedTestTopPending,
 ):
     m = EntInheritedTestTopModel
+    descriptor: Pattern = EntInheritedTestTopPattern()
 
     @classmethod
     @cache

@@ -7,13 +7,17 @@ from entpy.framework.fields.core import (
     FieldWithDynamicExample,
     FieldWithExample,
 )
-from entpy.framework.fields.string_field import NotEmptyStringValidator
+from entpy.framework.fields.string_field import (
+    NotEmptyStringValidator,
+    RemoveNullBytesPreprocessor,
+)
 
 
 class TextField(Field, FieldWithExample[str], FieldWithDynamicExample[str]):
     def __init__(self, name: str, case_sensitive: bool = True):
         super().__init__(name=name)
         self.case_sensitive = case_sensitive
+        self._preprocessors.append(RemoveNullBytesPreprocessor())
 
     def get_python_type(self) -> str:
         return "str"

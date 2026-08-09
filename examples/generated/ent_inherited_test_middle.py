@@ -16,7 +16,9 @@ from .ent_inherited_test_top import IEntInheritedTestTop
 from .ent_inherited_test_top import IEntInheritedTestTopMutatorDeletionAction
 from .ent_inherited_test_top import IEntInheritedTestTopMutatorUpdateAction
 from .ent_inherited_test_top import IEntInheritedTestTopPending
+from ent_inherited_test_middle_pattern import EntInheritedTestMiddlePattern
 from entpy.framework.errors import UnknownTypeError
+from entpy.framework.pattern import Pattern
 from entpy.framework.query import EntPatternQuery
 from evc import ExampleViewerContext
 from pydantic import Field as APIField
@@ -54,6 +56,7 @@ class IEntInheritedTestMiddlePending(IEntInheritedTestTopPending):
 
 class IEntInheritedTestMiddle(IEntInheritedTestTop, IEntInheritedTestMiddlePending):
     m = EntInheritedTestMiddleModel
+    descriptor: Pattern = EntInheritedTestMiddlePattern()
 
     @classmethod
     @cache
