@@ -6,7 +6,7 @@ from entpy import Pattern, Schema
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
-from entpy.gencode.utils import ImportedObject
+from entpy.gencode.utils import GENERATED_HEADER, ImportedObject
 from entpy.gencode.view_generator import generate as generate_view
 
 
@@ -194,7 +194,7 @@ def _load_descriptors_configs(
 
 def _write_file(path: Path, content: str) -> None:
     with open(path, "w") as f:
-        f.write(content)
+        f.write(GENERATED_HEADER + "\n" + content.lstrip("\n"))
 
 
 def get_children_schema_classes(pattern_class: type[Pattern]) -> list[type[Schema]]:
