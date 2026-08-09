@@ -66,7 +66,11 @@ def generate(
         # reassigns it, and an ent implementing two patterns inherits both, so
         # every declaration has to agree on the type.
         attributes = f"    descriptor: Pattern = {descriptor_class.__name__}()"
-        imports.append("from entpy.framework.pattern import Pattern")
+        # Pattern is only ever an annotation here -- the generated file starts
+        # with `from __future__ import annotations`, so it is never evaluated.
+        # The descriptor class itself is instantiated, so that one is a real
+        # runtime dependency.
+        type_checking_imports.append("from entpy.framework.pattern import Pattern")
         imports.append(
             f"from {descriptor_class.__module__} import {descriptor_class.__name__}"
         )

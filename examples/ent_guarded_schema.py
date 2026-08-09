@@ -26,7 +26,7 @@ class DenyIfLevelHigh(PrivacyRule[ExampleViewerContext, T, P]):
     async def gen_evaluate(
         self, vc: ExampleViewerContext, ent: T, pending_ent: P | None = None
     ) -> Decision:
-        target = cast(Any, pending_ent if pending_ent is not None else ent)
+        target = cast("Any", pending_ent if pending_ent is not None else ent)
         return Decision.DENY if target.level == "high" else Decision.ALLOW
 
 

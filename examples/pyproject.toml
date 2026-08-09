@@ -17,6 +17,23 @@ dev = [
     "mypy",
 ]
 
+[tool.ruff.lint]
+# TC catches gencode emitting a runtime import for something only used as an
+# annotation, which downstream consumers with flake8-type-checking enabled see
+# as an error in every generated file.
+extend-select = ["TC"]
+
+[tool.ruff.lint.per-file-ignores]
+# TC001/TC003: SQLAlchemy resolves `Mapped[...]` annotations at runtime, so the
+# types a model is mapped with have to be imported at runtime too. Moving them
+# under TYPE_CHECKING raises MappedAnnotationError.
+# TC004/TC005: gencode emits some imports in both the runtime and the
+# type-checking block, and an empty type-checking block for a pending class with
+# nothing to stub. Both are pre-existing cosmetic warts in the output, tracked
+# separately from the annotation-import problem this config exists to catch.
+# TC002 stays enforced: that is the one.
+"generated/*" = ["TC001", "TC003", "TC004", "TC005"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = ["."]
