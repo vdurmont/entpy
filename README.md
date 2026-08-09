@@ -174,6 +174,27 @@ The pattern still contributes its fields, privacy rules and mutator surface to i
 
 Uniqueness across implementations (`unique()` on a pattern field, or a unique `CompositeIndex`) is enforced through that view, so a non-queryable pattern cannot declare either; gencode rejects it.
 
+### Referencing a generated ent from its own pattern module
+
+The generated code for a pattern imports the pattern module at runtime, to instantiate the descriptor it reads its fields from. So a pattern module that references its own generated ent -- in a privacy rule or a trigger, typically -- must import it under `TYPE_CHECKING`, or the two modules form an import cycle and gencode fails while loading the descriptors:
+
+```python
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from entities.ent_account import IEntAccount, IEntAccountPending
+
+
+class DenyUnlessOwner(PrivacyRule["MyViewerContext", IEntAccount, IEntAccountPending]):
+    ...
+```
+
+The `from __future__ import annotations` is what makes the deferred import work: without it the annotations are evaluated at runtime and the names are not there.
+
+This bites in a way that hides itself. Gencode reads the descriptor modules before it writes anything, so the run that introduces the cycle usually succeeds -- it imports the *previous* output, which has no back-edge yet -- and writes the file that closes the loop. The failure shows up on the next run.
+
 ## Fields
 
 Fields have a set of common attributes, such as:

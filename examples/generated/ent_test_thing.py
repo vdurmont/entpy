@@ -17,7 +17,6 @@ from ent_test_thing_pattern import ThingStatus
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
-from entpy.framework.pattern import Pattern
 from entpy.framework.query import EntPatternQuery
 from entpy.framework.types import Uuid
 from entpy.model import APIEntity
@@ -32,6 +31,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5APIModel
     from entpy import Ent
+    from entpy.framework.pattern import Pattern
     from .ent_test_object5 import EntTestObject5
 
 

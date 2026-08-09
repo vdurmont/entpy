@@ -14,7 +14,6 @@ from ent_test_pattern_pattern import EntTestPatternPattern
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
-from entpy.framework.pattern import Pattern
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -25,6 +24,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 if TYPE_CHECKING:
     from entpy import Ent
+    from entpy.framework.pattern import Pattern
 
 
 if TYPE_CHECKING:

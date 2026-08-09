@@ -15,7 +15,6 @@ from ent_unqueryable_pattern import EntUnqueryablePattern
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
-from entpy.framework.pattern import Pattern
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
 from pydantic import Field as APIField
@@ -25,6 +24,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 if TYPE_CHECKING:
     from entpy import Ent
+    from entpy.framework.pattern import Pattern
 
 
 if TYPE_CHECKING:

@@ -18,7 +18,6 @@ from .ent_inherited_test_top import IEntInheritedTestTopMutatorUpdateAction
 from .ent_inherited_test_top import IEntInheritedTestTopPending
 from ent_inherited_test_middle_pattern import EntInheritedTestMiddlePattern
 from entpy.framework.errors import UnknownTypeError
-from entpy.framework.pattern import Pattern
 from entpy.framework.query import EntPatternQuery
 from evc import ExampleViewerContext
 from pydantic import Field as APIField
@@ -28,6 +27,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 if TYPE_CHECKING:
     from entpy import Ent
+    from entpy.framework.pattern import Pattern
 
 
 if TYPE_CHECKING:
