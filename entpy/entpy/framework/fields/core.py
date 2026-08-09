@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Generic, Self, TypeVar
 
+from .preprocessor import FieldPreprocessor
 from .validator import FieldValidator
 
 T = TypeVar("T")
@@ -21,11 +22,13 @@ class Field(ABC, Generic[T]):
     is_internal: bool = False
     is_deprecated: bool = False
     _validators: list[FieldValidator[T]]
+    _preprocessors: list[FieldPreprocessor[T]]
 
     def __init__(self, name: str, actual_name: str | None = None):
         self.original_name = name
         self.name = actual_name if actual_name else name
         self._validators = []
+        self._preprocessors = []
 
     @abstractmethod
     def get_python_type(self) -> str:
@@ -67,6 +70,16 @@ class Field(ABC, Generic[T]):
     def validators(self, validators: list[FieldValidator[T]]) -> Self:
         self._validators = self._validators + validators
         return self
+
+    def preprocessors(self, preprocessors: list[FieldPreprocessor[T]]) -> Self:
+        self._preprocessors = self._preprocessors + preprocessors
+        return self
+
+    def preprocess(self, value: T) -> T:
+        """Run the value through every preprocessor, in declaration order."""
+        for preprocessor in self._preprocessors:
+            value = preprocessor.preprocess(value)
+        return value
 
 
 class FieldWithExample(ABC, Generic[T]):

@@ -83,6 +83,13 @@ Index(
 )
 Index(
     None,
+    EntTestObject2Model.a_pattern_preprocessed_field,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
+Index(
+    None,
     EntTestObject2Model.idempotency_key,
     unique=True,
     postgresql_where=text("soft_deleted_at IS NULL"),
@@ -123,6 +130,35 @@ event.listen(
     "after_create",
     CreatePatternUniqueTriggerSqlite(
         "update", "test_thing", "test_object2", ["idempotency_key"]
+    ).execute_if(dialect="sqlite"),
+)
+
+event.listen(
+    EntTestObject2Model.__table__,
+    "after_create",
+    CreatePatternUniqueFunctionPostgres(
+        "test_thing", "test_object2", ["a_pattern_preprocessed_field"]
+    ).execute_if(dialect="postgresql"),
+)
+event.listen(
+    EntTestObject2Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerPostgres(
+        "test_thing", "test_object2", ["a_pattern_preprocessed_field"]
+    ).execute_if(dialect="postgresql"),
+)
+event.listen(
+    EntTestObject2Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite(
+        "insert", "test_thing", "test_object2", ["a_pattern_preprocessed_field"]
+    ).execute_if(dialect="sqlite"),
+)
+event.listen(
+    EntTestObject2Model.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite(
+        "update", "test_thing", "test_object2", ["a_pattern_preprocessed_field"]
     ).execute_if(dialect="sqlite"),
 )
 
@@ -220,6 +256,7 @@ class EntTestObject2Mutator:
         vc: ExampleViewerContext,
         a_good_thing: str,
         obj5_id: UUID,
+        a_pattern_preprocessed_field: str | None = None,
         a_pattern_validated_field: str | None = None,
         idempotency_key: UUID | None = None,
         limit: int | None = None,
@@ -237,6 +274,7 @@ class EntTestObject2Mutator:
             updated_at=updated_at,
             a_good_thing=a_good_thing,
             obj5_id=obj5_id,
+            a_pattern_preprocessed_field=a_pattern_preprocessed_field,
             a_pattern_validated_field=a_pattern_validated_field,
             idempotency_key=idempotency_key,
             limit=limit,
@@ -277,6 +315,7 @@ class EntTestObject2MutatorCreationAction(
         id: UUID
         a_good_thing: str
         obj5_id: UUID
+        a_pattern_preprocessed_field: str | None = None
         a_pattern_validated_field: str | None = None
         idempotency_key: UUID | None = None
         limit: int | None = None
@@ -301,6 +340,7 @@ class EntTestObject2MutatorUpdateAction(
         id: UUID
         a_good_thing: str
         obj5_id: UUID
+        a_pattern_preprocessed_field: str | None = None
         a_pattern_validated_field: str | None = None
         idempotency_key: UUID | None = None
         limit: int | None = None
@@ -326,6 +366,7 @@ class EntTestObject2Example:
         created_at: datetime | None = None,
         a_good_thing: str | Sentinel = NOTHING,
         obj5_id: UUID | Sentinel = NOTHING,
+        a_pattern_preprocessed_field: str | Sentinel = NOTHING,
         a_pattern_validated_field: str | Sentinel = NOTHING,
         idempotency_key: UUID | Sentinel = NOTHING,
         limit: int | Sentinel = NOTHING,
@@ -344,6 +385,17 @@ class EntTestObject2Example:
 
             obj5_id_ent = await EntTestObject5Example.gen_create(vc)
             obj5_id = obj5_id_ent.id
+
+        if isinstance(a_pattern_preprocessed_field, Sentinel):
+            field = _get_field("a_pattern_preprocessed_field")
+            if not isinstance(field, FieldWithDynamicExample):
+                raise TypeError(
+                    "Internal ent error: Field {field.name} must support dynamic examples."
+                )
+            generator = field.get_example_generator()
+            if generator:
+                a_pattern_preprocessed_field = generator()
+
         a_pattern_validated_field = (
             "vdurmont"
             if isinstance(a_pattern_validated_field, Sentinel)
@@ -375,6 +427,7 @@ class EntTestObject2Example:
             created_at=created_at,
             a_good_thing=a_good_thing,
             obj5_id=obj5_id,
+            a_pattern_preprocessed_field=a_pattern_preprocessed_field,
             a_pattern_validated_field=a_pattern_validated_field,
             idempotency_key=idempotency_key,
             limit=limit,

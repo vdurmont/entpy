@@ -121,6 +121,7 @@ class EntTestObjectModel(EntTestThingModel):
         ForeignKey("test_sub_object.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
+    preprocessed_field: Mapped[str | None] = mapped_column(String(100), nullable=True)
     secret_hash: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
     self_id: Mapped[UUID | None] = mapped_column(
         Uuid(),
@@ -209,6 +210,13 @@ Index(
 )
 Index(
     None,
+    EntTestObjectModel.a_pattern_preprocessed_field,
+    unique=True,
+    postgresql_where=text("soft_deleted_at IS NULL"),
+    sqlite_where=text("soft_deleted_at IS NULL"),
+)
+Index(
+    None,
     EntTestObjectModel.idempotency_key,
     unique=True,
     postgresql_where=text("soft_deleted_at IS NULL"),
@@ -249,6 +257,35 @@ event.listen(
     "after_create",
     CreatePatternUniqueTriggerSqlite(
         "update", "test_thing", "test_object", ["idempotency_key"]
+    ).execute_if(dialect="sqlite"),
+)
+
+event.listen(
+    EntTestObjectModel.__table__,
+    "after_create",
+    CreatePatternUniqueFunctionPostgres(
+        "test_thing", "test_object", ["a_pattern_preprocessed_field"]
+    ).execute_if(dialect="postgresql"),
+)
+event.listen(
+    EntTestObjectModel.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerPostgres(
+        "test_thing", "test_object", ["a_pattern_preprocessed_field"]
+    ).execute_if(dialect="postgresql"),
+)
+event.listen(
+    EntTestObjectModel.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite(
+        "insert", "test_thing", "test_object", ["a_pattern_preprocessed_field"]
+    ).execute_if(dialect="sqlite"),
+)
+event.listen(
+    EntTestObjectModel.__table__,
+    "after_create",
+    CreatePatternUniqueTriggerSqlite(
+        "update", "test_thing", "test_object", ["a_pattern_preprocessed_field"]
     ).execute_if(dialect="sqlite"),
 )
 
@@ -305,6 +342,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     is_it_true: bool | None = APIField(None, examples=[False])
     optional_sub_object: "EntTestSubObjectAPIModel | None" = APIField(None)
     optional_sub_object_no_ex: "EntTestSubObjectAPIModel | None" = APIField(None)
+    preprocessed_field: str | None = APIField(None)
     secret_hash: bytes | None = APIField(None)
     self: "EntTestObjectAPIModel | None" = APIField(None)
     some_json: list[str] | None = APIField(None, examples=[["hello", "world"]])
@@ -402,6 +440,10 @@ class EntTestObjectPending(IEntTestThingPending):
 
         @property
         def validated_field(self) -> str | None:
+            pass
+
+        @property
+        def preprocessed_field(self) -> str | None:
             pass
 
         @property
@@ -585,6 +627,7 @@ class EntTestObjectMutator:
         lastname: str | None = None,
         retry_count: int | None = None,
         sadness: Status | None = None,
+        a_pattern_preprocessed_field: str | None = None,
         a_pattern_validated_field: str | None = None,
         big_number: int | None = None,
         city: str | None = None,
@@ -600,6 +643,7 @@ class EntTestObjectMutator:
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
+        preprocessed_field: str | None = None,
         secret_hash: bytes | None = None,
         self_id: UUID | None = None,
         some_json: list[str] | None = None,
@@ -629,6 +673,7 @@ class EntTestObjectMutator:
             lastname=lastname,
             retry_count=retry_count,
             sadness=sadness,
+            a_pattern_preprocessed_field=a_pattern_preprocessed_field,
             a_pattern_validated_field=a_pattern_validated_field,
             big_number=big_number,
             city=city,
@@ -644,6 +689,7 @@ class EntTestObjectMutator:
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
+            preprocessed_field=preprocessed_field,
             secret_hash=secret_hash,
             self_id=self_id,
             some_json=some_json,
@@ -696,6 +742,7 @@ class EntTestObjectMutatorCreationAction(
         lastname: str | None = None
         retry_count: int | None = None
         sadness: Status | None = None
+        a_pattern_preprocessed_field: str | None = None
         a_pattern_validated_field: str | None = None
         big_number: int | None = None
         city: str | None = None
@@ -711,6 +758,7 @@ class EntTestObjectMutatorCreationAction(
         obj5_opt_id: UUID | None = None
         optional_sub_object_id: UUID | None = None
         optional_sub_object_no_ex_id: UUID | None = None
+        preprocessed_field: str | None = None
         secret_hash: bytes | None = None
         self_id: UUID | None = None
         some_json: list[str] | None = None
@@ -746,6 +794,7 @@ class EntTestObjectMutatorUpdateAction(
         lastname: str | None = None
         retry_count: int | None = None
         sadness: Status | None = None
+        a_pattern_preprocessed_field: str | None = None
         a_pattern_validated_field: str | None = None
         big_number: int | None = None
         city: str | None = None
@@ -760,6 +809,7 @@ class EntTestObjectMutatorUpdateAction(
         obj5_opt_id: UUID | None = None
         optional_sub_object_id: UUID | None = None
         optional_sub_object_no_ex_id: UUID | None = None
+        preprocessed_field: str | None = None
         secret_hash: bytes | None = None
         self_id: UUID | None = None
         some_json: list[str] | None = None
@@ -796,6 +846,7 @@ class EntTestObjectExample:
         lastname: str | None = None,
         retry_count: int | None = None,
         sadness: Status | None = None,
+        a_pattern_preprocessed_field: str | Sentinel = NOTHING,
         a_pattern_validated_field: str | Sentinel = NOTHING,
         big_number: int | Sentinel = NOTHING,
         city: str | Sentinel = NOTHING,
@@ -811,6 +862,7 @@ class EntTestObjectExample:
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
+        preprocessed_field: str | None = None,
         secret_hash: bytes | Sentinel = NOTHING,
         self_id: UUID | None = None,
         some_json: list[str] | Sentinel = NOTHING,
@@ -867,6 +919,16 @@ class EntTestObjectExample:
         retry_count = 0 if isinstance(retry_count, Sentinel) else retry_count
 
         sadness = Status.SAD if isinstance(sadness, Sentinel) else sadness
+
+        if isinstance(a_pattern_preprocessed_field, Sentinel):
+            field = _get_field("a_pattern_preprocessed_field")
+            if not isinstance(field, FieldWithDynamicExample):
+                raise TypeError(
+                    "Internal ent error: Field {field.name} must support dynamic examples."
+                )
+            generator = field.get_example_generator()
+            if generator:
+                a_pattern_preprocessed_field = generator()
 
         a_pattern_validated_field = (
             "vdurmont"
@@ -972,6 +1034,7 @@ class EntTestObjectExample:
             lastname=lastname,
             retry_count=retry_count,
             sadness=sadness,
+            a_pattern_preprocessed_field=a_pattern_preprocessed_field,
             a_pattern_validated_field=a_pattern_validated_field,
             big_number=big_number,
             city=city,
@@ -987,6 +1050,7 @@ class EntTestObjectExample:
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
+            preprocessed_field=preprocessed_field,
             secret_hash=secret_hash,
             self_id=self_id,
             some_json=some_json,

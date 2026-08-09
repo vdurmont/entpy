@@ -17,6 +17,7 @@ from entpy import (
     EmailField,
     EnumField,
     Field,
+    FieldPreprocessor,
     FieldValidator,
     IntervalField,
     IntField,
@@ -75,6 +76,9 @@ class EntTestObjectSchema(Schema):
             BigIntField("big_number").example(9_000_000_000),
             JsonField("some_json", "list[str]").example(["hello", "world"]),
             StringField("validated_field", 100).validators([CustomValidator()]),
+            StringField("preprocessed_field", 100).preprocessors(
+                [CustomPreprocessor()]
+            ),
             BoolField("is_it_true").example(False),
             UuidField("correlation_id"),
             UuidField("trace_id").dynamic_example(lambda: uuid.uuid4()),
@@ -98,6 +102,11 @@ class EntTestObjectSchema(Schema):
                 where="EntTestObjectModel.is_it_true.is_(True)",
             ),
         ]
+
+
+class CustomPreprocessor(FieldPreprocessor[str]):
+    def preprocess(self, value: str) -> str:
+        return value.strip()
 
 
 class CustomValidator(FieldValidator[str | None]):

@@ -182,6 +182,20 @@ Fields have a set of common attributes, such as:
 - `dynamic_example(lambda: ...)`, which is a more advanced version of `example()` that enables the developer to provide a dyanamically set example. It is useful for mandatory fields that have to be unique to make sure that each example has a different value.
 - `default`, which is something that some fields support and allows you to define a default value for the field in case none is provided.
 - `unique()`, which sets a unique index on that field and generates additional functions to get an Ent from that field: `gen_from_xxxx` and `genx_from_xxxx`.
+- `validators([...])`, which rejects a value: each `FieldValidator` returns whether the value is acceptable, and a mutation raises `ValidationError` if any of them says no.
+- `preprocessors([...])`, which rewrites a value on its way in: each `FieldPreprocessor` takes the value and returns the one to keep.
+
+```python
+class LowercasePreprocessor(FieldPreprocessor[str]):
+    def preprocess(self, value: str) -> str:
+        return value.lower()
+
+StringField("handle", 100).preprocessors([LowercasePreprocessor()])
+```
+
+Preprocessors run on the values the caller supplied, at the start of the mutation: before the triggers, before the privacy check and before the validators. Everything downstream therefore sees the same normalized value, and a preprocessor cannot shape a value in a way that escapes authorization or validation. They also run on the value passed to a unique lookup (`gen_from_xxxx`), so a field can be read back with the same raw input it was written with. They are *not* applied to `query(vc).where(...)` filters, which reach SQLAlchemy verbatim.
+
+Every `StringField` and `TextField` gets one preprocessor by default, which drops NUL bytes (`\x00`) from the value. Postgres rejects those outright in a text column, so a value carrying one is a bad decode or an injection attempt rather than something the caller meant to store.
 
 Then, we have a list of field types that are provided by the framework:
 - `DatetimeField` that stores a datetime object. Note that we store all datetime with tz=UTC.

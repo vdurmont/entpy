@@ -11,9 +11,11 @@ from typing import TYPE_CHECKING
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
 from .ent_model import EntModel
+from ent_unqueryable_pattern import EntUnqueryablePattern
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
+from entpy.framework.pattern import Pattern
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
 from pydantic import Field as APIField
@@ -53,6 +55,7 @@ class IEntUnqueryable(
     EntPatternBase[ExampleViewerContext, EntUnqueryableModel], IEntUnqueryablePending
 ):
     m = EntUnqueryableModel
+    descriptor: Pattern = EntUnqueryablePattern()
 
     @classmethod
     @cache

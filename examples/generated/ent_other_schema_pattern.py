@@ -10,9 +10,11 @@ from typing import TYPE_CHECKING
 
 
 from .ent_model import EntModel
+from ent_other_schema_pattern_pattern import EntOtherSchemaPatternPattern
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
+from entpy.framework.pattern import Pattern
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -47,6 +49,7 @@ class IEntOtherSchemaPattern(
     IEntOtherSchemaPatternPending,
 ):
     m = EntOtherSchemaPatternModel
+    descriptor: Pattern = EntOtherSchemaPatternPattern()
 
     @classmethod
     @cache

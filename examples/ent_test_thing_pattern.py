@@ -47,6 +47,12 @@ class EntTestThingPattern(Pattern):
             StringField("a_pattern_validated_field", 100)
             .example("vdurmont")
             .validators([MyValidator()]),
+            # Unique so the tests can check that a lookup normalizes its value
+            # the same way a write does -- here with the NUL-byte preprocessor
+            # every StringField gets by default.
+            StringField("a_pattern_preprocessed_field", 100)
+            .unique()
+            .dynamic_example(lambda: str(uuid.uuid4())),
         ]
 
     def get_composite_indexes(self) -> list[CompositeIndex]:

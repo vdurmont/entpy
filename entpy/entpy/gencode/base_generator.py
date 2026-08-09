@@ -58,6 +58,18 @@ def generate(
     attributes = ""
     if is_schema:
         attributes = "    schema = " + base_name + "Schema()"
+    elif is_pattern:
+        # The descriptor is what a unique lookup reads the field's
+        # preprocessors from, so a pattern needs its own at runtime.
+        descriptor_class = descriptor.__class__
+        # Annotated with the base type: a pattern that extends another pattern
+        # reassigns it, and an ent implementing two patterns inherits both, so
+        # every declaration has to agree on the type.
+        attributes = f"    descriptor: Pattern = {descriptor_class.__name__}()"
+        imports.append("from entpy.framework.pattern import Pattern")
+        imports.append(
+            f"from {descriptor_class.__module__} import {descriptor_class.__name__}"
+        )
 
     for pattern in descriptor.get_patterns():
         pattern_base_name = pattern.__class__.__name__.removesuffix("Pattern")

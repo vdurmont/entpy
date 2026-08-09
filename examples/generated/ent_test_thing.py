@@ -12,10 +12,12 @@ from uuid import UUID
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
 from .ent_model import EntModel
+from ent_test_thing_pattern import EntTestThingPattern
 from ent_test_thing_pattern import ThingStatus
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
+from entpy.framework.pattern import Pattern
 from entpy.framework.query import EntPatternQuery
 from entpy.framework.types import Uuid
 from entpy.model import APIEntity
@@ -46,6 +48,9 @@ class EntTestThingModel(EntModel):
         ForeignKey("test_object5.id", deferrable=True, initially="DEFERRED"),
         nullable=False,
     )
+    a_pattern_preprocessed_field: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
     a_pattern_validated_field: Mapped[str | None] = mapped_column(
         String(100), nullable=True
     )
@@ -63,6 +68,7 @@ class EntTestThingModel(EntModel):
 class EntTestThingAPIModel(APIEntity):
     a_good_thing: str = APIField(..., examples=["A sunny day"])
     obj5: "EntTestObject5APIModel" = APIField(...)
+    a_pattern_preprocessed_field: str | None = APIField(None)
     a_pattern_validated_field: str | None = APIField(None, examples=["vdurmont"])
     idempotency_key: UUID | None = APIField(None)
     obj5_opt: "EntTestObject5APIModel | None" = APIField(None)
@@ -98,11 +104,16 @@ class IEntTestThingPending(EntPending[EntTestThingModel]):
         def a_pattern_validated_field(self) -> str | None:
             pass
 
+        @property
+        def a_pattern_preprocessed_field(self) -> str | None:
+            pass
+
 
 class IEntTestThing(
     EntPatternBase[ExampleViewerContext, EntTestThingModel], IEntTestThingPending
 ):
     m = EntTestThingModel
+    descriptor: Pattern = EntTestThingPattern()
 
     if TYPE_CHECKING:
 
@@ -110,6 +121,36 @@ class IEntTestThing(
             pass
 
         async def gen_obj5_opt(self) -> "EntTestObject5" | None:
+            pass
+
+        @classmethod
+        async def gen_from_a_pattern_preprocessed_field(
+            cls,
+            vc: ExampleViewerContext,
+            a_pattern_preprocessed_field: str,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
+        ) -> Self | None:
+            pass
+
+        @classmethod
+        async def genx_from_a_pattern_preprocessed_field(
+            cls,
+            vc: ExampleViewerContext,
+            a_pattern_preprocessed_field: str,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
+        ) -> Self:
+            pass
+
+        @classmethod
+        async def genx_or_404_from_a_pattern_preprocessed_field(
+            cls,
+            vc: ExampleViewerContext,
+            a_pattern_preprocessed_field: str,
+            for_update: bool = False,
+            include_soft_deleted: bool = False,
+        ) -> Self:
             pass
 
         @classmethod
@@ -268,6 +309,7 @@ class IEntTestThingMutatorUpdateAction(ABC):
         thing_status: ThingStatus | None
         idempotency_key: UUID | None
         a_pattern_validated_field: str | None
+        a_pattern_preprocessed_field: str | None
 
     @abstractmethod
     async def gen_savex(self) -> IEntTestThing:
@@ -300,6 +342,7 @@ class IEntTestThingExample:
         created_at: datetime | None = None,
         a_good_thing: str | Sentinel = NOTHING,
         obj5_id: UUID | Sentinel = NOTHING,
+        a_pattern_preprocessed_field: str | None = None,
         a_pattern_validated_field: str | None = None,
         idempotency_key: UUID | None = None,
         obj5_opt_id: UUID | None = None,
@@ -314,6 +357,7 @@ class IEntTestThingExample:
             created_at=created_at,
             a_good_thing=a_good_thing,
             obj5_id=obj5_id,
+            a_pattern_preprocessed_field=a_pattern_preprocessed_field,
             a_pattern_validated_field=a_pattern_validated_field,
             idempotency_key=idempotency_key,
             obj5_opt_id=obj5_opt_id,

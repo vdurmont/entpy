@@ -10,9 +10,11 @@ from typing import Self, TYPE_CHECKING
 
 
 from .ent_model import EntModel
+from ent_test_pattern_pattern import EntTestPatternPattern
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
+from entpy.framework.pattern import Pattern
 from entpy.framework.query import EntPatternQuery
 from entpy.model import APIEntity
 from evc import ExampleViewerContext
@@ -53,6 +55,7 @@ class IEntTestPattern(
     EntPatternBase[ExampleViewerContext, EntTestPatternModel], IEntTestPatternPending
 ):
     m = EntTestPatternModel
+    descriptor: Pattern = EntTestPatternPattern()
 
     if TYPE_CHECKING:
 
