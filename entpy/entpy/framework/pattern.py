@@ -22,5 +22,9 @@ class Pattern(Descriptor):
         Return `False` to skip both. The pattern still contributes its fields,
         privacy rules and mutator surface to its implementations; only the
         cross-implementation query goes away, so callers reach the ents through
-        the concrete schemas instead."""
+        the concrete schemas instead.
+
+        Reading many ents at once does not need the view: `gen_by_ids()` groups
+        the ids by the type each one carries and reads one query per
+        implementation present."""
         return True
