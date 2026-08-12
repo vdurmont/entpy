@@ -1,6 +1,8 @@
 import logging
 import struct
 from abc import abstractmethod
+from collections import defaultdict
+from collections.abc import Iterable
 from datetime import datetime
 from functools import cache, partial
 from secrets import token_bytes
@@ -481,6 +483,40 @@ class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL])
         real_ent_id = validate_ent_id(ent_id)
         ent_type = cls._get_child_type(real_ent_id.bytes[6:8])
         return await ent_type.gen(vc, ent_id, for_update, include_soft_deleted)
+
+    @classmethod
+    async def gen_by_ids(
+        cls,
+        vc: VC,
+        ent_ids: Iterable[UUID | str],
+        include_soft_deleted: bool = False,
+    ) -> dict[UUID, Self]:
+        """Load many ents of this pattern at once, keyed by id.
+
+        `gen()` resolves one id at a time, which makes serializing a list of
+        edges that point at a pattern cost a query per row. A non-queryable
+        pattern cannot fix that with `query()`, because the view those edges
+        would be selected from is exactly what it opted out of.
+
+        The id itself carries the ent type, so the ids can be grouped by
+        implementation and each group read from its own table: one query per
+        distinct type present, regardless of how many ids there are. Ids the
+        viewer cannot see, and ids that match no row, are absent from the
+        result rather than raising, so the caller decides what a miss means.
+        """
+        by_type: dict[type[Self], list[UUID]] = defaultdict(list)
+        for ent_id in ent_ids:
+            real_ent_id = validate_ent_id(ent_id)
+            by_type[cls._get_child_type(real_ent_id.bytes[6:8])].append(real_ent_id)
+
+        ents: dict[UUID, Self] = {}
+        for ent_type, ids in by_type.items():
+            query = ent_type.query(vc).where(ent_type.m.id.in_(ids))
+            if include_soft_deleted:
+                query = query.with_soft_deleted()
+            for ent in await query.gen():
+                ents[ent.id] = ent
+        return ents
 
     @classmethod
     async def _gen_from_unique(
