@@ -4,6 +4,11 @@ EntPy is a data access and privacy framework that augments SQLAlchemy, providing
 
 Its purpose and name is directly "inspired" from the framework of the same name at Meta.
 
+New to EntPy? Start with the [conceptual primer](docs/primer.md). It explains
+why the library exists and builds a mental model for schemas, generated Ents,
+patterns, viewer contexts, and ordered privacy rules before this README dives
+into the API.
+
 # IMPORTANT
 
 This is very much a work in progress. I only built the features I need for my own projects. If you need something else, definitely let me know and I'll try to send a quick PR.
@@ -362,4 +367,5 @@ uv add <path to the artifact>/entpy-<version>-py3-none-any.whl
 
 Those are things we may tackle later... maybe! Let us know if you're interested!
 
-- Adding a function to `EntXXXCountQuery` to compute the count in a privacy-aware way.
+- Make counts privacy-aware without the current raw-count fallback above the
+  privacy threshold.
