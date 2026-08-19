@@ -74,6 +74,10 @@ class IEntUnqueryable(
                 from .ent_unqueryable_child import EntUnqueryableChild
 
                 return EntUnqueryableChild
+            case b"\x5d\x2a":
+                from .ent_unqueryable_grandchild import EntUnqueryableGrandchild
+
+                return EntUnqueryableGrandchild
             case b"\x43\xdb":
                 from .ent_unqueryable_sibling import EntUnqueryableSibling
 
@@ -97,6 +101,13 @@ class IEntUnqueryableMutator:
 
             return EntUnqueryableChildMutator.update(vc, ent)
 
+        from .ent_unqueryable_grandchild import EntUnqueryableGrandchild
+
+        if isinstance(ent, EntUnqueryableGrandchild):
+            from .ent_unqueryable_grandchild import EntUnqueryableGrandchildMutator
+
+            return EntUnqueryableGrandchildMutator.update(vc, ent)
+
         from .ent_unqueryable_sibling import EntUnqueryableSibling
 
         if isinstance(ent, EntUnqueryableSibling):
@@ -118,6 +129,13 @@ class IEntUnqueryableMutator:
 
             return EntUnqueryableChildMutator.hard_delete(vc, ent)
 
+        from .ent_unqueryable_grandchild import EntUnqueryableGrandchild
+
+        if isinstance(ent, EntUnqueryableGrandchild):
+            from .ent_unqueryable_grandchild import EntUnqueryableGrandchildMutator
+
+            return EntUnqueryableGrandchildMutator.hard_delete(vc, ent)
+
         from .ent_unqueryable_sibling import EntUnqueryableSibling
 
         if isinstance(ent, EntUnqueryableSibling):
@@ -138,6 +156,13 @@ class IEntUnqueryableMutator:
             from .ent_unqueryable_child import EntUnqueryableChildMutator
 
             return EntUnqueryableChildMutator.soft_delete(vc, ent)
+
+        from .ent_unqueryable_grandchild import EntUnqueryableGrandchild
+
+        if isinstance(ent, EntUnqueryableGrandchild):
+            from .ent_unqueryable_grandchild import EntUnqueryableGrandchildMutator
+
+            return EntUnqueryableGrandchildMutator.soft_delete(vc, ent)
 
         from .ent_unqueryable_sibling import EntUnqueryableSibling
 

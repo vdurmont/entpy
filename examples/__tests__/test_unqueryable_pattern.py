@@ -17,6 +17,11 @@ from generated.ent_unqueryable_child import (
     EntUnqueryableChild,
     EntUnqueryableChildExample,
 )
+from generated.ent_unqueryable_grandchild import (
+    EntUnqueryableGrandchild,
+    EntUnqueryableGrandchildExample,
+)
+from generated.ent_unqueryable_middle import IEntUnqueryableMiddle
 from generated.ent_unqueryable_sibling import EntUnqueryableSiblingExample
 
 _GENERATED = Path(__file__).resolve().parent.parent / "generated"
@@ -53,6 +58,48 @@ def test_no_query_is_generated() -> None:
     # EntPatternBase.query() stays abstract rather than being implemented
     # against a view that does not exist.
     assert getattr(IEntUnqueryable.query, "__isabstractmethod__", False) is True
+
+
+def _query_def_line(module_name: str) -> str:
+    source = (_GENERATED / module_name).read_text()
+    (line,) = [ln for ln in source.splitlines() if "def query(" in ln]
+    return line
+
+
+def test_a_queryable_pattern_may_implement_an_unqueryable_one() -> None:
+    assert (_GENERATED / "ent_unqueryable_middle_view.py").exists()
+    assert getattr(IEntUnqueryableMiddle.query, "__isabstractmethod__", False) is False
+
+
+def test_query_over_an_abstract_parent_carries_no_override_ignore() -> None:
+    assert "type: ignore" not in _query_def_line("ent_unqueryable_middle.py")
+    assert "type: ignore[override]" in _query_def_line("ent_unqueryable_grandchild.py")
+    assert "type: ignore[override]" in _query_def_line("ent_unqueryable_child.py")
+
+
+async def test_the_middle_pattern_queries_across_its_implementations(
+    vc: ExampleViewerContext,
+) -> None:
+    grandchild = await EntUnqueryableGrandchildExample.gen_create(
+        vc, label="leaf", kind="example"
+    )
+
+    ents = await IEntUnqueryableMiddle.query(vc).gen()
+
+    assert [ent.id for ent in ents] == [grandchild.id]
+
+
+async def test_the_unqueryable_root_reaches_grandchildren(
+    vc: ExampleViewerContext,
+) -> None:
+    grandchild = await EntUnqueryableGrandchildExample.gen_create(
+        vc, label="leaf", kind="example"
+    )
+
+    fetched = await IEntUnqueryable.gen(vc, grandchild.id)
+
+    assert isinstance(fetched, EntUnqueryableGrandchild)
+    assert fetched.label == "leaf"
 
 
 def test_the_pattern_may_span_database_schemas() -> None:
