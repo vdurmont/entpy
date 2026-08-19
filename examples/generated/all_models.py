@@ -56,6 +56,9 @@ from .ent_test_sub_object import EntTestSubObject
 from .ent_test_thing_view import ent_test_thing_view  # noqa: F401
 from .ent_unqueryable_child import EntUnqueryableChildModel  # noqa: F401
 from .ent_unqueryable_child import EntUnqueryableChild
+from .ent_unqueryable_grandchild import EntUnqueryableGrandchildModel  # noqa: F401
+from .ent_unqueryable_grandchild import EntUnqueryableGrandchild
+from .ent_unqueryable_middle_view import ent_unqueryable_middle_view  # noqa: F401
 from .ent_unqueryable_sibling import EntUnqueryableSiblingModel  # noqa: F401
 from .ent_unqueryable_sibling import EntUnqueryableSibling
 from .ent_user import EntUserModel  # noqa: F401
@@ -83,6 +86,7 @@ UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x23\x1c": EntTestObject,
     b"\x16\xd7": EntTestSubObject,
     b"\x84\x30": EntUnqueryableChild,
+    b"\x5d\x2a": EntUnqueryableGrandchild,
     b"\x43\xdb": EntUnqueryableSibling,
     b"\x01\x75": EntUser,
 }

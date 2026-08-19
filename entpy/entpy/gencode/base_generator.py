@@ -101,9 +101,13 @@ def generate(
     # description of it.
     query_method = ""
     if not (isinstance(descriptor, Pattern) and not descriptor.is_queryable()):
+        needs_ignore = bool(descriptor.get_patterns()) and (
+            is_schema or _has_queryable_pattern(descriptor)
+        )
+        override_ignore = "# type: ignore[override]" if needs_ignore else ""
         query_method = f"""
     @classmethod
-    def query(  {"# type: ignore[override]" if descriptor.get_patterns() else ""}
+    def query(  {override_ignore}
         cls,
         vc: {vc.name},
     ) -> {i}{base_name}Query:
@@ -238,3 +242,10 @@ def _generate_unique_gens(
             pass
 """  # noqa: E501
     return unique_gens
+
+
+def _has_queryable_pattern(descriptor: Descriptor) -> bool:
+    return any(
+        pattern.is_queryable() or _has_queryable_pattern(pattern)
+        for pattern in descriptor.get_patterns()
+    )
