@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from entpy.framework.action import Action
 from entpy.framework.database import db
 from entpy.framework.decision import Decision
 
@@ -44,3 +45,5 @@ class PrivacyRule[VC: ViewerContext, T: Ent, P: EntPending](ABC):
 @dataclass
 class EdgeDelegate:
     edge_name: str
+    # Check a different action on the delegate, or disable certain actions.
+    actions: dict[Action, Action | None] = field(default_factory=dict)

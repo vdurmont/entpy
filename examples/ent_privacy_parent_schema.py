@@ -1,5 +1,6 @@
 from entpy import (
     Action,
+    DenyAll,
     EdgeDelegate,
     Field,
     PrivacyRule,
@@ -18,7 +19,9 @@ class EntPrivacyParentSchema(Schema):
 
     def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         # Allow TestViewerContext and OmniscientViewerContext, deny others
-        return [
-            AllowIfTestViewerContext(),
-            AllowIfOmniscientViewerContext(),
-        ]
+        if action in (Action.READ, Action.CREATE, Action.HARD_DELETE):
+            return [
+                AllowIfTestViewerContext(),
+                AllowIfOmniscientViewerContext(),
+            ]
+        return [DenyAll()]
