@@ -20,4 +20,9 @@ class EntDelegatingChildSchema(Schema):
 
     def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         # Delegate privacy evaluation to the parent
-        return [EdgeDelegate(edge_name="privacy_parent")]
+        return [
+            EdgeDelegate(
+                edge_name="privacy_parent",
+                actions={Action.UPDATE: Action.CREATE, Action.HARD_DELETE: None},
+            )
+        ]

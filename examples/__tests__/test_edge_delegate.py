@@ -1,3 +1,5 @@
+import pytest
+from entpy import PrivacyError
 from evc import (
     ExampleOmniscientViewerContext,
     ExampleTestViewerContext,
@@ -5,6 +7,7 @@ from evc import (
 )
 from generated.ent_delegating_child import (
     EntDelegatingChild,
+    EntDelegatingChildMutator,
     EntDelegatingChildExample,
 )
 from generated.ent_delegating_grandchild import (
@@ -81,6 +84,37 @@ async def test_basic_edge_delegation_denies_regular_viewer_context() -> None:
     regular_vc = ExampleViewerContext()
     fetched_child = await EntDelegatingChild.gen(regular_vc, child.id)
     assert fetched_child is None  # Access should be denied
+
+
+async def test_action_translation() -> None:
+    vc = ExampleOmniscientViewerContext()
+
+    parent = await EntPrivacyParentExample.gen_create(vc, name="Parent 1")
+    child = await EntDelegatingChildExample.gen_create(
+        vc, privacy_parent_id=parent.id, name="Child 1"
+    )
+
+    # The parent policy does not allow UPDATE, but the EdgeDelegate should
+    # translate the UPDATE check into a CREATE check on the parent.
+    mut = EntDelegatingChildMutator.update(vc, child)
+    mut.name = "Updated Child"
+    updated_child = await mut.gen_savex()
+    assert updated_child is not None
+    assert updated_child.name == "Updated Child"
+
+
+async def test_action_disabling() -> None:
+    vc = ExampleOmniscientViewerContext()
+
+    parent = await EntPrivacyParentExample.gen_create(vc, name="Parent 1")
+    child = await EntDelegatingChildExample.gen_create(
+        vc, privacy_parent_id=parent.id, name="Child 1"
+    )
+
+    # The parent policy allows HARD_DELETE, but the EdgeDelegate disables
+    # this and so this should fail.
+    with pytest.raises(PrivacyError):
+        await EntDelegatingChildMutator.hard_delete(vc, child).gen_save()
 
 
 # ==============================================================================

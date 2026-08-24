@@ -409,18 +409,21 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
                     )
             elif isinstance(item, EdgeDelegate):
                 edge_type = self._get_edge_type(item.edge_name)[0]
+                edge_action = item.actions.get(action, action)
+                if edge_action is None:
+                    continue
                 delegate = await edge_type._genx_no_privacy_DO_NOT_USE(
                     vc, getattr(self, f"{item.edge_name}_id")
                 )
                 # pending_ent is not forwarded: it belongs to the child ent, not the delegate
                 decision = await delegate.gen_evaluate_privacy(
-                    vc, action, pending_ent=None, default_to_deny=False
+                    vc, edge_action, pending_ent=None, default_to_deny=False
                 )
                 if decision == Decision.DENY and log_on_deny:
                     privacy_logger.debug(
                         "Delegate %s denied %s of %s %s for %s",
                         item.edge_name,
-                        action.value,
+                        edge_action.value,
                         self.__class__.__name__,
                         self.id,
                         vc,
