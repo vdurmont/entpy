@@ -115,6 +115,7 @@ class EntTestObjectModel(EntTestThingModel):
     end_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
     image: Mapped[bytes | None] = mapped_column("image", LargeBinary(), nullable=True)
     is_it_true: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
+    large_text: Mapped[str | None] = mapped_column(Text(), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
         Uuid(),
         ForeignKey("test_sub_object.id", deferrable=True, initially="DEFERRED"),
@@ -357,6 +358,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
         None, examples=[bytes.fromhex("5035203120310a310a00")]
     )
     is_it_true: bool | None = APIField(None, examples=[False])
+    large_text: str | None = APIField(None)
     optional_sub_object: "EntTestSubObjectAPIModel | None" = APIField(None)
     optional_sub_object_no_ex: "EntTestSubObjectAPIModel | None" = APIField(None)
     preprocessed_field: str | None = APIField(None)
@@ -425,6 +427,10 @@ class EntTestObjectPending(IEntTestThingPending):
 
         @property
         def context(self) -> str | None:
+            pass
+
+        @property
+        def large_text(self) -> str | None:
             pass
 
         @property
@@ -662,6 +668,7 @@ class EntTestObjectMutator:
         idempotency_key: UUID | None = None,
         image: bytes | None = None,
         is_it_true: bool | None = None,
+        large_text: str | None = None,
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
@@ -709,6 +716,7 @@ class EntTestObjectMutator:
             idempotency_key=idempotency_key,
             image=image,
             is_it_true=is_it_true,
+            large_text=large_text,
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
@@ -779,6 +787,7 @@ class EntTestObjectMutatorCreationAction(
         idempotency_key: UUID | None = None
         image: bytes | None = None
         is_it_true: bool | None = None
+        large_text: str | None = None
         obj5_opt_id: UUID | None = None
         optional_sub_object_id: UUID | None = None
         optional_sub_object_no_ex_id: UUID | None = None
@@ -831,6 +840,7 @@ class EntTestObjectMutatorUpdateAction(
         idempotency_key: UUID | None = None
         image: bytes | None = None
         is_it_true: bool | None = None
+        large_text: str | None = None
         obj5_opt_id: UUID | None = None
         optional_sub_object_id: UUID | None = None
         optional_sub_object_no_ex_id: UUID | None = None
@@ -885,6 +895,7 @@ class EntTestObjectExample:
         idempotency_key: UUID | Sentinel = NOTHING,
         image: bytes | Sentinel = NOTHING,
         is_it_true: bool | Sentinel = NOTHING,
+        large_text: str | None = None,
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
@@ -1084,6 +1095,7 @@ class EntTestObjectExample:
             idempotency_key=idempotency_key,
             image=image,
             is_it_true=is_it_true,
+            large_text=large_text,
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,

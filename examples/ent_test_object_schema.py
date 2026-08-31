@@ -66,6 +66,7 @@ class EntTestObjectSchema(Schema):
             EdgeField("optional_sub_object", EntTestSubObjectSchema),
             EdgeField("optional_sub_object_no_ex", EntTestSubObjectSchema).no_example(),
             TextField("context").example("This is some good context.").immutable(),
+            StringField("large_text", 16 * 1024 * 1024).example(""),
             EnumField("status", Status).example(Status.HAPPY),
             EnumField("sadness", Status).default(Status.SAD),
             DatetimeField("when_is_it_cool").dynamic_example(

@@ -85,12 +85,14 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             types_imports.append("from sqlalchemy.dialects.postgresql import JSONB")
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f'mapped_column(JSON().with_variant(JSONB(), "postgresql"){common_column_attributes})\n'
-        elif isinstance(field, StringField):
+        elif isinstance(field, StringField) and field.length <= 10 * 1024 * 1024:
             types_imports.append("from sqlalchemy import String")
             attributes = ", collation='nocase'" if not field.case_sensitive else ""
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(String({field.length}{attributes}){common_column_attributes})\n"
-        elif isinstance(field, TextField):
+        elif isinstance(field, TextField) or (
+            isinstance(field, StringField) and field.length > 10 * 1024 * 1024
+        ):
             types_imports.append("from sqlalchemy import Text")
             attributes = ", collation='nocase'" if not field.case_sensitive else ""
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
