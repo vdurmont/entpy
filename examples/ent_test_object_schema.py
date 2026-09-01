@@ -76,6 +76,9 @@ class EntTestObjectSchema(Schema):
             IntField("retry_count").default(0),
             BigIntField("big_number").example(9_000_000_000),
             JsonField("some_json", "list[str]").example(["hello", "world"]),
+            JsonField("limited_json", "list[str]", length=100).example(
+                ["hello", "world"]
+            ),
             StringField("validated_field", 100).validators([CustomValidator()]),
             StringField("preprocessed_field", 100).preprocessors(
                 [CustomPreprocessor()]

@@ -37,6 +37,7 @@ from entpy.framework.triggers import (
     CreatePatternUniqueTriggerPostgres,
     CreatePatternUniqueTriggerSqlite,
 )
+from entpy.framework.types import JSON
 from entpy.framework.types import Uuid
 from entpy.types import DateTime
 from functools import cache
@@ -52,13 +53,11 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Index, text
 from sqlalchemy import Integer
 from sqlalchemy import Interval
-from sqlalchemy import JSON
 from sqlalchemy import LargeBinary
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import Time
 from sqlalchemy import event
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from typing import TYPE_CHECKING
@@ -116,6 +115,7 @@ class EntTestObjectModel(EntTestThingModel):
     image: Mapped[bytes | None] = mapped_column("image", LargeBinary(), nullable=True)
     is_it_true: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
     large_text: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    limited_json: Mapped[list[str] | None] = mapped_column(JSON(100), nullable=True)
     optional_sub_object_id: Mapped[UUID | None] = mapped_column(
         Uuid(),
         ForeignKey("test_sub_object.id", deferrable=True, initially="DEFERRED"),
@@ -135,9 +135,7 @@ class EntTestObjectModel(EntTestThingModel):
         ForeignKey("test_object.id", deferrable=True, initially="DEFERRED"),
         nullable=True,
     )
-    some_json: Mapped[list[str] | None] = mapped_column(
-        JSON().with_variant(JSONB(), "postgresql"), nullable=True
-    )
+    some_json: Mapped[list[str] | None] = mapped_column(JSON(), nullable=True)
     some_pattern_id: Mapped[UUID | None] = mapped_column(Uuid(), nullable=True)
     start_time: Mapped[time | None] = mapped_column(Time(), nullable=True)
     status: Mapped[Status | None] = mapped_column(
@@ -359,6 +357,7 @@ class EntTestObjectAPIModel(EntTestThingAPIModel):
     )
     is_it_true: bool | None = APIField(None, examples=[False])
     large_text: str | None = APIField(None)
+    limited_json: list[str] | None = APIField(None, examples=[["hello", "world"]])
     optional_sub_object: "EntTestSubObjectAPIModel | None" = APIField(None)
     optional_sub_object_no_ex: "EntTestSubObjectAPIModel | None" = APIField(None)
     preprocessed_field: str | None = APIField(None)
@@ -459,6 +458,10 @@ class EntTestObjectPending(IEntTestThingPending):
 
         @property
         def some_json(self) -> list[str] | None:
+            pass
+
+        @property
+        def limited_json(self) -> list[str] | None:
             pass
 
         @property
@@ -669,6 +672,7 @@ class EntTestObjectMutator:
         image: bytes | None = None,
         is_it_true: bool | None = None,
         large_text: str | None = None,
+        limited_json: list[str] | None = None,
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
@@ -717,6 +721,7 @@ class EntTestObjectMutator:
             image=image,
             is_it_true=is_it_true,
             large_text=large_text,
+            limited_json=limited_json,
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
@@ -788,6 +793,7 @@ class EntTestObjectMutatorCreationAction(
         image: bytes | None = None
         is_it_true: bool | None = None
         large_text: str | None = None
+        limited_json: list[str] | None = None
         obj5_opt_id: UUID | None = None
         optional_sub_object_id: UUID | None = None
         optional_sub_object_no_ex_id: UUID | None = None
@@ -841,6 +847,7 @@ class EntTestObjectMutatorUpdateAction(
         image: bytes | None = None
         is_it_true: bool | None = None
         large_text: str | None = None
+        limited_json: list[str] | None = None
         obj5_opt_id: UUID | None = None
         optional_sub_object_id: UUID | None = None
         optional_sub_object_no_ex_id: UUID | None = None
@@ -896,6 +903,7 @@ class EntTestObjectExample:
         image: bytes | Sentinel = NOTHING,
         is_it_true: bool | Sentinel = NOTHING,
         large_text: str | None = None,
+        limited_json: list[str] | Sentinel = NOTHING,
         obj5_opt_id: UUID | None = None,
         optional_sub_object_id: UUID | None = None,
         optional_sub_object_no_ex_id: UUID | None = None,
@@ -1027,6 +1035,10 @@ class EntTestObjectExample:
 
         is_it_true = False if isinstance(is_it_true, Sentinel) else is_it_true
 
+        limited_json = (
+            ["hello", "world"] if isinstance(limited_json, Sentinel) else limited_json
+        )
+
         if isinstance(secret_hash, Sentinel):
             field = _get_field("secret_hash")
             if not isinstance(field, FieldWithDynamicExample):
@@ -1096,6 +1108,7 @@ class EntTestObjectExample:
             image=image,
             is_it_true=is_it_true,
             large_text=large_text,
+            limited_json=limited_json,
             obj5_opt_id=obj5_opt_id,
             optional_sub_object_id=optional_sub_object_id,
             optional_sub_object_no_ex_id=optional_sub_object_no_ex_id,
