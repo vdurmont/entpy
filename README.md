@@ -9,6 +9,10 @@ why the library exists and builds a mental model for schemas, generated Ents,
 patterns, viewer contexts, and ordered privacy rules before this README dives
 into the API.
 
+Working with an AI coding agent? A condensed Agent Skill distilling this mental
+model and the dev workflow lives at
+[`.claude/skills/entpy/SKILL.md`](.claude/skills/entpy/SKILL.md).
+
 # IMPORTANT
 
 This is very much a work in progress. I only built the features I need for my own projects. If you need something else, definitely let me know and I'll try to send a quick PR.
