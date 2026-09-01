@@ -15,9 +15,12 @@ class JsonField(
     FieldWithExample[Any],
     FieldWithDynamicExample[Any],
 ):
-    def __init__(self, name: str, expected_python_type: str) -> None:
+    def __init__(
+        self, name: str, expected_python_type: str, length: int | None = None
+    ) -> None:
         super().__init__(name)
         self.expected_python_type = expected_python_type
+        self.length = length
 
     def get_python_type(self) -> str:
         return self.expected_python_type

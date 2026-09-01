@@ -81,10 +81,10 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
             fields_code += f"mapped_column(Integer(){common_column_attributes})\n"
         elif isinstance(field, JsonField):
-            types_imports.append("from sqlalchemy import JSON")
-            types_imports.append("from sqlalchemy.dialects.postgresql import JSONB")
+            types_imports.append("from entpy.framework.types import JSON")
+            length = field.length if field.length is not None else ""
             fields_code += f"    {field.name}: Mapped[{mapped_type}] = "
-            fields_code += f'mapped_column(JSON().with_variant(JSONB(), "postgresql"){common_column_attributes})\n'
+            fields_code += f"mapped_column(JSON({length}){common_column_attributes})\n"
         elif isinstance(field, StringField) and field.length <= 10 * 1024 * 1024:
             types_imports.append("from sqlalchemy import String")
             attributes = ", collation='nocase'" if not field.case_sensitive else ""
