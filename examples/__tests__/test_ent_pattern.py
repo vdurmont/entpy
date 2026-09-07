@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy.exc import IntegrityError
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import Conflict, NotFound
 
 from ent_test_thing_pattern import ThingStatus
 from evc import ExampleViewerContext
@@ -240,6 +240,28 @@ async def test_unique_across_schemas_update(vc: ExampleViewerContext) -> None:
     mutator.idempotency_key = object1.idempotency_key
     with pytest.raises(IntegrityError):
         await mutator.gen_savex()
+
+
+# Unique constraints across schemas are enforced by a trigger rather than an
+# index, which is reported differently by each dialect.
+async def test_unique_across_schemas_insert_conflict(vc: ExampleViewerContext) -> None:
+    object1 = await EntTestObjectExample.gen_create(vc=vc)
+    with pytest.raises(Conflict):
+        await EntTestObject2Mutator.create(
+            vc=vc,
+            a_good_thing="Eating cheese",
+            obj5_id=(await EntTestObject5Example.gen_create(vc)).id,
+            idempotency_key=object1.idempotency_key,
+        ).gen_savex_or_403()
+
+
+async def test_unique_across_schemas_update_conflict(vc: ExampleViewerContext) -> None:
+    object1 = await EntTestObjectExample.gen_create(vc=vc)
+    object2 = await EntTestObject2Example.gen_create(vc=vc)
+    mutator = EntTestObject2Mutator.update(vc, object2)
+    mutator.idempotency_key = object1.idempotency_key
+    with pytest.raises(Conflict):
+        await mutator.gen_savex_or_403()
 
 
 async def test_pattern_multiple_inheritance(vc: ExampleViewerContext) -> None:
