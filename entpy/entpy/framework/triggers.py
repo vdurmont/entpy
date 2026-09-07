@@ -15,7 +15,8 @@ def gen_postgresql_function(
         BEGIN
             PERFORM 1 FROM {quote(pattern)} WHERE {where_clause} AND id != NEW.id AND soft_deleted_at IS NULL;
             IF FOUND THEN
-                RAISE EXCEPTION 'duplicate key value violates unique constraint "unique_{pattern}_{"_".join(columns)}"';
+                RAISE EXCEPTION 'duplicate key value violates unique constraint "unique_{pattern}_{"_".join(columns)}"'
+                    USING ERRCODE = 'unique_violation';
             END IF;
             RETURN NULL;
         END;

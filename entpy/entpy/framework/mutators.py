@@ -4,7 +4,8 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import UUID
 
-from werkzeug.exceptions import BadRequest, Forbidden
+from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import BadRequest, Conflict, Forbidden
 
 from entpy.framework.action import Action
 from entpy.framework.database import db
@@ -120,6 +121,10 @@ class EntMutatorCreationAction[
             raise Forbidden from e
         except ValidationError as e:
             raise BadRequest(str(e)) from e
+        except IntegrityError as e:
+            if is_unique_violation(e):
+                raise Conflict from e
+            raise
 
 
 class EntMutatorUpdateAction[
@@ -195,6 +200,10 @@ class EntMutatorUpdateAction[
             raise Forbidden from e
         except ValidationError as e:
             raise BadRequest(str(e)) from e
+        except IntegrityError as e:
+            if is_unique_violation(e):
+                raise Conflict from e
+            raise
 
 
 class EntMutatorDeletionAction[
@@ -243,3 +252,16 @@ class EntMutatorDeletionAction[
             await self.gen_save()
         except PrivacyError as e:
             raise Forbidden from e
+
+
+def is_unique_violation(e: IntegrityError) -> bool:
+    sqlstate = getattr(e.orig, "sqlstate", None) or getattr(e.orig, "pgcode", None)
+    if sqlstate is not None:
+        return bool(sqlstate == "23505")  # UNIQUE_VIOLATION
+
+    sqlite_errorcode = getattr(e.orig, "sqlite_errorcode", None)
+    return sqlite_errorcode in (
+        1555,  # SQLITE_CONSTRAINT_PRIMARYKEY
+        2067,  # SQLITE_CONSTRAINT_UNIQUE
+        1811,  # SQLITE_CONSTRAINT_TRIGGER
+    )

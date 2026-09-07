@@ -2,7 +2,8 @@ import uuid
 
 import pytest
 from entpy import ValidationError
-from werkzeug.exceptions import Forbidden
+from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import Conflict, Forbidden
 from evc import ExampleViewerContext, ExampleTestViewerContext
 from generated.ent_test_object import (
     EntTestObject,
@@ -52,6 +53,35 @@ async def test_creation_or_403_forbidden(vc: ExampleViewerContext) -> None:
         await EntSingleRuleMutator.create(vc, name="Test Entity 2").gen_savex_or_403()
 
 
+async def test_creation_or_403_conflict(vc: ExampleViewerContext) -> None:
+    existing = await EntTestObjectExample.gen_create(vc=vc)
+
+    with pytest.raises(Conflict):
+        await EntTestObjectMutator.create(
+            vc=vc,
+            a_good_thing="Eating cheese",
+            username=existing.username,
+            firstname="Vincent",
+            required_sub_object_id=uuid.uuid4(),
+            obj5_id=(await EntTestObject5Example.gen_create(vc)).id,
+        ).gen_savex_or_403()
+
+
+async def test_creation_or_403_other_integrity_error(
+    vc: ExampleViewerContext,
+) -> None:
+    # username is NOT NULL, and only unique violations become a Conflict.
+    with pytest.raises(IntegrityError):
+        await EntTestObjectMutator.create(
+            vc=vc,
+            a_good_thing="Eating cheese",
+            username=None,  # type: ignore[arg-type]
+            firstname="Vincent",
+            required_sub_object_id=uuid.uuid4(),
+            obj5_id=(await EntTestObject5Example.gen_create(vc)).id,
+        ).gen_savex_or_403()
+
+
 async def test_update(vc: ExampleViewerContext) -> None:
     name = "Chris"
 
@@ -84,6 +114,16 @@ async def test_update_or_403_forbidden(vc: ExampleViewerContext) -> None:
     ent = await EntSingleRuleExample.gen_create(vc=ExampleTestViewerContext())
     mut = EntSingleRuleMutator.update(vc, ent)
     with pytest.raises(Forbidden):
+        await mut.gen_savex_or_403()
+
+
+async def test_update_or_403_conflict(vc: ExampleViewerContext) -> None:
+    existing = await EntTestObjectExample.gen_create(vc=vc)
+    ent = await EntTestObjectExample.gen_create(vc=vc)
+
+    mut = EntTestObjectMutator.update(vc, ent)
+    mut.username = existing.username
+    with pytest.raises(Conflict):
         await mut.gen_savex_or_403()
 
 
