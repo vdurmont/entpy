@@ -181,7 +181,9 @@ class EntObjectQuery[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMixin
 
     async def _gen_ents(self, rows: list[ENTMODEL]) -> list[ENT | None]:
         return [
-            await self.ent_type._gen_from_model(self.vc, model)  # noqa: SLF001
+            await self.ent_type._gen_from_model(  # noqa: SLF001
+                self.vc, model, self.include_soft_deleted
+            )
             for model in rows
         ]
 
@@ -191,7 +193,9 @@ class EntObjectQuery[VC: ViewerContext, ENT: EntObjectBase, ENTMODEL: ModelMixin
                 "Multiple rows were found when one or none was required"
             )
         if rows:
-            return await self.ent_type._gen_from_model(self.vc, rows[0])  # noqa: SLF001
+            return await self.ent_type._gen_from_model(  # noqa: SLF001
+                self.vc, rows[0], self.include_soft_deleted
+            )
         return None
 
 
@@ -218,12 +222,10 @@ class EntPatternQuery[
         all_ents = {}
         for uuid_type, ids in ids_by_type.items():
             ent_type = self.ent_type._get_child_type(uuid_type)
-            for ent in (
-                await ent_type.query(self.vc)
-                .where(ent_type.m.id.in_(ids))
-                .limit(None)
-                .gen()
-            ):
+            query = ent_type.query(self.vc).where(ent_type.m.id.in_(ids)).limit(None)
+            if self.include_soft_deleted:
+                query = query.with_soft_deleted()
+            for ent in await query.gen():
                 all_ents[ent.id] = ent
 
         return [all_ents[ent_id] for ent_id in rows if ent_id in all_ents]
@@ -235,5 +237,7 @@ class EntPatternQuery[
             )
         if rows:
             ent_type = self.ent_type._get_child_type(rows[0].bytes[6:8])
-            return await ent_type.gen(self.vc, rows[0])
+            return await ent_type.gen(
+                self.vc, rows[0], include_soft_deleted=self.include_soft_deleted
+            )
         return None

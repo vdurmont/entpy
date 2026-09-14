@@ -125,6 +125,7 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
     EntPending[ENTMODEL], metaclass=EntMeta
 ):
     vc: VC
+    include_soft_deleted: bool
 
     if not TYPE_CHECKING:
 
@@ -133,9 +134,12 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
                 return partial(self._gen_edge, name[4:])
             return super().__getattr__(name)
 
-    def __init__(self, vc: VC, model: ENTMODEL) -> None:
+    def __init__(
+        self, vc: VC, model: ENTMODEL, include_soft_deleted: bool = False
+    ) -> None:
         super().__init__(model)
         self.vc = vc
+        self.include_soft_deleted = include_soft_deleted
 
     @classmethod
     @abstractmethod
@@ -289,9 +293,13 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
         edge_id = getattr(self.model, f"{edge_name}_id")
         ent_type, nullable = self._get_edge_type(edge_name)
         if not nullable:
-            return await ent_type.genx(self.vc, edge_id)
+            return await ent_type.genx(
+                self.vc, edge_id, include_soft_deleted=self.include_soft_deleted
+            )
         elif edge_id:
-            return await ent_type.gen(self.vc, edge_id)
+            return await ent_type.gen(
+                self.vc, edge_id, include_soft_deleted=self.include_soft_deleted
+            )
         else:
             return None
 
@@ -319,7 +327,7 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         if not model or (not include_soft_deleted and model.soft_deleted_at):
             return None
         db.session.info.setdefault("models", set()).add(model)
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
+        return await cls._gen_from_model(vc, model, include_soft_deleted)  # noqa: SLF001
 
     @classmethod
     async def _gen_no_privacy_DO_NOT_USE(  # noqa: N802
@@ -335,16 +343,22 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         return cls(vc=vc, model=model)
 
     @classmethod
-    async def _gen_from_model(cls, vc: VC, model: ENTMODEL | None) -> Self | None:
+    async def _gen_from_model(
+        cls, vc: VC, model: ENTMODEL | None, include_soft_deleted: bool = False
+    ) -> Self | None:
         if not model:
             return None
-        ent = cls(vc=vc, model=model)
+        ent = cls(vc=vc, model=model, include_soft_deleted=include_soft_deleted)
         decision = await ent.gen_evaluate_privacy(vc=vc, action=Action.READ)
         return ent if decision == Decision.ALLOW else None
 
     @classmethod
-    async def _genx_from_model(cls, vc: VC, model: ENTMODEL) -> Self:
-        ent = await cls._gen_from_model(vc=vc, model=model)
+    async def _genx_from_model(
+        cls, vc: VC, model: ENTMODEL, include_soft_deleted: bool = False
+    ) -> Self:
+        ent = await cls._gen_from_model(
+            vc=vc, model=model, include_soft_deleted=include_soft_deleted
+        )
         if not ent:
             raise EntNotFoundError(f"No {cls.__name__} found for ID {model.id}")
         return ent
@@ -359,10 +373,13 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         include_soft_deleted: bool = False,
     ) -> Self | None:
         value = cls._preprocess_unique_value(name, value)
+        # include_soft_deleted is part of the key: the two flags select from
+        # different row sets, so a hit from one would answer the other wrongly.
+        cache_key = (cls, name, value, include_soft_deleted)
         if not for_update and (
-            cached := db.session.info.get("unique", {}).get((cls, name, value))
+            cached := db.session.info.get("unique", {}).get(cache_key)
         ):
-            return await cls._gen_from_model(vc, cached)
+            return await cls._gen_from_model(vc, cached, include_soft_deleted)
 
         query = select(cls.m).where(getattr(cls.m, name) == value)
         if for_update:
@@ -373,8 +390,8 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
             result = await db.session.execute(query)
         model = result.scalar_one_or_none()
         db.session.info.setdefault("models", set()).add(model)
-        db.session.info.setdefault("unique", {})[(cls, name, value)] = model
-        return await cls._gen_from_model(vc, model)  # noqa: SLF001
+        db.session.info.setdefault("unique", {})[cache_key] = model
+        return await cls._gen_from_model(vc, model, include_soft_deleted)  # noqa: SLF001
 
     @classmethod
     @abstractmethod
