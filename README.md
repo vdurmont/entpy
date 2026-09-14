@@ -79,6 +79,28 @@ optional_ent = await EntMyObject.gen(vc, ent_id)
 ent = await EntMyObject.genx(vc, ent_id)
 ```
 
+### Reading soft-deleted Ents
+
+Reads skip soft-deleted rows. Pass `include_soft_deleted=True` to keep them:
+
+```python
+ent = await EntMyObject.genx(vc, ent_id, include_soft_deleted=True)
+```
+
+An Ent remembers the flag it was loaded with and passes it to every edge it
+fetches, so the whole traversal reachable from it sees soft-deleted rows too:
+
+```python
+# Both hops resolve even if the parent and the grand parent are soft deleted.
+grand_parent = await (await ent.gen_parent()).gen_grand_parent()
+```
+
+`query(vc).with_soft_deleted()` marks the Ents it returns the same way.
+
+The flag only widens the rows a read considers; privacy still decides what is
+returned. An application that prepends `DenyIfSoftDeleted` to its read rules
+keeps denying these reads for viewers that rule applies to.
+
 ## Querying Ents
 
 If you want to perform a more complex query to find one or more Ents, you can use the query API:
