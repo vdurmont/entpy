@@ -98,7 +98,6 @@ class EntMutatorCreationAction[
                 self.model = await trigger.gen_on_create(self.vc, self.model)
 
         self._validate()
-        db.session.add(self.model)
         ent = self.ent_type(vc=self.vc, model=self.model)
         pending_ent = self.pending_type(model=self.model)
         decision = await ent.gen_evaluate_privacy(
@@ -108,6 +107,8 @@ class EntMutatorCreationAction[
             raise PrivacyError(
                 f"Current viewer context {self.vc} is not authorized to CREATE {self.ent_type.__name__} with ID {ent.id}"
             )
+
+        db.session.add(self.model)
         await db.session.flush()
         self.record_events()
         db.session.info.get("query", {}).clear()
@@ -237,6 +238,7 @@ class EntMutatorDeletionAction[
             raise PrivacyError(
                 f"Current viewer context {self.vc} is not authorized to {action.value} {self.ent_type.__name__} with ID {self.ent.id}"
             )
+
         if self.is_soft_delete:
             model.soft_deleted_at = datetime.now(tz=UTC)
             model.updated_at = datetime.now(tz=UTC)
