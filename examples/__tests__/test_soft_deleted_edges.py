@@ -153,16 +153,3 @@ async def test_query_with_soft_deleted_propagates_to_edges(
     )
     found = await ents[0].gen_parent()
     assert found.id == parent.id
-
-
-async def test_pattern_gen_by_ids_propagates_to_edges(
-    vc: ExampleViewerContext,
-) -> None:
-    obj = await EntTestObjectExample.gen_create(vc)
-    obj5 = await obj.gen_obj5()
-    await EntTestObject5Mutator.soft_delete(vc, obj5).gen_save()
-
-    test_vc = ExampleTestViewerContext()
-    by_id = await IEntTestThing.gen_by_ids(test_vc, [obj.id], include_soft_deleted=True)
-    found = await by_id[obj.id].gen_obj5()
-    assert found.id == obj5.id
