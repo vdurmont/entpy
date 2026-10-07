@@ -6,7 +6,7 @@ from sqlalchemy import (
     literal_column,
     select,
     union_all,
-    Selectable,
+    CompoundSelect,
 )
 from entpy.framework.view import create_view
 from .ent_test_object import EntTestObjectModel
@@ -16,7 +16,7 @@ from .ent_test_thing import EntTestThingModel
 from database import Base
 
 
-view_query: Selectable = union_all(
+view_query: CompoundSelect = union_all(
     select(
         literal_column("'EntTestObject2Model'").label("ent_type"),
         EntTestObject2Model.id,

@@ -6,16 +6,25 @@ from sqlalchemy import (
     literal_column,
     select,
     union_all,
-    Selectable,
+    CompoundSelect,
 )
-from entpy.framework.view import create_view
 from .ent_inherited_test import EntInheritedTestModel
+from .ent_inherited_test2 import EntInheritedTest2Model
 from .ent_inherited_test_middle import EntInheritedTestMiddleModel
 
 from database import Base
 
 
-view_query: Selectable = union_all(
+view_query: CompoundSelect = union_all(
+    select(
+        literal_column("'EntInheritedTest2Model'").label("ent_type"),
+        EntInheritedTest2Model.id,
+        EntInheritedTest2Model.created_at,
+        EntInheritedTest2Model.updated_at,
+        EntInheritedTest2Model.soft_deleted_at,
+        EntInheritedTest2Model.base_field,
+        EntInheritedTest2Model.middle_field,
+    ),
     select(
         literal_column("'EntInheritedTestModel'").label("ent_type"),
         EntInheritedTestModel.id,
@@ -27,12 +36,7 @@ view_query: Selectable = union_all(
     ),
 )
 
-ent_inherited_test_middle_view = create_view(
-    "inherited_test_middle",
-    view_query,
-    metadata=Base.metadata,
-    schema=None,
-)
+ent_inherited_test_middle_view = view_query.subquery("inherited_test_middle")
 Base.registry.map_imperatively(
     EntInheritedTestMiddleModel, ent_inherited_test_middle_view
 )

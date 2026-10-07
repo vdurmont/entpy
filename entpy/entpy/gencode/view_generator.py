@@ -61,6 +61,21 @@ def generate(
     for field in pattern.get_all_fields():
         column_accessors += f"\n    {field.name} = __table__.c.{field.name}"
 
+    table_schemas = {schema.get_table_schema() for schema in schemas}
+    if len(table_schemas) > 1:
+        table = f"""{to_snake_case(base_name)}_view = view_query.subquery("{pattern_class.get_table_name()}")"""
+    else:
+        if next(iter(table_schemas)) != pattern_class.get_table_schema():
+            raise ValueError(
+                f"Pattern {pattern_class.__class__.__name__} has a different table schema than its schemas"
+            )
+        table = f"""{to_snake_case(base_name)}_view = create_view(
+    "{pattern_class.get_table_name()}",
+    view_query,
+    metadata=Base.metadata,
+    schema={repr(pattern_class.get_table_schema())},
+)"""
+
     return f"""
 from sqlalchemy import (
     DDL,
@@ -70,7 +85,7 @@ from sqlalchemy import (
     literal_column,
     select,
     union_all,
-    Selectable,
+    CompoundSelect,
 )
 from entpy.framework.view import create_view
 {imports_code}
@@ -78,16 +93,11 @@ from entpy.framework.view import create_view
 {base_import}
 
 
-view_query: Selectable = union_all(
+view_query: CompoundSelect = union_all(
 {selects}
 )
 
-{to_snake_case(base_name)}_view = create_view(
-    "{pattern_class.get_table_name()}",
-    view_query,
-    metadata=Base.metadata,
-    schema={repr(pattern_class.get_table_schema())},
-)
+{table}
 Base.registry.map_imperatively({base_name}Model, {to_snake_case(base_name)}_view)
 """  # noqa: E501
 
