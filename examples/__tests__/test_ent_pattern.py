@@ -6,7 +6,7 @@ from werkzeug.exceptions import Conflict, NotFound
 
 from ent_test_thing_pattern import ThingStatus
 from evc import ExampleViewerContext
-from generated.ent_inherited_test import EntInheritedTestExample
+from generated.ent_inherited_test import EntInheritedTestExample, EntInheritedTest
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
@@ -21,6 +21,7 @@ from generated.ent_test_thing import (
     IEntTestThing,
     IEntTestThingMutator,
 )
+from generated.ent_inherited_test_top import IEntInheritedTestTop
 
 
 async def test_gen_from_pattern(vc: ExampleViewerContext) -> None:
@@ -267,3 +268,12 @@ async def test_unique_across_schemas_update_conflict(vc: ExampleViewerContext) -
 async def test_pattern_multiple_inheritance(vc: ExampleViewerContext) -> None:
     example = await EntInheritedTestExample.gen_create(vc)
     assert example is not None
+
+
+async def test_gen_from_cross_schema_pattern(vc: ExampleViewerContext) -> None:
+    ent = await EntInheritedTestExample.gen_create(vc)
+
+    result = await IEntInheritedTestTop.gen(vc, ent.id)
+
+    assert result is not None, "gen should not return None for a valid ID"
+    assert isinstance(result, EntInheritedTest), "we should get the right type"

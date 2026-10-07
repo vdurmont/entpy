@@ -23,6 +23,8 @@ from .ent_grand_parent import EntGrandParentModel  # noqa: F401
 from .ent_grand_parent import EntGrandParent
 from .ent_guarded import EntGuardedModel  # noqa: F401
 from .ent_guarded import EntGuarded
+from .ent_inherited_test2 import EntInheritedTest2Model  # noqa: F401
+from .ent_inherited_test2 import EntInheritedTest2
 from .ent_inherited_test_middle_view import ent_inherited_test_middle_view  # noqa: F401
 from .ent_inherited_test import EntInheritedTestModel  # noqa: F401
 from .ent_inherited_test import EntInheritedTest
@@ -65,6 +67,7 @@ UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x2a\x0c": EntDelegatingGrandchild,
     b"\x3b\xdf": EntGrandParent,
     b"\x14\x8b": EntGuarded,
+    b"\xae\xf7": EntInheritedTest2,
     b"\xb6\x61": EntInheritedTest,
     b"\x6f\xd4": EntMixedList,
     b"\x20\x33": EntParent,

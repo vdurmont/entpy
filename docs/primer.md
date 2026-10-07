@@ -156,10 +156,10 @@ partial index. The expression is emitted for PostgreSQL and SQLite.
 
 An index declared by a pattern is copied to each implementation. A unique
 pattern field or composite index additionally enforces uniqueness across all
-implementations through the pattern view. Because that requires the view,
-non-queryable patterns cannot declare cross-implementation uniqueness. Use
-`.unique(pattern=False)` when a field comes from a pattern but only needs to be
-unique within each concrete table.
+implementations through the pattern view. A pattern whose implementations span
+multiple database schemas has no view, so it cannot enforce uniqueness across
+implementations. Use `.unique(pattern=False)` when a field comes from a pattern
+but only needs to be unique within each concrete table.
 
 > [!WARNING]
 > `.unique()` already creates an index; do not also call `.index()` on the same
@@ -442,16 +442,13 @@ special cases. If there is no honest shared contract, use concrete rules.
 ### Patterns are not tables or foreign-key inheritance
 
 Implementations remain separate concrete tables. EntPy entity IDs encode the
-concrete entity type, allowing a pattern's `gen()`/`gen_by_ids()` to dispatch to
-the correct implementation. A queryable pattern additionally generates a
-database view that unions its implementations so `IEntOwnable.query(vc)` can
-query across them.
+concrete entity type, allowing a pattern's `gen()` to dispatch to the correct
+implementation. A pattern also generates a database view that unions its
+implementations so `IEntOwnable.query(vc)` can query across them.
 
-If polymorphic queries are unnecessary, override `is_queryable()` to return
-`False`. Loading by ID, inherited fields, mutators, and interfaces still work;
-only the union view and `query()` disappear. A non-queryable pattern cannot
-enforce uniqueness across implementations, so it cannot declare a unique field
-or unique composite index.
+Prefer keeping all implementations of a pattern in the same database schema. A
+pattern whose implementations span multiple schemas is not backed by a database
+view.
 
 ### Pattern composition is explicit
 
@@ -637,11 +634,9 @@ later:
   not also need a `REVOKED` or `DELETED` status unless those states have a
   distinct domain meaning.
 
-Patterns are queryable by default. Keep that default unless avoiding the union
-view is an intentional tradeoff and callers truly do not need polymorphic
-queries. Similarly, choose deletion policy from retention and lifecycle needs:
-some data should be archived, some may be soft-deleted, and some ephemeral data
-may only support hard deletion. Do not copy another schema's choice by habit.
+Choose deletion policy from retention and lifecycle needs: some data should be
+archived, some may be soft-deleted, and some ephemeral data may only support
+hard deletion. Do not copy another schema's choice by habit.
 
 ## A practical design recipe
 
@@ -658,9 +653,7 @@ When adding an entity, work through these questions in order:
    required edge; otherwise write a local rule.
 6. Does write authorization depend on the new state? Inspect `pending_ent` and
    be cautious with caching.
-7. Will callers query across implementations? Keep the pattern queryable only
-   when the union view is useful.
-8. Could this code bypass Ent privacy through models, counts, or no-privacy
+7. Could this code bypass Ent privacy through models, counts, or no-privacy
    helpers? Keep that access small, named, and reviewed.
 
 Tests should cover each action and viewer kind, both decisive and `PASS` paths,

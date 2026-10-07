@@ -79,6 +79,10 @@ class IEntInheritedTestTop(
         uuid_type: bytes,
     ) -> type[IEntInheritedTestTop]:
         match uuid_type:
+            case b"\xae\xf7":
+                from .ent_inherited_test2 import EntInheritedTest2
+
+                return EntInheritedTest2
             case b"\xb6\x61":
                 from .ent_inherited_test import EntInheritedTest
 
@@ -104,6 +108,13 @@ class IEntInheritedTestTopMutator:
         cls, vc: ExampleViewerContext, ent: IEntInheritedTestTop
     ) -> IEntInheritedTestTopMutatorUpdateAction:
 
+        from .ent_inherited_test2 import EntInheritedTest2
+
+        if isinstance(ent, EntInheritedTest2):
+            from .ent_inherited_test2 import EntInheritedTest2Mutator
+
+            return EntInheritedTest2Mutator.update(vc, ent)
+
         from .ent_inherited_test import EntInheritedTest
 
         if isinstance(ent, EntInheritedTest):
@@ -120,6 +131,13 @@ class IEntInheritedTestTopMutator:
         cls, vc: ExampleViewerContext, ent: IEntInheritedTestTop
     ) -> IEntInheritedTestTopMutatorDeletionAction:
 
+        from .ent_inherited_test2 import EntInheritedTest2
+
+        if isinstance(ent, EntInheritedTest2):
+            from .ent_inherited_test2 import EntInheritedTest2Mutator
+
+            return EntInheritedTest2Mutator.hard_delete(vc, ent)
+
         from .ent_inherited_test import EntInheritedTest
 
         if isinstance(ent, EntInheritedTest):
@@ -135,6 +153,13 @@ class IEntInheritedTestTopMutator:
     def soft_delete(
         cls, vc: ExampleViewerContext, ent: IEntInheritedTestTop
     ) -> IEntInheritedTestTopMutatorDeletionAction:
+
+        from .ent_inherited_test2 import EntInheritedTest2
+
+        if isinstance(ent, EntInheritedTest2):
+            from .ent_inherited_test2 import EntInheritedTest2Mutator
+
+            return EntInheritedTest2Mutator.soft_delete(vc, ent)
 
         from .ent_inherited_test import EntInheritedTest
 
@@ -188,8 +213,8 @@ class IEntInheritedTestTopExample:
     ) -> IEntInheritedTestTop:
         # TODO make sure we only use this in test mode
 
-        from .ent_inherited_test import EntInheritedTestExample
+        from .ent_inherited_test2 import EntInheritedTest2Example
 
-        return await EntInheritedTestExample.gen_create(
+        return await EntInheritedTest2Example.gen_create(
             vc=vc, created_at=created_at, base_field=base_field
         )
