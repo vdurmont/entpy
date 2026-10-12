@@ -10,7 +10,7 @@ from sqlalchemy.orm.strategy_options import _AbstractLoad
 from sqlalchemy.sql.expression import ColumnElement
 from werkzeug.exceptions import NotFound
 
-from entpy.framework.database import db
+from entpy.framework.database import db, emulate_for_update
 from entpy.framework.ent import Ent, EntObjectBase, EntPatternBase
 from entpy.framework.errors import EntNotFoundError, ExecutionError
 from entpy.framework.model import ModelMixin
@@ -99,12 +99,17 @@ class EntQuery[
     async def _gen_cached(
         self, query: Select[tuple[TARGET]], for_update: bool = False
     ) -> list[TARGET]:
-        compiled = str(query.compile(compile_kwargs={"literal_binds": True}))
-        key = md5(compiled.encode()).digest()
+        compiled = query.compile()
+        params = sorted(compiled.params.items())
+        values = tuple(tuple(v) if isinstance(v, list) else v for _, v in params)
+        key = (md5(str(compiled).encode()).digest(), values)
         if not for_update and (cached := db.session.info.get("query", {}).get(key)):
             return cached  # type: ignore[no-any-return]
 
-        rows = list(await db.session.scalars(query))
+        async with emulate_for_update(
+            self.model_type, ",".join(name for name, _ in params), values, for_update
+        ):
+            rows = list(await db.session.scalars(query))
         if len(rows) < QUERY_CACHE_THRESHOLD:
             db.session.info.setdefault("query", {})[key] = rows
         return rows
