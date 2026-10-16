@@ -6,8 +6,10 @@ from generated.ent_test_object import (
     EntTestObjectMutator,
 )
 
+from entpy import Action, AllowAll, BytesField, EdgeDelegate, Field, PrivacyRule, Schema
 from entpy.framework.crypto import decrypt_field
 from entpy.framework.database import db
+from entpy.gencode.model_generator import generate
 
 SECRET = b"correct horse battery staple"
 
@@ -86,3 +88,31 @@ async def test_encrypted_field_can_be_updated(
     assert decrypt_field(ent.id, "encrypt", stored) == updated_secret, (
         "stored bytes should decrypt to the updated plaintext"
     )
+
+
+class _EncryptedSchema(Schema):
+    def get_fields(self) -> list[Field]:
+        return [
+            BytesField("optional_secret").encrypt(),
+            BytesField("required_secret").not_null().encrypt().example(b"required"),
+        ]
+
+    def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
+        return [AllowAll()]
+
+
+def test_encrypted_properties_match_nullability() -> None:
+    """The generated setter is annotated, and a required field does not return None."""
+    code = generate(_EncryptedSchema(), "Encrypted").code
+
+    assert "def optional_secret(self) -> bytes | None:" in code
+    assert "def optional_secret(self, value: bytes | None) -> None:" in code
+    assert "def required_secret(self) -> bytes:" in code
+    assert "def required_secret(self, value: bytes) -> None:" in code
+
+    optional = code.split("def optional_secret(self) -> bytes | None:", 1)[1]
+    optional = optional.split("@optional_secret.setter", 1)[0]
+    required = code.split("def required_secret(self) -> bytes:", 1)[1]
+    required = required.split("@required_secret.setter", 1)[0]
+    assert "else None" in optional
+    assert "else None" not in required

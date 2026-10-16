@@ -177,7 +177,7 @@ class EntTestObjectModel(EntTestThingModel):
         )
 
     @encrypt.setter
-    def encrypt(self, value: bytes | None):
+    def encrypt(self, value: bytes | None) -> None:
         self._encrypt = encrypt_field(self.id, "encrypt", value) if value else None
 
 

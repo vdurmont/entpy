@@ -160,10 +160,18 @@ def generate(descriptor: Descriptor, base_name: str) -> GeneratedContent:
                 )
                 fields_code += "    @property\n"
                 fields_code += f"    def {field.name}(self) -> {mapped_type}:\n"
-                fields_code += f'        return decrypt_field(self.id, "{field.name}", self._{field.name}) if self._{field.name} else None\n'
+                if field.nullable:
+                    fields_code += f'        return decrypt_field(self.id, "{field.name}", self._{field.name}) if self._{field.name} else None\n'
+                else:
+                    fields_code += f'        return decrypt_field(self.id, "{field.name}", self._{field.name})\n'
                 fields_code += f"    @{field.name}.setter\n"
-                fields_code += f"    def {field.name}(self, value: {mapped_type}):\n"
-                fields_code += f'        self._{field.name} = encrypt_field(self.id, "{field.name}", value) if value else None\n'
+                fields_code += (
+                    f"    def {field.name}(self, value: {mapped_type}) -> None:\n"
+                )
+                if field.nullable:
+                    fields_code += f'        self._{field.name} = encrypt_field(self.id, "{field.name}", value) if value else None\n'
+                else:
+                    fields_code += f'        self._{field.name} = encrypt_field(self.id, "{field.name}", value)\n'
 
     indexes = (
         _generate_indexes(schema=descriptor, base_name=base_name)
