@@ -46,9 +46,14 @@ class EntQuery[
         pass
 
     def join(
-        self, model_class: type[ModelMixin] | Table, predicate: ColumnElement[bool]
+        self,
+        model_class: type[ModelMixin] | Table,
+        predicate: ColumnElement[bool],
+        *,
+        isouter: bool = False,
+        full: bool = False,
     ) -> Self:
-        query = self.query.join(model_class, predicate)
+        query = self.query.join(model_class, predicate, isouter=isouter, full=full)
         return self.__class__(self.vc, query, self.include_soft_deleted)
 
     def where(self, predicate: ColumnElement[bool]) -> Self:
