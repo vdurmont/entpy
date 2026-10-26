@@ -61,31 +61,19 @@ class IEntTestPattern(
 
         @classmethod
         async def gen_from_limit(
-            cls,
-            vc: ExampleViewerContext,
-            limit: int,
-            for_update: bool = False,
-            include_soft_deleted: bool = False,
+            cls, vc: ExampleViewerContext, limit: int, for_update: bool = False
         ) -> Self | None:
             pass
 
         @classmethod
         async def genx_from_limit(
-            cls,
-            vc: ExampleViewerContext,
-            limit: int,
-            for_update: bool = False,
-            include_soft_deleted: bool = False,
+            cls, vc: ExampleViewerContext, limit: int, for_update: bool = False
         ) -> Self:
             pass
 
         @classmethod
         async def genx_or_404_from_limit(
-            cls,
-            vc: ExampleViewerContext,
-            limit: int,
-            for_update: bool = False,
-            include_soft_deleted: bool = False,
+            cls, vc: ExampleViewerContext, limit: int, for_update: bool = False
         ) -> Self:
             pass
 
