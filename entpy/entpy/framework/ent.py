@@ -233,7 +233,6 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
         vc: VC,
         value: Any,
         for_update: bool = False,
-        include_soft_deleted: bool = False,
     ) -> Self | None:
         pass
 
@@ -244,11 +243,8 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
         vc: VC,
         value: Any,
         for_update: bool = False,
-        include_soft_deleted: bool = False,
     ) -> Self | None:
-        ent = await cls._gen_from_unique(
-            name, vc, value, for_update, include_soft_deleted
-        )
+        ent = await cls._gen_from_unique(name, vc, value, for_update)
         if not ent:
             raise EntNotFoundError(f"No {cls.__name__} found for {name} = '{value}'")
         return ent
@@ -260,12 +256,9 @@ class Ent[VC: ViewerContext, ENTMODEL: ModelMixin](
         vc: VC,
         value: Any,
         for_update: bool = False,
-        include_soft_deleted: bool = False,
     ) -> Self | None:
         try:
-            return await cls._genx_from_unique(
-                name, vc, value, for_update, include_soft_deleted
-            )
+            return await cls._genx_from_unique(name, vc, value, for_update)
         except EntNotFoundError as e:
             raise NotFound from e
 
@@ -368,28 +361,27 @@ class EntObjectBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL]):
         vc: VC,
         value: Any,
         for_update: bool = False,
-        include_soft_deleted: bool = False,
     ) -> Self | None:
         value = cls._preprocess_unique_value(name, value)
-        # include_soft_deleted is part of the key: the two flags select from
-        # different row sets, so a hit from one would answer the other wrongly.
-        cache_key = (cls, name, value, include_soft_deleted)
+        cache_key = (cls, name, value)
         if not for_update and (
             cached := db.session.info.get("unique", {}).get(cache_key)
         ):
-            return await cls._gen_from_model(vc, cached, include_soft_deleted)
+            return await cls._gen_from_model(vc, cached)
 
-        query = select(cls.m).where(getattr(cls.m, name) == value)
+        query = (
+            select(cls.m)
+            .where(getattr(cls.m, name) == value)
+            .where(cls.m.soft_deleted_at.is_(None))
+        )
         if for_update:
             query = query.with_for_update()
-        if not include_soft_deleted:
-            query = query.where(cls.m.soft_deleted_at.is_(None))
         async with emulate_for_update(cls.m, name, value, for_update):
             result = await db.session.execute(query)
         model = result.scalar_one_or_none()
         db.session.info.setdefault("models", set()).add(model)
         db.session.info.setdefault("unique", {})[cache_key] = model
-        return await cls._gen_from_model(vc, model, include_soft_deleted)  # noqa: SLF001
+        return await cls._gen_from_model(vc, model)  # noqa: SLF001
 
     @classmethod
     @abstractmethod
@@ -509,16 +501,19 @@ class EntPatternBase[VC: ViewerContext, ENTMODEL: ModelMixin](Ent[VC, ENTMODEL])
         vc: VC,
         value: Any,
         for_update: bool = False,
-        include_soft_deleted: bool = False,
     ) -> Self | None:
         value = cls._preprocess_unique_value(name, value)
-        query = select(cls.m.id).where(getattr(cls.m, name) == value)
+        query = (
+            select(cls.m.id)
+            .where(getattr(cls.m, name) == value)
+            .where(cls.m.soft_deleted_at.is_(None))
+        )
         result = await db.session.execute(query)
         ent_id = result.scalar_one_or_none()
         if ent_id is None:
             return None
         ent_type = cls._get_child_type(ent_id.bytes[6:8])
-        return await ent_type.gen(vc, ent_id, for_update, include_soft_deleted)
+        return await ent_type.gen(vc, ent_id, for_update)
 
     @classmethod
     @abstractmethod

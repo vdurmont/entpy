@@ -20,7 +20,6 @@ from generated.ent_parent import EntParentMutator
 from generated.ent_test_object import (
     EntTestObject,
     EntTestObjectExample,
-    EntTestObjectMutator,
 )
 from generated.ent_test_object5 import EntTestObject5Mutator
 from generated.ent_test_sub_object import (
@@ -89,37 +88,6 @@ async def test_nullable_edge_follows_stored_include_soft_deleted(
     found = await reloaded.gen_optional_sub_object()
     assert found is not None
     assert found.id == sub_object.id
-
-
-async def test_unique_lookup_propagates_to_edges(vc: ExampleViewerContext) -> None:
-    obj = await EntTestObjectExample.gen_create(vc)
-    obj5 = await obj.gen_obj5()
-    await EntTestObject5Mutator.soft_delete(vc, obj5).gen_save()
-
-    test_vc = ExampleTestViewerContext()
-    reloaded = await EntTestObject.genx_from_username(
-        test_vc, obj.username, include_soft_deleted=True
-    )
-    assert reloaded is not None
-    found = await reloaded.gen_obj5()
-    assert found.id == obj5.id
-
-
-async def test_unique_cache_is_keyed_on_include_soft_deleted(
-    vc: ExampleViewerContext,
-) -> None:
-    obj = await EntTestObjectExample.gen_create(vc)
-    username = obj.username
-    await EntTestObjectMutator.soft_delete(vc, obj).gen_save()
-
-    test_vc = ExampleTestViewerContext()
-    assert (
-        await EntTestObject.gen_from_username(
-            test_vc, username, include_soft_deleted=True
-        )
-        is not None
-    )
-    assert await EntTestObject.gen_from_username(test_vc, username) is None
 
 
 async def test_pattern_gen_propagates_to_edges(vc: ExampleViewerContext) -> None:
