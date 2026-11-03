@@ -1,6 +1,6 @@
 from .framework.action import Action  # noqa: F401
 from .framework.composite_index import CompositeIndex  # noqa: F401
-from .framework.computed_field import ComputedField  # noqa: F401
+from .framework.computed_api_field import ComputedApiField  # noqa: F401
 from .framework.database import (
     db,
     event_subscription,  # noqa: F401

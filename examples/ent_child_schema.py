@@ -5,7 +5,7 @@ from entpy import (
     EdgeField,
     Action,
     AllowAll,
-    ComputedField,
+    ComputedApiField,
     ImportedObject,
     EdgeDelegate,
     PrivacyRule,
@@ -26,9 +26,9 @@ class EntChildSchema(Schema):
             .serialize(Tier.ITEM),
         ]
 
-    def get_computed_fields(self) -> list[ComputedField]:
+    def get_computed_api_fields(self) -> list[ComputedApiField]:
         return [
-            ComputedField(
+            ComputedApiField(
                 "shout",
                 "str",
                 resolver=ImportedObject(module="resolvers", name="gen_child_shout"),

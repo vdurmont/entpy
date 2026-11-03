@@ -56,7 +56,7 @@ async def test_item_nests_edges_at_the_field_tier(vc: ExampleViewerContext) -> N
     assert "shout" not in result
 
 
-async def test_detailed_includes_lower_tiers_and_computed_fields(
+async def test_detailed_includes_lower_tiers_and_computed_api_fields(
     vc: ExampleViewerContext,
 ) -> None:
     child = await EntChildExample.gen_create(vc, name="Benjamin")

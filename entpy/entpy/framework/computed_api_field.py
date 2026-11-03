@@ -5,7 +5,7 @@ from entpy.framework.imported_object import ImportedObject
 from entpy.framework.serialization import FieldSerialization
 
 
-class ComputedField:
+class ComputedApiField:
     """A serialized value that is not a column.
 
     `resolver` names an async function taking the ent and returning a value of

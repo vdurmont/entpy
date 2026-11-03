@@ -4,7 +4,7 @@ from enum import Enum
 from importlib import import_module
 
 from entpy import (
-    ComputedField,
+    ComputedApiField,
     DateField,
     DatetimeField,
     EdgeField,
@@ -46,7 +46,7 @@ class SerializationContext:
         return f"{self.tier_enum.name}.{tier.name}"
 
 
-Member = Field | ComputedField
+Member = Field | ComputedApiField
 type Node = tuple[type[Schema], Enum]
 
 
@@ -63,10 +63,10 @@ def api_model_names(base_name: str, ctx: SerializationContext) -> list[str]:
     return [api_model_name(base_name, tier) for tier in ctx.config.get_ordered_tiers()]
 
 
-def get_all_computed_fields(descriptor: Descriptor) -> list[ComputedField]:
-    fields = list(descriptor.get_computed_fields())
+def get_all_computed_api_fields(descriptor: Descriptor) -> list[ComputedApiField]:
+    fields = list(descriptor.get_computed_api_fields())
     for pattern in descriptor.get_patterns():
-        fields += get_all_computed_fields(pattern)
+        fields += get_all_computed_api_fields(pattern)
     return fields
 
 
@@ -74,12 +74,12 @@ def _own_members(descriptor: Descriptor) -> list[Member]:
     fields: list[Member] = [
         f for f in descriptor.get_sorted_fields() if not f.is_deprecated
     ]
-    return fields + list(descriptor.get_computed_fields())
+    return fields + list(descriptor.get_computed_api_fields())
 
 
 def _all_members(descriptor: Descriptor) -> list[Member]:
     fields: list[Member] = list(descriptor.get_all_fields())
-    return fields + get_all_computed_fields(descriptor)
+    return fields + get_all_computed_api_fields(descriptor)
 
 
 def exposes_fields(descriptor: Descriptor) -> bool:
@@ -115,7 +115,7 @@ def validate_descriptor(
     members = _own_members(descriptor)
     for member in members:
         label = f"{name}.{member.name}"
-        if isinstance(member, ComputedField) and member.serialization is None:
+        if isinstance(member, ComputedApiField) and member.serialization is None:
             raise ValueError(f"Computed field {label} must call serialize().")
         serialization = member.serialization
         if serialization is None:
@@ -130,7 +130,7 @@ def validate_descriptor(
                 f"{label} is serialized in {serialization.tier!r}, which is not "
                 + f"a tier of {ctx.config.tier_enum.__name__}."
             )
-        if isinstance(member, ComputedField):
+        if isinstance(member, ComputedApiField):
             continue
         if member.is_internal:
             raise ValueError(f"{label} is internal and cannot be serialized.")
@@ -270,7 +270,7 @@ def generate_api_models(
         for member in members:
             if member.serialization is None or member.serialization.tier != tier:
                 continue
-            if isinstance(member, ComputedField):
+            if isinstance(member, ComputedApiField):
                 python_type = member.python_type
             else:
                 generated_type = _python_type(member, ctx)
@@ -352,7 +352,7 @@ def generate_schema_serialize(
             if member.serialization is None or member.serialization.tier != tier:
                 continue
             key = _output_key(member)
-            if isinstance(member, ComputedField):
+            if isinstance(member, ComputedApiField):
                 resolver = member.resolver
                 lines += f"            {resolver}\n"
                 lines += f'            values["{key}"] = await {resolver.name}(self)\n'

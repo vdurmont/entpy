@@ -327,9 +327,9 @@ DatetimeField("archived_at").serialize(Tier.DETAILED),
 Values that are not columns are declared as computed fields, with an async resolver that takes the Ent. The resolver is named by import path, because it imports the generated Ent:
 
 ```python
-def get_computed_fields(self) -> list[ComputedField]:
+def get_computed_api_fields(self) -> list[ComputedApiField]:
     return [
-        ComputedField(
+        ComputedApiField(
             "full_name",
             "str",
             resolver=ImportedObject(module="myapp.resolvers", name="gen_full_name"),
