@@ -24,6 +24,9 @@ class APIEntity(BaseModel):
     updated_at: datetime = Field(
         ..., description="Timestamp when the entity was last updated"
     )
+    soft_deleted_at: datetime | None = Field(
+        ..., description="Timestamp when the entity was soft deleted"
+    )
 
 
 class TieredAPIEntity(BaseModel):
@@ -36,6 +39,9 @@ class TieredAPIEntity(BaseModel):
     )
     updated_at: AwareDatetime = Field(
         ..., description="Timestamp when the entity was last updated"
+    )
+    soft_deleted_at: AwareDatetime | None = Field(
+        ..., description="Timestamp when the entity was soft deleted"
     )
 
     # Pydantic writes UTC as "Z"; this keeps Python's own "+00:00" form.

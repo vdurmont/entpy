@@ -388,6 +388,7 @@ def generate_schema_serialize(
             "entity_type": "{base_name}",
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "soft_deleted_at": self.soft_deleted_at,
         }}
 {blocks}
         api_models: dict[{tier_type}, type[{base_model}]] = {{{models_by_tier}}}

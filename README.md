@@ -337,7 +337,7 @@ def get_computed_fields(self) -> list[ComputedField]:
     ]
 ```
 
-Gencode then emits one Pydantic model per tier, `EntMyObjectRefAPIModel`, `EntMyObjectItemAPIModel` and so on, each inheriting from the tier it includes and from its patterns' models. Every model carries `id`, `entity_type`, `created_at` and `updated_at`. The Ent gets a `gen_serialize(tier)` typed per tier, and a pattern's version dispatches to the concrete Ent:
+Gencode then emits one Pydantic model per tier, `EntMyObjectRefAPIModel`, `EntMyObjectItemAPIModel` and so on, each inheriting from the tier it includes and from its patterns' models. Every model carries `id`, `entity_type`, `created_at`, `updated_at` and `soft_deleted_at` (`null` unless the Ent is soft deleted). The Ent gets a `gen_serialize(tier)` typed per tier, and a pattern's version dispatches to the concrete Ent:
 
 ```python
 model = await my_object.gen_serialize(Tier.ITEM)  # EntMyObjectItemAPIModel

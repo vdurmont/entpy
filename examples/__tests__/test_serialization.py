@@ -1,9 +1,9 @@
 from datetime import UTC, datetime
 
 from entpy.model import TieredAPIEntity
-from evc import ExampleViewerContext
+from evc import ExampleTestViewerContext, ExampleViewerContext
 from generated import ent_test_object3
-from generated.ent_child import EntChildExample
+from generated.ent_child import EntChild, EntChildExample, EntChildMutator
 from generated.ent_grand_parent import EntGrandParentExample
 from generated.ent_inherited_owner import EntInheritedOwnerExample
 from generated.ent_inherited_test import EntInheritedTestExample
@@ -22,7 +22,23 @@ async def test_ref_carries_only_identity(vc: ExampleViewerContext) -> None:
         "entity_type": "EntChild",
         "created_at": child.created_at.isoformat(),
         "updated_at": child.updated_at.isoformat(),
+        "soft_deleted_at": None,
     }
+
+
+async def test_soft_deleted_ent_carries_its_deletion_time(
+    vc: ExampleViewerContext,
+) -> None:
+    child = await EntChildExample.gen_create(vc)
+    await EntChildMutator.soft_delete(vc, child).gen_save()
+    deleted = await EntChild.genx(
+        ExampleTestViewerContext(), child.id, include_soft_deleted=True
+    )
+
+    result = (await deleted.gen_serialize(Tier.REF)).model_dump(mode="json")
+
+    assert deleted.soft_deleted_at is not None
+    assert result["soft_deleted_at"] == deleted.soft_deleted_at.isoformat()
 
 
 async def test_item_nests_edges_at_the_field_tier(vc: ExampleViewerContext) -> None:

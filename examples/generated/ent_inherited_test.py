@@ -130,6 +130,7 @@ class EntInheritedTest(
             "entity_type": "EntInheritedTest",
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "soft_deleted_at": self.soft_deleted_at,
         }
         if tier in (
             Tier.ITEM,
