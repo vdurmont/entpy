@@ -21,20 +21,23 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
 from pydantic import Field as APIField
+from pydantic import SerializeAsAny
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_parent import EntParentModel
-    from .ent_parent import EntParentAPIModel
+    from .ent_parent import EntParentItemAPIModel
     from entpy import Ent
     from .ent_parent import EntParent
     from entpy import Field
@@ -56,9 +59,17 @@ class EntChildModel(EntModel):
     )
 
 
-class EntChildAPIModel(APIEntity):
-    name: str = APIField(..., examples=["Benjamin"])
-    parent: "EntParentAPIModel" = APIField(...)
+class EntChildRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntChildItemAPIModel(EntChildRefAPIModel):
+    name: str = APIField(...)
+    parent: SerializeAsAny[EntParentItemAPIModel] = APIField(...)
+
+
+class EntChildDetailedAPIModel(EntChildItemAPIModel):
+    shout: str = APIField(...)
 
 
 class EntChildPending(EntPending[EntChildModel]):
@@ -103,6 +114,50 @@ class EntChild(
         vc: ExampleViewerContext,
     ) -> EntChildQuery:
         return EntChildQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(self, tier: Literal[Tier.REF]) -> EntChildRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Literal[Tier.ITEM]) -> EntChildItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntChildDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntChildRefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntChildRefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntChild",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "soft_deleted_at": self.soft_deleted_at,
+        }
+        if tier in (
+            Tier.ITEM,
+            Tier.DETAILED,
+        ):
+            values["name"] = self.name
+            edge_parent = await self.gen_parent()
+            values["parent"] = await edge_parent.gen_serialize(Tier.ITEM)
+        if tier in (Tier.DETAILED,):
+            from resolvers import gen_child_shout
+
+            values["shout"] = await gen_child_shout(self)
+
+        api_models: dict[Tier, type[EntChildRefAPIModel]] = {
+            Tier.REF: EntChildRefAPIModel,
+            Tier.ITEM: EntChildItemAPIModel,
+            Tier.DETAILED: EntChildDetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntChildQuery(EntObjectQuery[ExampleViewerContext, EntChild, EntChildModel]):

@@ -16,11 +16,15 @@ from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
+from entpy.types import DateTime
 from evc import ExampleViewerContext
+from pydantic import AwareDatetime
 from pydantic import Field as APIField
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Literal, overload
 
 
 if TYPE_CHECKING:
@@ -36,10 +40,20 @@ class EntInheritedTestTopModel(EntModel):
     __abstract__ = True
 
     base_field: Mapped[str] = mapped_column(String(100), nullable=False)
+    happened_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
 
 
-class EntInheritedTestTopAPIModel(APIEntity):
-    base_field: str = APIField(..., examples=["base value"])
+class EntInheritedTestTopRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntInheritedTestTopItemAPIModel(EntInheritedTestTopRefAPIModel):
+    base_field: str = APIField(...)
+    happened_at: AwareDatetime | None = APIField(...)
+
+
+class EntInheritedTestTopDetailedAPIModel(EntInheritedTestTopItemAPIModel):
+    pass
 
 
 class IEntInheritedTestTopPending(EntPending[EntInheritedTestTopModel]):
@@ -49,6 +63,10 @@ class IEntInheritedTestTopPending(EntPending[EntInheritedTestTopModel]):
 
         @property
         def base_field(self) -> str:
+            pass
+
+        @property
+        def happened_at(self) -> datetime | None:
             pass
 
 
@@ -71,6 +89,28 @@ class IEntInheritedTestTop(
         vc: ExampleViewerContext,
     ) -> IEntInheritedTestTopQuery:
         return IEntInheritedTestTopQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntInheritedTestTopRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntInheritedTestTopItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntInheritedTestTopDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTestTopRefAPIModel: ...
+
+    @abstractmethod
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTestTopRefAPIModel:
+        pass
 
     @classmethod
     @cache
@@ -179,6 +219,7 @@ class IEntInheritedTestTopMutatorUpdateAction(ABC):
     ent: IEntInheritedTestTop
     if TYPE_CHECKING:
         base_field: str
+        happened_at: datetime | None
 
     @abstractmethod
     async def gen_savex(self) -> IEntInheritedTestTop:
@@ -210,11 +251,12 @@ class IEntInheritedTestTopExample:
         vc: ExampleViewerContext,
         created_at: datetime | None = None,
         base_field: str | Sentinel = NOTHING,
+        happened_at: datetime | None = None,
     ) -> IEntInheritedTestTop:
         # TODO make sure we only use this in test mode
 
         from .ent_inherited_test2 import EntInheritedTest2Example
 
         return await EntInheritedTest2Example.gen_create(
-            vc=vc, created_at=created_at, base_field=base_field
+            vc=vc, created_at=created_at, base_field=base_field, happened_at=happened_at
         )

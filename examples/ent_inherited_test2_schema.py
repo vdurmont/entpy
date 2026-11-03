@@ -10,6 +10,7 @@ from entpy import (
 )
 
 from ent_inherited_test_middle_pattern import EntInheritedTestMiddlePattern
+from tiers import Tier
 
 
 class EntInheritedTest2Schema(Schema):
@@ -17,7 +18,12 @@ class EntInheritedTest2Schema(Schema):
         return [EntInheritedTestMiddlePattern()]
 
     def get_fields(self) -> list[Field]:
-        return [StringField("schema_field", 100).not_null().example("schema value")]
+        return [
+            StringField("schema_field", 100)
+            .not_null()
+            .example("schema value")
+            .serialize(Tier.ITEM)
+        ]
 
     def get_privacy_config(self, action: Action) -> list[EdgeDelegate | PrivacyRule]:
         return [AllowAll()]

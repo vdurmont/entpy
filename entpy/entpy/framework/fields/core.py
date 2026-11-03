@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from enum import Enum
 from typing import Generic, Self, TypeVar
+
+from entpy.framework.serialization import FieldSerialization
 
 from .preprocessor import FieldPreprocessor
 from .validator import FieldValidator
@@ -21,6 +24,7 @@ class Field(ABC, Generic[T]):
     description: str | None = None
     is_internal: bool = False
     is_deprecated: bool = False
+    serialization: FieldSerialization | None = None
     _validators: list[FieldValidator[T]]
     _preprocessors: list[FieldPreprocessor[T]]
 
@@ -59,6 +63,12 @@ class Field(ABC, Generic[T]):
 
     def internal(self) -> Self:
         self.is_internal = True
+        return self
+
+    def serialize(
+        self, tier: Enum, name: str | None = None, nested: Enum | None = None
+    ) -> Self:
+        self.serialization = FieldSerialization(tier=tier, name=name, nested=nested)
         return self
 
     def deprecated(self) -> Self:

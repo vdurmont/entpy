@@ -21,10 +21,8 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
-from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
@@ -34,7 +32,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_delegating_child import EntDelegatingChildModel
-    from .ent_delegating_child import EntDelegatingChildAPIModel
     from entpy import Ent
     from .ent_delegating_child import EntDelegatingChild
     from entpy import Field
@@ -55,11 +52,6 @@ class EntDelegatingGrandchildModel(EntModel):
         "EntDelegatingChildModel",
         primaryjoin="EntDelegatingGrandchildModel.delegating_child_id == EntDelegatingChildModel.id",
     )
-
-
-class EntDelegatingGrandchildAPIModel(APIEntity):
-    delegating_child: "EntDelegatingChildAPIModel" = APIField(...)
-    name: str = APIField(..., examples=["Delegating Grandchild"])
 
 
 class EntDelegatingGrandchildPending(EntPending[EntDelegatingGrandchildModel]):

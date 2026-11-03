@@ -20,10 +20,8 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -40,10 +38,6 @@ class EntPrivacyParentModel(EntModel):
     __tablename__ = "privacy_parent"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-
-
-class EntPrivacyParentAPIModel(APIEntity):
-    name: str = APIField(..., examples=["Privacy Parent"])
 
 
 class EntPrivacyParentPending(EntPending[EntPrivacyParentModel]):

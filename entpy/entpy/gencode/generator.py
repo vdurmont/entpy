@@ -6,6 +6,15 @@ from entpy import Pattern, Schema
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
+from entpy.gencode.serialization_generator import (
+    SerializationContext,
+    api_model_names,
+    base_name_of,
+    exposes_fields,
+    generate_ensure_built,
+    get_serialized_enum_types,
+    validate_no_cycles,
+)
 from entpy.gencode.utils import GENERATED_HEADER, ImportedObject
 from entpy.gencode.view_generator import generate as generate_view
 
@@ -17,6 +26,7 @@ def run(
     vc: ImportedObject,
     privacy_mixin: ImportedObject | None = None,
     threshold_to_stop_loading_ents_for_count: int = 50,
+    serialization: ImportedObject | None = None,
 ) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()
@@ -35,6 +45,18 @@ def run(
         schemas_path=schemas_path, output_path=output_path
     )
     print(f"Found {len(configs)} schema(s) and pattern(s).")
+
+    serialization_context = (
+        SerializationContext.load(serialization) if serialization else None
+    )
+    if serialization_context:
+        validate_no_cycles(
+            schema_classes=[c[0] for c in configs if issubclass(c[0], Schema)],
+            get_children=lambda pattern: get_children_schema_classes(pattern),
+            ctx=serialization_context,
+        )
+    api_model_imports: list[tuple[str, str]] = []
+    enum_types: list[ImportedObject] = []
 
     # Gencode all the things!
     examples_list_imports = ""
@@ -63,6 +85,7 @@ def run(
                 vc=vc,
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
                 privacy_mixin=privacy_mixin,
+                serialization=serialization_context,
             )
         elif issubclass(descriptor_class, Pattern):
             children = get_children_schema_classes(
@@ -73,6 +96,7 @@ def run(
                 children_schema_classes=children,
                 vc=vc,
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
+                serialization=serialization_context,
             )
             view_code = generate_view(
                 pattern_class=descriptor_class,
@@ -93,8 +117,23 @@ def run(
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
 
+        if serialization_context and exposes_fields(descriptor_class()):
+            api_model_imports += [
+                (descriptor_output_path.stem, model)
+                for model in api_model_names(
+                    base_name_of(descriptor_class), serialization_context
+                )
+            ]
+            enum_types += get_serialized_enum_types(descriptor_class())
         _write_file(descriptor_output_path, code)
 
+    ensure_built = (
+        generate_ensure_built(api_model_imports, enum_types)
+        if api_model_imports
+        else None
+    )
+    if ensure_built:
+        models_list_imports += "\n" + "\n".join(ensure_built.imports)
     models_list_code = f"""
 from uuid import UUID
 
@@ -113,6 +152,8 @@ def decode_entity_type_from_id(entity_id: UUID) -> type[Ent[{vc.name}, EntModel]
     uuid_type = entity_id.bytes[6:8]
     return UUID_TO_ENT.get(uuid_type)
 """
+    if ensure_built:
+        models_list_code += ensure_built.code
     _write_file(output_path / "all_models.py", models_list_code)
 
     examples_list_code = f"""

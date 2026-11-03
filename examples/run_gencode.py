@@ -9,4 +9,5 @@ if __name__ == "__main__":
         base_model_import="from database import Base",
         vc=ImportedObject(module="evc", name="ExampleViewerContext"),
         privacy_mixin=ImportedObject(module="privacy", name="PrivacyMixin"),
+        serialization=ImportedObject(module="tiers", name="SERIALIZATION"),
     )
