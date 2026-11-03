@@ -72,6 +72,16 @@ class EdgeWithoutNestingSchema(_Base):
         return [EdgeField("other", CycleASchema).serialize(Level.LOW)]
 
 
+class SilentSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [StringField("name", 10)]
+
+
+class PointsAtSilentSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [EdgeField("silent", SilentSchema).serialize(Level.HIGH)]
+
+
 class DuplicateKeySchema(_Base):
     def get_fields(self) -> list[Field]:
         return [
@@ -143,3 +153,8 @@ def test_nesting_cycles_are_rejected() -> None:
             get_children=lambda _pattern: [],
             ctx=CTX,
         )
+
+
+def test_edge_to_an_ent_exposing_no_field_is_rejected() -> None:
+    with pytest.raises(ValueError, match="SilentSchema exposes no fields"):
+        validate_descriptor(PointsAtSilentSchema(), CTX)

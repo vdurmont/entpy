@@ -32,7 +32,7 @@ def generate(
             descriptor=pattern, base_name=base_name, ctx=serialization
         )
         serialize_content = generate_pattern_serialize(
-            base_name=base_name, ctx=serialization
+            pattern=pattern, base_name=base_name, ctx=serialization
         )
     else:
         api_model = generate_api_model(descriptor=pattern, base_name=base_name)

@@ -21,7 +21,6 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
-from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
@@ -29,8 +28,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
-from tiers import Tier
-from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -55,18 +52,6 @@ class EntDelegatingChildModel(EntModel):
         "EntPrivacyParentModel",
         primaryjoin="EntDelegatingChildModel.privacy_parent_id == EntPrivacyParentModel.id",
     )
-
-
-class EntDelegatingChildRefAPIModel(TieredAPIEntity):
-    pass
-
-
-class EntDelegatingChildItemAPIModel(EntDelegatingChildRefAPIModel):
-    pass
-
-
-class EntDelegatingChildDetailedAPIModel(EntDelegatingChildItemAPIModel):
-    pass
 
 
 class EntDelegatingChildPending(EntPending[EntDelegatingChildModel]):
@@ -113,42 +98,6 @@ class EntDelegatingChild(
         vc: ExampleViewerContext,
     ) -> EntDelegatingChildQuery:
         return EntDelegatingChildQuery(vc=vc)
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.REF]
-    ) -> EntDelegatingChildRefAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.ITEM]
-    ) -> EntDelegatingChildItemAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.DETAILED]
-    ) -> EntDelegatingChildDetailedAPIModel: ...
-
-    @overload
-    async def gen_serialize(self, tier: Tier) -> EntDelegatingChildRefAPIModel: ...
-
-    async def gen_serialize(self, tier: Tier) -> EntDelegatingChildRefAPIModel:
-        from .all_models import ensure_api_models_built
-
-        ensure_api_models_built()
-        values: dict[str, Any] = {
-            "id": self.id,
-            "entity_type": "EntDelegatingChild",
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }
-
-        api_models: dict[Tier, type[EntDelegatingChildRefAPIModel]] = {
-            Tier.REF: EntDelegatingChildRefAPIModel,
-            Tier.ITEM: EntDelegatingChildItemAPIModel,
-            Tier.DETAILED: EntDelegatingChildDetailedAPIModel,
-        }
-        return api_models[tier].model_validate(values)
 
 
 class EntDelegatingChildQuery(

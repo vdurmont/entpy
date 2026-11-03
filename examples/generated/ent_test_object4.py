@@ -10,10 +10,7 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
-from .ent_other_schema_pattern import EntOtherSchemaPatternDetailedAPIModel
-from .ent_other_schema_pattern import EntOtherSchemaPatternItemAPIModel
 from .ent_other_schema_pattern import EntOtherSchemaPatternModel
-from .ent_other_schema_pattern import EntOtherSchemaPatternRefAPIModel
 from .ent_other_schema_pattern import IEntOtherSchemaPattern
 from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorDeletionAction
 from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorUpdateAction
@@ -32,8 +29,6 @@ from privacy import PrivacyMixin
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
-from tiers import Tier
-from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -58,22 +53,6 @@ class EntTestObject4Model(EntOtherSchemaPatternModel):
         "EntTestObject3Model",
         primaryjoin="EntTestObject4Model.other_id == EntTestObject3Model.id",
     )
-
-
-class EntTestObject4RefAPIModel(EntOtherSchemaPatternRefAPIModel):
-    pass
-
-
-class EntTestObject4ItemAPIModel(
-    EntTestObject4RefAPIModel, EntOtherSchemaPatternItemAPIModel
-):
-    pass
-
-
-class EntTestObject4DetailedAPIModel(
-    EntTestObject4ItemAPIModel, EntOtherSchemaPatternDetailedAPIModel
-):
-    pass
 
 
 class EntTestObject4Pending(IEntOtherSchemaPatternPending):
@@ -117,42 +96,6 @@ class EntTestObject4(
         vc: ExampleViewerContext,
     ) -> EntTestObject4Query:
         return EntTestObject4Query(vc=vc)
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.REF]
-    ) -> EntTestObject4RefAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.ITEM]
-    ) -> EntTestObject4ItemAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.DETAILED]
-    ) -> EntTestObject4DetailedAPIModel: ...
-
-    @overload
-    async def gen_serialize(self, tier: Tier) -> EntTestObject4RefAPIModel: ...
-
-    async def gen_serialize(self, tier: Tier) -> EntTestObject4RefAPIModel:
-        from .all_models import ensure_api_models_built
-
-        ensure_api_models_built()
-        values: dict[str, Any] = {
-            "id": self.id,
-            "entity_type": "EntTestObject4",
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }
-
-        api_models: dict[Tier, type[EntTestObject4RefAPIModel]] = {
-            Tier.REF: EntTestObject4RefAPIModel,
-            Tier.ITEM: EntTestObject4ItemAPIModel,
-            Tier.DETAILED: EntTestObject4DetailedAPIModel,
-        }
-        return api_models[tier].model_validate(values)
 
 
 class EntTestObject4Query(

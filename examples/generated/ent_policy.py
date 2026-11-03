@@ -21,7 +21,6 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
-from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
@@ -29,8 +28,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
-from tiers import Tier
-from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -55,18 +52,6 @@ class EntPolicyModel(EntModel):
         "EntCredentialModel",
         primaryjoin="EntPolicyModel.credential_id == EntCredentialModel.id",
     )
-
-
-class EntPolicyRefAPIModel(TieredAPIEntity):
-    pass
-
-
-class EntPolicyItemAPIModel(EntPolicyRefAPIModel):
-    pass
-
-
-class EntPolicyDetailedAPIModel(EntPolicyItemAPIModel):
-    pass
 
 
 class EntPolicyPending(EntPending[EntPolicyModel]):
@@ -111,40 +96,6 @@ class EntPolicy(
         vc: ExampleViewerContext,
     ) -> EntPolicyQuery:
         return EntPolicyQuery(vc=vc)
-
-    @overload
-    async def gen_serialize(self, tier: Literal[Tier.REF]) -> EntPolicyRefAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.ITEM]
-    ) -> EntPolicyItemAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.DETAILED]
-    ) -> EntPolicyDetailedAPIModel: ...
-
-    @overload
-    async def gen_serialize(self, tier: Tier) -> EntPolicyRefAPIModel: ...
-
-    async def gen_serialize(self, tier: Tier) -> EntPolicyRefAPIModel:
-        from .all_models import ensure_api_models_built
-
-        ensure_api_models_built()
-        values: dict[str, Any] = {
-            "id": self.id,
-            "entity_type": "EntPolicy",
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }
-
-        api_models: dict[Tier, type[EntPolicyRefAPIModel]] = {
-            Tier.REF: EntPolicyRefAPIModel,
-            Tier.ITEM: EntPolicyItemAPIModel,
-            Tier.DETAILED: EntPolicyDetailedAPIModel,
-        }
-        return api_models[tier].model_validate(values)
 
 
 class EntPolicyQuery(EntObjectQuery[ExampleViewerContext, EntPolicy, EntPolicyModel]):

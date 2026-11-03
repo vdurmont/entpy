@@ -20,15 +20,12 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Boolean
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
-from tiers import Tier
-from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -45,18 +42,6 @@ class EntTestObject5Model(EntModel):
     is_it_true: Mapped[bool] = mapped_column(
         Boolean(), nullable=False, server_default="true"
     )
-
-
-class EntTestObject5RefAPIModel(TieredAPIEntity):
-    pass
-
-
-class EntTestObject5ItemAPIModel(EntTestObject5RefAPIModel):
-    pass
-
-
-class EntTestObject5DetailedAPIModel(EntTestObject5ItemAPIModel):
-    pass
 
 
 class EntTestObject5Pending(EntPending[EntTestObject5Model]):
@@ -93,42 +78,6 @@ class EntTestObject5(
         vc: ExampleViewerContext,
     ) -> EntTestObject5Query:
         return EntTestObject5Query(vc=vc)
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.REF]
-    ) -> EntTestObject5RefAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.ITEM]
-    ) -> EntTestObject5ItemAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.DETAILED]
-    ) -> EntTestObject5DetailedAPIModel: ...
-
-    @overload
-    async def gen_serialize(self, tier: Tier) -> EntTestObject5RefAPIModel: ...
-
-    async def gen_serialize(self, tier: Tier) -> EntTestObject5RefAPIModel:
-        from .all_models import ensure_api_models_built
-
-        ensure_api_models_built()
-        values: dict[str, Any] = {
-            "id": self.id,
-            "entity_type": "EntTestObject5",
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }
-
-        api_models: dict[Tier, type[EntTestObject5RefAPIModel]] = {
-            Tier.REF: EntTestObject5RefAPIModel,
-            Tier.ITEM: EntTestObject5ItemAPIModel,
-            Tier.DETAILED: EntTestObject5DetailedAPIModel,
-        }
-        return api_models[tier].model_validate(values)
 
 
 class EntTestObject5Query(

@@ -15,12 +15,9 @@ from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
-from entpy.model import TieredAPIEntity
 from evc import ExampleViewerContext
 from sqlalchemy import Integer
 from sqlalchemy.orm import Mapped, mapped_column
-from tiers import Tier
-from typing import Literal, overload
 
 
 if TYPE_CHECKING:
@@ -36,18 +33,6 @@ class EntTestPatternModel(EntModel):
     __abstract__ = True
 
     limit: Mapped[int | None] = mapped_column(Integer(), nullable=True)
-
-
-class EntTestPatternRefAPIModel(TieredAPIEntity):
-    pass
-
-
-class EntTestPatternItemAPIModel(EntTestPatternRefAPIModel):
-    pass
-
-
-class EntTestPatternDetailedAPIModel(EntTestPatternItemAPIModel):
-    pass
 
 
 class IEntTestPatternPending(EntPending[EntTestPatternModel]):
@@ -98,28 +83,6 @@ class IEntTestPattern(
         vc: ExampleViewerContext,
     ) -> IEntTestPatternQuery:
         return IEntTestPatternQuery(vc=vc)
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.REF]
-    ) -> EntTestPatternRefAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.ITEM]
-    ) -> EntTestPatternItemAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.DETAILED]
-    ) -> EntTestPatternDetailedAPIModel: ...
-
-    @overload
-    async def gen_serialize(self, tier: Tier) -> EntTestPatternRefAPIModel: ...
-
-    @abstractmethod
-    async def gen_serialize(self, tier: Tier) -> EntTestPatternRefAPIModel:
-        pass
 
     @classmethod
     @cache

@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 
+from entpy.model import TieredAPIEntity
 from evc import ExampleViewerContext
+from generated import ent_test_object3
 from generated.ent_child import EntChildExample
 from generated.ent_grand_parent import EntGrandParentExample
 from generated.ent_inherited_owner import EntInheritedOwnerExample
@@ -101,3 +103,13 @@ async def test_edge_to_pattern_serializes_the_concrete_ent(
     assert result["inherited"]["entity_type"] == "EntInheritedTest2"
     assert result["inherited"]["base_field"] == "base"
     assert result["inherited"]["schema_field"] == "concrete"
+
+
+def test_an_ent_exposing_no_field_gets_no_api_model() -> None:
+    api_models = [
+        obj
+        for obj in vars(ent_test_object3).values()
+        if isinstance(obj, type) and issubclass(obj, TieredAPIEntity)
+    ]
+
+    assert api_models == []

@@ -82,6 +82,10 @@ def _all_members(descriptor: Descriptor) -> list[Member]:
     return fields + get_all_computed_fields(descriptor)
 
 
+def exposes_fields(descriptor: Descriptor) -> bool:
+    return any(m.serialization is not None for m in _all_members(descriptor))
+
+
 def _output_key(member: Member) -> str:
     if member.serialization is not None and member.serialization.name:
         return member.serialization.name
@@ -136,6 +140,11 @@ def validate_descriptor(
             nested = _nested_tier(member, ctx)
             if nested not in ctx.config.tiers:
                 raise ValueError(f"{label} nests at {nested!r}, which is not a tier.")
+            if not exposes_fields(member.edge_class()):
+                raise ValueError(
+                    f"{label} is serialized, but {member.edge_class.__name__} "
+                    + "exposes no fields."
+                )
         elif serialization.nested is not None:
             raise ValueError(f"{label} is not an edge and cannot set nested=.")
 
@@ -232,6 +241,8 @@ def _python_type(field: Field, ctx: SerializationContext) -> GeneratedContent:
 def generate_api_models(
     descriptor: Descriptor, base_name: str, ctx: SerializationContext
 ) -> GeneratedContent:
+    if not exposes_fields(descriptor):
+        return GeneratedContent(code="")
     imports = ["from pydantic import Field as APIField"]
     type_checking_imports: list[str] = []
     code = ""
@@ -243,6 +254,8 @@ def generate_api_models(
         if included is not None:
             bases.append(api_model_name(base_name, included))
         for pattern in descriptor.get_patterns():
+            if not exposes_fields(pattern):
+                continue
             pattern_base = base_name_of(type(pattern))
             pattern_model = api_model_name(pattern_base, tier)
             bases.append(pattern_model)
@@ -311,8 +324,10 @@ def _generate_overloads(
 
 
 def generate_pattern_serialize(
-    base_name: str, ctx: SerializationContext
+    pattern: Pattern, base_name: str, ctx: SerializationContext
 ) -> GeneratedContent:
+    if not exposes_fields(pattern):
+        return GeneratedContent(code="")
     signature = _generate_overloads(base_name, ctx, abstract=True)
     return GeneratedContent(
         code=f"{signature}\n        pass\n",
@@ -327,6 +342,8 @@ def generate_pattern_serialize(
 def generate_schema_serialize(
     schema: Schema, base_name: str, ctx: SerializationContext
 ) -> GeneratedContent:
+    if not exposes_fields(schema):
+        return GeneratedContent(code="")
     members = [m for m in _all_members(schema) if m.serialization is not None]
     blocks = ""
     for tier in ctx.config.get_ordered_tiers():

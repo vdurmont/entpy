@@ -313,7 +313,7 @@ SERIALIZATION = SerializationConfig(
 - `includes`: a tier contains every field of the tier it includes. The tiers form a single chain, and every member of the enum needs a `TierConfig`.
 - `nested`: the tier an edge renders at when it is serialized in this tier.
 
-Fields opt in. A field is serialized only if `serialize()` is called on it; otherwise it is in no API model. An `internal()` or encrypted field cannot be serialized.
+Fields opt in. A field is serialized only if `serialize()` is called on it; otherwise it is in no API model. An `internal()` or encrypted field cannot be serialized. A schema or pattern that serializes no field gets no API model and no `gen_serialize`, and a serialized edge pointing at one is a gencode error.
 
 ```python
 StringField("name", 100).not_null().serialize(Tier.ITEM),

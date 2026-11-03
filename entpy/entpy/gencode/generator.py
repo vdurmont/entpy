@@ -10,6 +10,7 @@ from entpy.gencode.serialization_generator import (
     SerializationContext,
     api_model_names,
     base_name_of,
+    exposes_fields,
     generate_ensure_built,
     get_serialized_enum_types,
     validate_no_cycles,
@@ -116,7 +117,7 @@ def run(
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
 
-        if serialization_context:
+        if serialization_context and exposes_fields(descriptor_class()):
             api_model_imports += [
                 (descriptor_output_path.stem, model)
                 for model in api_model_names(
@@ -128,7 +129,7 @@ def run(
 
     ensure_built = (
         generate_ensure_built(api_model_imports, enum_types)
-        if serialization_context
+        if api_model_imports
         else None
     )
     if ensure_built:

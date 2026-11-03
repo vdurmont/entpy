@@ -11,10 +11,7 @@ from uuid import UUID
 from datetime import datetime
 from typing import Self
 from evc import ExampleViewerContext
-from .ent_test_thing import EntTestThingDetailedAPIModel
-from .ent_test_thing import EntTestThingItemAPIModel
 from .ent_test_thing import EntTestThingModel
-from .ent_test_thing import EntTestThingRefAPIModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
@@ -60,8 +57,6 @@ from sqlalchemy import Time
 from sqlalchemy import event
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
-from tiers import Tier
-from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -334,20 +329,6 @@ event.listen(
 )
 
 
-class EntTestObjectRefAPIModel(EntTestThingRefAPIModel):
-    pass
-
-
-class EntTestObjectItemAPIModel(EntTestObjectRefAPIModel, EntTestThingItemAPIModel):
-    pass
-
-
-class EntTestObjectDetailedAPIModel(
-    EntTestObjectItemAPIModel, EntTestThingDetailedAPIModel
-):
-    pass
-
-
 class EntTestObjectPending(IEntTestThingPending):
     m = EntTestObjectModel
 
@@ -585,42 +566,6 @@ class EntTestObject(
         vc: ExampleViewerContext,
     ) -> EntTestObjectQuery:
         return EntTestObjectQuery(vc=vc)
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.REF]
-    ) -> EntTestObjectRefAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.ITEM]
-    ) -> EntTestObjectItemAPIModel: ...
-
-    @overload
-    async def gen_serialize(
-        self, tier: Literal[Tier.DETAILED]
-    ) -> EntTestObjectDetailedAPIModel: ...
-
-    @overload
-    async def gen_serialize(self, tier: Tier) -> EntTestObjectRefAPIModel: ...
-
-    async def gen_serialize(self, tier: Tier) -> EntTestObjectRefAPIModel:
-        from .all_models import ensure_api_models_built
-
-        ensure_api_models_built()
-        values: dict[str, Any] = {
-            "id": self.id,
-            "entity_type": "EntTestObject",
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }
-
-        api_models: dict[Tier, type[EntTestObjectRefAPIModel]] = {
-            Tier.REF: EntTestObjectRefAPIModel,
-            Tier.ITEM: EntTestObjectItemAPIModel,
-            Tier.DETAILED: EntTestObjectDetailedAPIModel,
-        }
-        return api_models[tier].model_validate(values)
 
 
 class EntTestObjectQuery(
