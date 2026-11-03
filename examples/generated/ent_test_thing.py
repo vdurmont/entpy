@@ -19,17 +19,17 @@ from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.framework.types import Uuid
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from evc import ExampleViewerContext
-from pydantic import Field as APIField
 from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Literal, overload
 
 
 if TYPE_CHECKING:
-    from .ent_test_object5 import EntTestObject5APIModel
     from entpy import Ent
     from entpy.framework.pattern import Pattern
     from .ent_test_object5 import EntTestObject5
@@ -65,14 +65,16 @@ class EntTestThingModel(EntModel):
     )
 
 
-class EntTestThingAPIModel(APIEntity):
-    a_good_thing: str = APIField(..., examples=["A sunny day"])
-    obj5: "EntTestObject5APIModel" = APIField(...)
-    a_pattern_preprocessed_field: str | None = APIField(None)
-    a_pattern_validated_field: str | None = APIField(None, examples=["vdurmont"])
-    idempotency_key: UUID | None = APIField(None)
-    obj5_opt: "EntTestObject5APIModel | None" = APIField(None)
-    thing_status: ThingStatus | None = APIField(None)
+class EntTestThingRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntTestThingItemAPIModel(EntTestThingRefAPIModel):
+    pass
+
+
+class EntTestThingDetailedAPIModel(EntTestThingItemAPIModel):
+    pass
 
 
 class IEntTestThingPending(EntPending[EntTestThingModel]):
@@ -198,6 +200,28 @@ class IEntTestThing(
         vc: ExampleViewerContext,
     ) -> IEntTestThingQuery:
         return IEntTestThingQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntTestThingRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntTestThingItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntTestThingDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntTestThingRefAPIModel: ...
+
+    @abstractmethod
+    async def gen_serialize(self, tier: Tier) -> EntTestThingRefAPIModel:
+        pass
 
     @classmethod
     @cache

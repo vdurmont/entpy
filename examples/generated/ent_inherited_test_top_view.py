@@ -23,6 +23,7 @@ view_query: CompoundSelect = union_all(
         EntInheritedTest2Model.updated_at,
         EntInheritedTest2Model.soft_deleted_at,
         EntInheritedTest2Model.base_field,
+        EntInheritedTest2Model.happened_at,
     ),
     select(
         literal_column("'EntInheritedTestModel'").label("ent_type"),
@@ -31,6 +32,7 @@ view_query: CompoundSelect = union_all(
         EntInheritedTestModel.updated_at,
         EntInheritedTestModel.soft_deleted_at,
         EntInheritedTestModel.base_field,
+        EntInheritedTestModel.happened_at,
     ),
 )
 

@@ -10,14 +10,18 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
-from .ent_test_pattern import EntTestPatternAPIModel
+from .ent_test_pattern import EntTestPatternDetailedAPIModel
+from .ent_test_pattern import EntTestPatternItemAPIModel
 from .ent_test_pattern import EntTestPatternModel
+from .ent_test_pattern import EntTestPatternRefAPIModel
 from .ent_test_pattern import IEntTestPattern
 from .ent_test_pattern import IEntTestPatternMutatorDeletionAction
 from .ent_test_pattern import IEntTestPatternMutatorUpdateAction
 from .ent_test_pattern import IEntTestPatternPending
-from .ent_test_thing import EntTestThingAPIModel
+from .ent_test_thing import EntTestThingDetailedAPIModel
+from .ent_test_thing import EntTestThingItemAPIModel
 from .ent_test_thing import EntTestThingModel
+from .ent_test_thing import EntTestThingRefAPIModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
 from .ent_test_thing import IEntTestThingMutatorUpdateAction
@@ -39,13 +43,14 @@ from entpy.framework.triggers import (
 )
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Index, text
 from sqlalchemy import String
 from sqlalchemy import event
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -192,9 +197,22 @@ event.listen(
 )
 
 
-class EntTestObject2APIModel(EntTestThingAPIModel, EntTestPatternAPIModel):
-    some_deprecated_field: str | None = APIField(None)
-    some_field: str | None = APIField(None)
+class EntTestObject2RefAPIModel(EntTestThingRefAPIModel, EntTestPatternRefAPIModel):
+    pass
+
+
+class EntTestObject2ItemAPIModel(
+    EntTestObject2RefAPIModel, EntTestThingItemAPIModel, EntTestPatternItemAPIModel
+):
+    pass
+
+
+class EntTestObject2DetailedAPIModel(
+    EntTestObject2ItemAPIModel,
+    EntTestThingDetailedAPIModel,
+    EntTestPatternDetailedAPIModel,
+):
+    pass
 
 
 class EntTestObject2Pending(IEntTestThingPending, IEntTestPatternPending):
@@ -240,6 +258,42 @@ class EntTestObject2(
         vc: ExampleViewerContext,
     ) -> EntTestObject2Query:
         return EntTestObject2Query(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntTestObject2RefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntTestObject2ItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntTestObject2DetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntTestObject2RefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntTestObject2RefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntTestObject2",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+        api_models: dict[Tier, type[EntTestObject2RefAPIModel]] = {
+            Tier.REF: EntTestObject2RefAPIModel,
+            Tier.ITEM: EntTestObject2ItemAPIModel,
+            Tier.DETAILED: EntTestObject2DetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntTestObject2Query(

@@ -10,8 +10,10 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
-from .ent_inherited_test_middle import EntInheritedTestMiddleAPIModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleDetailedAPIModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleItemAPIModel
 from .ent_inherited_test_middle import EntInheritedTestMiddleModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleRefAPIModel
 from .ent_inherited_test_middle import IEntInheritedTestMiddle
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorDeletionAction
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorUpdateAction
@@ -30,9 +32,13 @@ from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_grand_parent import EntGrandParentModel
     from entpy import Ent
     from entpy import Field
 
@@ -44,10 +50,26 @@ class EntInheritedTest2Model(EntInheritedTestMiddleModel):
     __table_args__ = {"schema": "other"}
 
     schema_field: Mapped[str] = mapped_column(String(100), nullable=False)
+    grand_parent: Mapped["EntGrandParentModel"] = relationship(
+        "EntGrandParentModel",
+        primaryjoin="EntInheritedTest2Model.grand_parent_id == EntGrandParentModel.id",
+    )
 
 
-class EntInheritedTest2APIModel(EntInheritedTestMiddleAPIModel):
-    schema_field: str = APIField(..., examples=["schema value"])
+class EntInheritedTest2RefAPIModel(EntInheritedTestMiddleRefAPIModel):
+    pass
+
+
+class EntInheritedTest2ItemAPIModel(
+    EntInheritedTest2RefAPIModel, EntInheritedTestMiddleItemAPIModel
+):
+    schema_field: str = APIField(...)
+
+
+class EntInheritedTest2DetailedAPIModel(
+    EntInheritedTest2ItemAPIModel, EntInheritedTestMiddleDetailedAPIModel
+):
+    pass
 
 
 class EntInheritedTest2Pending(IEntInheritedTestMiddlePending):
@@ -82,6 +104,57 @@ class EntInheritedTest2(
     ) -> EntInheritedTest2Query:
         return EntInheritedTest2Query(vc=vc)
 
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntInheritedTest2RefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntInheritedTest2ItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntInheritedTest2DetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTest2RefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTest2RefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntInheritedTest2",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+        if tier in (
+            Tier.ITEM,
+            Tier.DETAILED,
+        ):
+            values["base_field"] = self.base_field
+            values["schema_field"] = self.schema_field
+            values["happened_at"] = self.happened_at
+        if tier in (Tier.DETAILED,):
+            values["middle"] = self.middle_field
+            edge_grand_parent = await self.gen_grand_parent()
+            values["grand_parent"] = (
+                None
+                if edge_grand_parent is None
+                else await edge_grand_parent.gen_serialize(Tier.ITEM)
+            )
+
+        api_models: dict[Tier, type[EntInheritedTest2RefAPIModel]] = {
+            Tier.REF: EntInheritedTest2RefAPIModel,
+            Tier.ITEM: EntInheritedTest2ItemAPIModel,
+            Tier.DETAILED: EntInheritedTest2DetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
+
 
 class EntInheritedTest2Query(
     EntObjectQuery[ExampleViewerContext, EntInheritedTest2, EntInheritedTest2Model]
@@ -98,6 +171,8 @@ class EntInheritedTest2Mutator:
         base_field: str,
         middle_field: int,
         schema_field: str,
+        grand_parent_id: UUID | None = None,
+        happened_at: datetime | None = None,
         id: UUID | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
@@ -110,6 +185,8 @@ class EntInheritedTest2Mutator:
             base_field=base_field,
             middle_field=middle_field,
             schema_field=schema_field,
+            grand_parent_id=grand_parent_id,
+            happened_at=happened_at,
         )
 
     @classmethod
@@ -151,6 +228,8 @@ class EntInheritedTest2MutatorCreationAction(
         base_field: str
         middle_field: int
         schema_field: str
+        grand_parent_id: UUID | None = None
+        happened_at: datetime | None = None
 
 
 class EntInheritedTest2MutatorUpdateAction(
@@ -171,6 +250,8 @@ class EntInheritedTest2MutatorUpdateAction(
         base_field: str
         middle_field: int
         schema_field: str
+        grand_parent_id: UUID | None = None
+        happened_at: datetime | None = None
 
 
 class EntInheritedTest2MutatorDeletionAction(  # type: ignore[misc]
@@ -192,6 +273,8 @@ class EntInheritedTest2Example:
         base_field: str | Sentinel = NOTHING,
         middle_field: int | Sentinel = NOTHING,
         schema_field: str | Sentinel = NOTHING,
+        grand_parent_id: UUID | None = None,
+        happened_at: datetime | None = None,
     ) -> EntInheritedTest2:
         # TODO make sure we only use this in test mode
 
@@ -209,6 +292,8 @@ class EntInheritedTest2Example:
             base_field=base_field,
             middle_field=middle_field,
             schema_field=schema_field,
+            grand_parent_id=grand_parent_id,
+            happened_at=happened_at,
         ).gen_savex()
 
 

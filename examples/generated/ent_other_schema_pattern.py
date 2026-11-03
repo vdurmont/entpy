@@ -15,8 +15,10 @@ from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from evc import ExampleViewerContext
+from tiers import Tier
+from typing import Literal, overload
 
 
 if TYPE_CHECKING:
@@ -33,7 +35,15 @@ class EntOtherSchemaPatternModel(EntModel):
     __table_args__ = {"schema": "other"}
 
 
-class EntOtherSchemaPatternAPIModel(APIEntity):
+class EntOtherSchemaPatternRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntOtherSchemaPatternItemAPIModel(EntOtherSchemaPatternRefAPIModel):
+    pass
+
+
+class EntOtherSchemaPatternDetailedAPIModel(EntOtherSchemaPatternItemAPIModel):
     pass
 
 
@@ -63,6 +73,28 @@ class IEntOtherSchemaPattern(
         vc: ExampleViewerContext,
     ) -> IEntOtherSchemaPatternQuery:
         return IEntOtherSchemaPatternQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntOtherSchemaPatternRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntOtherSchemaPatternItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntOtherSchemaPatternDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntOtherSchemaPatternRefAPIModel: ...
+
+    @abstractmethod
+    async def gen_serialize(self, tier: Tier) -> EntOtherSchemaPatternRefAPIModel:
+        pass
 
     @classmethod
     @cache

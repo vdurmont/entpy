@@ -20,13 +20,15 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
 from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -42,8 +44,16 @@ class EntGrandParentModel(EntModel):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
-class EntGrandParentAPIModel(APIEntity):
-    name: str = APIField(..., examples=["Anne"])
+class EntGrandParentRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntGrandParentItemAPIModel(EntGrandParentRefAPIModel):
+    name: str = APIField(...)
+
+
+class EntGrandParentDetailedAPIModel(EntGrandParentItemAPIModel):
+    pass
 
 
 class EntGrandParentPending(EntPending[EntGrandParentModel]):
@@ -76,6 +86,47 @@ class EntGrandParent(
         vc: ExampleViewerContext,
     ) -> EntGrandParentQuery:
         return EntGrandParentQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntGrandParentRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntGrandParentItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntGrandParentDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntGrandParentRefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntGrandParentRefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntGrandParent",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+        if tier in (
+            Tier.ITEM,
+            Tier.DETAILED,
+        ):
+            values["name"] = self.name
+
+        api_models: dict[Tier, type[EntGrandParentRefAPIModel]] = {
+            Tier.REF: EntGrandParentRefAPIModel,
+            Tier.ITEM: EntGrandParentItemAPIModel,
+            Tier.DETAILED: EntGrandParentDetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntGrandParentQuery(

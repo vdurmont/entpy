@@ -1,5 +1,6 @@
 from .framework.action import Action  # noqa: F401
 from .framework.composite_index import CompositeIndex  # noqa: F401
+from .framework.computed_field import ComputedField  # noqa: F401
 from .framework.database import (
     db,
     event_subscription,  # noqa: F401
@@ -37,11 +38,13 @@ from .framework.fields.time_field import TimeField  # noqa: F401
 from .framework.fields.uuid_field import UuidField  # noqa: F401
 from .framework.fields.validator import FieldValidator  # noqa: F401
 from .framework.hooks import EntTrigger  # noqa: F401
+from .framework.imported_object import ImportedObject  # noqa: F401
 from .framework.pattern import Pattern  # noqa: F401
 from .framework.privacy_rule import EdgeDelegate, PrivacyRule  # noqa: F401
 from .framework.query import EntQuery  # noqa: F401
 from .framework.rules import AllOf, AllowAll, DenyAll  # noqa: F401
 from .framework.schema import Schema  # noqa: F401
+from .framework.serialization import SerializationConfig, TierConfig  # noqa: F401
 from .framework.viewer_context import ViewerContext  # noqa: F401
 
 init_entpy = db.init_entpy

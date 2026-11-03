@@ -20,13 +20,14 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -42,8 +43,16 @@ class EntPassThenDenyModel(EntModel):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
-class EntPassThenDenyAPIModel(APIEntity):
-    name: str = APIField(..., examples=["Pass Then Deny Entity"])
+class EntPassThenDenyRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntPassThenDenyItemAPIModel(EntPassThenDenyRefAPIModel):
+    pass
+
+
+class EntPassThenDenyDetailedAPIModel(EntPassThenDenyItemAPIModel):
+    pass
 
 
 class EntPassThenDenyPending(EntPending[EntPassThenDenyModel]):
@@ -76,6 +85,42 @@ class EntPassThenDeny(
         vc: ExampleViewerContext,
     ) -> EntPassThenDenyQuery:
         return EntPassThenDenyQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntPassThenDenyRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntPassThenDenyItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntPassThenDenyDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntPassThenDenyRefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntPassThenDenyRefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntPassThenDeny",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+        api_models: dict[Tier, type[EntPassThenDenyRefAPIModel]] = {
+            Tier.REF: EntPassThenDenyRefAPIModel,
+            Tier.ITEM: EntPassThenDenyItemAPIModel,
+            Tier.DETAILED: EntPassThenDenyDetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntPassThenDenyQuery(

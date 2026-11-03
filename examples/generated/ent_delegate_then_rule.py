@@ -21,20 +21,20 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_privacy_parent import EntPrivacyParentModel
-    from .ent_privacy_parent import EntPrivacyParentAPIModel
     from entpy import Ent
     from .ent_privacy_parent import EntPrivacyParent
     from entpy import Field
@@ -57,9 +57,16 @@ class EntDelegateThenRuleModel(EntModel):
     )
 
 
-class EntDelegateThenRuleAPIModel(APIEntity):
-    name: str = APIField(..., examples=["Delegate Then Rule Entity"])
-    privacy_parent: "EntPrivacyParentAPIModel" = APIField(...)
+class EntDelegateThenRuleRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntDelegateThenRuleItemAPIModel(EntDelegateThenRuleRefAPIModel):
+    pass
+
+
+class EntDelegateThenRuleDetailedAPIModel(EntDelegateThenRuleItemAPIModel):
+    pass
 
 
 class EntDelegateThenRulePending(EntPending[EntDelegateThenRuleModel]):
@@ -106,6 +113,42 @@ class EntDelegateThenRule(
         vc: ExampleViewerContext,
     ) -> EntDelegateThenRuleQuery:
         return EntDelegateThenRuleQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntDelegateThenRuleRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntDelegateThenRuleItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntDelegateThenRuleDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntDelegateThenRuleRefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntDelegateThenRuleRefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntDelegateThenRule",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+        api_models: dict[Tier, type[EntDelegateThenRuleRefAPIModel]] = {
+            Tier.REF: EntDelegateThenRuleRefAPIModel,
+            Tier.ITEM: EntDelegateThenRuleItemAPIModel,
+            Tier.DETAILED: EntDelegateThenRuleDetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntDelegateThenRuleQuery(

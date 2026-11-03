@@ -23,6 +23,8 @@ from .ent_grand_parent import EntGrandParentModel  # noqa: F401
 from .ent_grand_parent import EntGrandParent
 from .ent_guarded import EntGuardedModel  # noqa: F401
 from .ent_guarded import EntGuarded
+from .ent_inherited_owner import EntInheritedOwnerModel  # noqa: F401
+from .ent_inherited_owner import EntInheritedOwner
 from .ent_inherited_test2 import EntInheritedTest2Model  # noqa: F401
 from .ent_inherited_test2 import EntInheritedTest2
 from .ent_inherited_test_middle_view import ent_inherited_test_middle_view  # noqa: F401
@@ -58,6 +60,98 @@ from .ent_test_sub_object import EntTestSubObject
 from .ent_test_thing_view import ent_test_thing_view  # noqa: F401
 from .ent_user import EntUserModel  # noqa: F401
 from .ent_user import EntUser
+from functools import cache
+from pydantic import BaseModel
+from datetime import date
+from datetime import time
+from datetime import timedelta
+from pydantic import AwareDatetime
+from pydantic import SerializeAsAny
+from typing import Any
+from .ent_child import EntChildRefAPIModel
+from .ent_child import EntChildItemAPIModel
+from .ent_child import EntChildDetailedAPIModel
+from .ent_credential import EntCredentialRefAPIModel
+from .ent_credential import EntCredentialItemAPIModel
+from .ent_credential import EntCredentialDetailedAPIModel
+from .ent_delegate_then_rule import EntDelegateThenRuleRefAPIModel
+from .ent_delegate_then_rule import EntDelegateThenRuleItemAPIModel
+from .ent_delegate_then_rule import EntDelegateThenRuleDetailedAPIModel
+from .ent_delegating_child import EntDelegatingChildRefAPIModel
+from .ent_delegating_child import EntDelegatingChildItemAPIModel
+from .ent_delegating_child import EntDelegatingChildDetailedAPIModel
+from .ent_delegating_grandchild import EntDelegatingGrandchildRefAPIModel
+from .ent_delegating_grandchild import EntDelegatingGrandchildItemAPIModel
+from .ent_delegating_grandchild import EntDelegatingGrandchildDetailedAPIModel
+from .ent_grand_parent import EntGrandParentRefAPIModel
+from .ent_grand_parent import EntGrandParentItemAPIModel
+from .ent_grand_parent import EntGrandParentDetailedAPIModel
+from .ent_guarded import EntGuardedRefAPIModel
+from .ent_guarded import EntGuardedItemAPIModel
+from .ent_guarded import EntGuardedDetailedAPIModel
+from .ent_inherited_owner import EntInheritedOwnerRefAPIModel
+from .ent_inherited_owner import EntInheritedOwnerItemAPIModel
+from .ent_inherited_owner import EntInheritedOwnerDetailedAPIModel
+from .ent_inherited_test2 import EntInheritedTest2RefAPIModel
+from .ent_inherited_test2 import EntInheritedTest2ItemAPIModel
+from .ent_inherited_test2 import EntInheritedTest2DetailedAPIModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleRefAPIModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleItemAPIModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleDetailedAPIModel
+from .ent_inherited_test import EntInheritedTestRefAPIModel
+from .ent_inherited_test import EntInheritedTestItemAPIModel
+from .ent_inherited_test import EntInheritedTestDetailedAPIModel
+from .ent_inherited_test_top import EntInheritedTestTopRefAPIModel
+from .ent_inherited_test_top import EntInheritedTestTopItemAPIModel
+from .ent_inherited_test_top import EntInheritedTestTopDetailedAPIModel
+from .ent_mixed_list import EntMixedListRefAPIModel
+from .ent_mixed_list import EntMixedListItemAPIModel
+from .ent_mixed_list import EntMixedListDetailedAPIModel
+from .ent_other_schema_pattern import EntOtherSchemaPatternRefAPIModel
+from .ent_other_schema_pattern import EntOtherSchemaPatternItemAPIModel
+from .ent_other_schema_pattern import EntOtherSchemaPatternDetailedAPIModel
+from .ent_parent import EntParentRefAPIModel
+from .ent_parent import EntParentItemAPIModel
+from .ent_parent import EntParentDetailedAPIModel
+from .ent_pass_then_deny import EntPassThenDenyRefAPIModel
+from .ent_pass_then_deny import EntPassThenDenyItemAPIModel
+from .ent_pass_then_deny import EntPassThenDenyDetailedAPIModel
+from .ent_policy import EntPolicyRefAPIModel
+from .ent_policy import EntPolicyItemAPIModel
+from .ent_policy import EntPolicyDetailedAPIModel
+from .ent_privacy_parent import EntPrivacyParentRefAPIModel
+from .ent_privacy_parent import EntPrivacyParentItemAPIModel
+from .ent_privacy_parent import EntPrivacyParentDetailedAPIModel
+from .ent_single_rule import EntSingleRuleRefAPIModel
+from .ent_single_rule import EntSingleRuleItemAPIModel
+from .ent_single_rule import EntSingleRuleDetailedAPIModel
+from .ent_test_object2 import EntTestObject2RefAPIModel
+from .ent_test_object2 import EntTestObject2ItemAPIModel
+from .ent_test_object2 import EntTestObject2DetailedAPIModel
+from .ent_test_object3 import EntTestObject3RefAPIModel
+from .ent_test_object3 import EntTestObject3ItemAPIModel
+from .ent_test_object3 import EntTestObject3DetailedAPIModel
+from .ent_test_object4 import EntTestObject4RefAPIModel
+from .ent_test_object4 import EntTestObject4ItemAPIModel
+from .ent_test_object4 import EntTestObject4DetailedAPIModel
+from .ent_test_object5 import EntTestObject5RefAPIModel
+from .ent_test_object5 import EntTestObject5ItemAPIModel
+from .ent_test_object5 import EntTestObject5DetailedAPIModel
+from .ent_test_object import EntTestObjectRefAPIModel
+from .ent_test_object import EntTestObjectItemAPIModel
+from .ent_test_object import EntTestObjectDetailedAPIModel
+from .ent_test_pattern import EntTestPatternRefAPIModel
+from .ent_test_pattern import EntTestPatternItemAPIModel
+from .ent_test_pattern import EntTestPatternDetailedAPIModel
+from .ent_test_sub_object import EntTestSubObjectRefAPIModel
+from .ent_test_sub_object import EntTestSubObjectItemAPIModel
+from .ent_test_sub_object import EntTestSubObjectDetailedAPIModel
+from .ent_test_thing import EntTestThingRefAPIModel
+from .ent_test_thing import EntTestThingItemAPIModel
+from .ent_test_thing import EntTestThingDetailedAPIModel
+from .ent_user import EntUserRefAPIModel
+from .ent_user import EntUserItemAPIModel
+from .ent_user import EntUserDetailedAPIModel
 
 UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x43\x48": EntChild,
@@ -67,6 +161,7 @@ UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x2a\x0c": EntDelegatingGrandchild,
     b"\x3b\xdf": EntGrandParent,
     b"\x14\x8b": EntGuarded,
+    b"\x3a\x8c": EntInheritedOwner,
     b"\xae\xf7": EntInheritedTest2,
     b"\xb6\x61": EntInheritedTest,
     b"\x6f\xd4": EntMixedList,
@@ -90,3 +185,111 @@ def decode_entity_type_from_id(
 ) -> type[Ent[ExampleViewerContext, EntModel]] | None:
     uuid_type = entity_id.bytes[6:8]
     return UUID_TO_ENT.get(uuid_type)
+
+
+_API_MODELS: list[type[BaseModel]] = [
+    EntChildRefAPIModel,
+    EntChildItemAPIModel,
+    EntChildDetailedAPIModel,
+    EntCredentialRefAPIModel,
+    EntCredentialItemAPIModel,
+    EntCredentialDetailedAPIModel,
+    EntDelegateThenRuleRefAPIModel,
+    EntDelegateThenRuleItemAPIModel,
+    EntDelegateThenRuleDetailedAPIModel,
+    EntDelegatingChildRefAPIModel,
+    EntDelegatingChildItemAPIModel,
+    EntDelegatingChildDetailedAPIModel,
+    EntDelegatingGrandchildRefAPIModel,
+    EntDelegatingGrandchildItemAPIModel,
+    EntDelegatingGrandchildDetailedAPIModel,
+    EntGrandParentRefAPIModel,
+    EntGrandParentItemAPIModel,
+    EntGrandParentDetailedAPIModel,
+    EntGuardedRefAPIModel,
+    EntGuardedItemAPIModel,
+    EntGuardedDetailedAPIModel,
+    EntInheritedOwnerRefAPIModel,
+    EntInheritedOwnerItemAPIModel,
+    EntInheritedOwnerDetailedAPIModel,
+    EntInheritedTest2RefAPIModel,
+    EntInheritedTest2ItemAPIModel,
+    EntInheritedTest2DetailedAPIModel,
+    EntInheritedTestMiddleRefAPIModel,
+    EntInheritedTestMiddleItemAPIModel,
+    EntInheritedTestMiddleDetailedAPIModel,
+    EntInheritedTestRefAPIModel,
+    EntInheritedTestItemAPIModel,
+    EntInheritedTestDetailedAPIModel,
+    EntInheritedTestTopRefAPIModel,
+    EntInheritedTestTopItemAPIModel,
+    EntInheritedTestTopDetailedAPIModel,
+    EntMixedListRefAPIModel,
+    EntMixedListItemAPIModel,
+    EntMixedListDetailedAPIModel,
+    EntOtherSchemaPatternRefAPIModel,
+    EntOtherSchemaPatternItemAPIModel,
+    EntOtherSchemaPatternDetailedAPIModel,
+    EntParentRefAPIModel,
+    EntParentItemAPIModel,
+    EntParentDetailedAPIModel,
+    EntPassThenDenyRefAPIModel,
+    EntPassThenDenyItemAPIModel,
+    EntPassThenDenyDetailedAPIModel,
+    EntPolicyRefAPIModel,
+    EntPolicyItemAPIModel,
+    EntPolicyDetailedAPIModel,
+    EntPrivacyParentRefAPIModel,
+    EntPrivacyParentItemAPIModel,
+    EntPrivacyParentDetailedAPIModel,
+    EntSingleRuleRefAPIModel,
+    EntSingleRuleItemAPIModel,
+    EntSingleRuleDetailedAPIModel,
+    EntTestObject2RefAPIModel,
+    EntTestObject2ItemAPIModel,
+    EntTestObject2DetailedAPIModel,
+    EntTestObject3RefAPIModel,
+    EntTestObject3ItemAPIModel,
+    EntTestObject3DetailedAPIModel,
+    EntTestObject4RefAPIModel,
+    EntTestObject4ItemAPIModel,
+    EntTestObject4DetailedAPIModel,
+    EntTestObject5RefAPIModel,
+    EntTestObject5ItemAPIModel,
+    EntTestObject5DetailedAPIModel,
+    EntTestObjectRefAPIModel,
+    EntTestObjectItemAPIModel,
+    EntTestObjectDetailedAPIModel,
+    EntTestPatternRefAPIModel,
+    EntTestPatternItemAPIModel,
+    EntTestPatternDetailedAPIModel,
+    EntTestSubObjectRefAPIModel,
+    EntTestSubObjectItemAPIModel,
+    EntTestSubObjectDetailedAPIModel,
+    EntTestThingRefAPIModel,
+    EntTestThingItemAPIModel,
+    EntTestThingDetailedAPIModel,
+    EntUserRefAPIModel,
+    EntUserItemAPIModel,
+    EntUserDetailedAPIModel,
+]
+
+_ANNOTATION_TYPES: dict[str, object] = {
+    "date": date,
+    "time": time,
+    "timedelta": timedelta,
+    "AwareDatetime": AwareDatetime,
+    "SerializeAsAny": SerializeAsAny,
+    "Any": Any,
+    "UUID": UUID,
+}
+
+
+@cache
+def ensure_api_models_built() -> None:
+    namespace = {
+        **_ANNOTATION_TYPES,
+        **{model.__name__: model for model in _API_MODELS},
+    }
+    for model in _API_MODELS:
+        model.model_rebuild(_types_namespace=namespace)

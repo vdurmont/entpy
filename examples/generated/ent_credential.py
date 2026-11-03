@@ -20,13 +20,14 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -43,9 +44,16 @@ class EntCredentialModel(EntModel):
     slug: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
-class EntCredentialAPIModel(APIEntity):
-    name: str = APIField(..., examples=["My Credential"])
-    slug: str | None = APIField(None, examples=["my-credential"])
+class EntCredentialRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntCredentialItemAPIModel(EntCredentialRefAPIModel):
+    pass
+
+
+class EntCredentialDetailedAPIModel(EntCredentialItemAPIModel):
+    pass
 
 
 class EntCredentialPending(EntPending[EntCredentialModel]):
@@ -82,6 +90,42 @@ class EntCredential(
         vc: ExampleViewerContext,
     ) -> EntCredentialQuery:
         return EntCredentialQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntCredentialRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntCredentialItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntCredentialDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntCredentialRefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntCredentialRefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntCredential",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+        api_models: dict[Tier, type[EntCredentialRefAPIModel]] = {
+            Tier.REF: EntCredentialRefAPIModel,
+            Tier.ITEM: EntCredentialItemAPIModel,
+            Tier.DETAILED: EntCredentialDetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntCredentialQuery(

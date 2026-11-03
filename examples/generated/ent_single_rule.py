@@ -20,13 +20,14 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -42,8 +43,16 @@ class EntSingleRuleModel(EntModel):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
-class EntSingleRuleAPIModel(APIEntity):
-    name: str = APIField(..., examples=["Single Rule Entity"])
+class EntSingleRuleRefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntSingleRuleItemAPIModel(EntSingleRuleRefAPIModel):
+    pass
+
+
+class EntSingleRuleDetailedAPIModel(EntSingleRuleItemAPIModel):
+    pass
 
 
 class EntSingleRulePending(EntPending[EntSingleRuleModel]):
@@ -76,6 +85,42 @@ class EntSingleRule(
         vc: ExampleViewerContext,
     ) -> EntSingleRuleQuery:
         return EntSingleRuleQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntSingleRuleRefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntSingleRuleItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntSingleRuleDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntSingleRuleRefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntSingleRuleRefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntSingleRule",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+        api_models: dict[Tier, type[EntSingleRuleRefAPIModel]] = {
+            Tier.REF: EntSingleRuleRefAPIModel,
+            Tier.ITEM: EntSingleRuleItemAPIModel,
+            Tier.DETAILED: EntSingleRuleDetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntSingleRuleQuery(

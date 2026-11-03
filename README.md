@@ -216,6 +216,7 @@ Fields have a set of common attributes, such as:
 - `unique()`, which sets a unique index on that field and generates additional functions to get an Ent from that field: `gen_from_xxxx` and `genx_from_xxxx`.
 - `validators([...])`, which rejects a value: each `FieldValidator` returns whether the value is acceptable, and a mutation raises `ValidationError` if any of them says no.
 - `preprocessors([...])`, which rewrites a value on its way in: each `FieldPreprocessor` takes the value and returns the one to keep.
+- `serialize(tier, name=None, nested=None)`, which exposes the field in the generated API models from `tier` up. See [Serialization](#serialization).
 
 ```python
 class LowercasePreprocessor(FieldPreprocessor[str]):
@@ -287,6 +288,64 @@ def is_immutable(self) -> bool:
     return True
 ```
 
+# Serialization
+
+EntPy can generate typed API models for your Ents, in tiers you define: for example a cheap `ITEM` shape for lists and a richer `DETAILED` one for a single object.
+
+The tiers are your own enum, described by a `SerializationConfig` and passed to the gencode `run()`:
+
+```python
+class Tier(Enum):
+    REF = "REF"
+    ITEM = "ITEM"
+    DETAILED = "DETAILED"
+
+
+SERIALIZATION = SerializationConfig(
+    tiers={
+        Tier.REF: TierConfig(),
+        Tier.ITEM: TierConfig(includes=Tier.REF, nested=Tier.REF),
+        Tier.DETAILED: TierConfig(includes=Tier.ITEM, nested=Tier.ITEM),
+    },
+)
+```
+
+- `includes`: a tier contains every field of the tier it includes. The tiers form a single chain, and every member of the enum needs a `TierConfig`.
+- `nested`: the tier an edge renders at when it is serialized in this tier.
+
+Fields opt in. A field is serialized only if `serialize()` is called on it; otherwise it is in no API model. An `internal()` or encrypted field cannot be serialized.
+
+```python
+StringField("name", 100).not_null().serialize(Tier.ITEM),
+IntField("cached_likes_count").not_null().serialize(Tier.ITEM, name="likes_count"),
+EdgeField("owner", EntAccountPattern).not_null().serialize(Tier.ITEM, nested=Tier.ITEM),
+DatetimeField("archived_at").serialize(Tier.DETAILED),
+```
+
+`name=` renames the output key, and `nested=` overrides the tier's `nested` for one edge. An edge renders at a single tier, whichever tier it is read in.
+
+Values that are not columns are declared as computed fields, with an async resolver that takes the Ent. The resolver is named by import path, because it imports the generated Ent:
+
+```python
+def get_computed_fields(self) -> list[ComputedField]:
+    return [
+        ComputedField(
+            "full_name",
+            "str",
+            resolver=ImportedObject(module="myapp.resolvers", name="gen_full_name"),
+        ).serialize(Tier.ITEM),
+    ]
+```
+
+Gencode then emits one Pydantic model per tier, `EntMyObjectRefAPIModel`, `EntMyObjectItemAPIModel` and so on, each inheriting from the tier it includes and from its patterns' models. Every model carries `id`, `entity_type`, `created_at` and `updated_at`. The Ent gets a `gen_serialize(tier)` typed per tier, and a pattern's version dispatches to the concrete Ent:
+
+```python
+model = await my_object.gen_serialize(Tier.ITEM)  # EntMyObjectItemAPIModel
+model.model_dump(mode="json")
+```
+
+Gencode fails if the nesting forms a cycle, for example `EntUser[ITEM] -> workspace -> EntWorkspace[ITEM] -> creator -> EntUser[ITEM]`.
+
 # Gencode
 
 // TODO write me: explain how the gencode works, and how to configure your gencode script
@@ -316,6 +375,7 @@ Here are some details for the arguments:
 - `base_import`: an import statement to be used to import the `Base` model from SQLAlchemy in your project. See `examples/database.py` for an example.
 - `session_getter_import`: an import statement used to import a function that will enable the framework to obtain a database session. See `examples/database.py` for an example.
 - `session_getter_fn_name`: the name of the function imported above.
+- `serialization`: an `ImportedObject` pointing at your `SerializationConfig`, to generate tiered API models. See [Serialization](#serialization).
 
 # Contributing
 

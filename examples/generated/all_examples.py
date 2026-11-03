@@ -9,6 +9,7 @@ from .ent_delegating_child import EntDelegatingChildExample
 from .ent_delegating_grandchild import EntDelegatingGrandchildExample
 from .ent_grand_parent import EntGrandParentExample
 from .ent_guarded import EntGuardedExample
+from .ent_inherited_owner import EntInheritedOwnerExample
 from .ent_inherited_test2 import EntInheritedTest2Example
 from .ent_inherited_test import EntInheritedTestExample
 from .ent_mixed_list import EntMixedListExample
@@ -34,6 +35,7 @@ examples = [
     EntDelegatingGrandchildExample,
     EntGrandParentExample,
     EntGuardedExample,
+    EntInheritedOwnerExample,
     EntInheritedTest2Example,
     EntInheritedTestExample,
     EntMixedListExample,

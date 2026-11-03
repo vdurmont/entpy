@@ -11,11 +11,18 @@ from entpy.framework.fields.enum_field import EnumField
 from entpy.gencode.api_model_generator import generate as generate_api_model
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
+from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.introspection_generator import generate as generate_introspection
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.mutator_generator import generate as generate_mutator
 from entpy.gencode.mutator_generator import generate_pending
 from entpy.gencode.query_generator import generate as generate_query
+from entpy.gencode.serialization_generator import (
+    SerializationContext,
+    generate_api_models,
+    generate_schema_serialize,
+    validate_descriptor,
+)
 from entpy.gencode.utils import ImportedObject
 
 
@@ -24,6 +31,7 @@ def generate(
     vc: ImportedObject,
     threshold_to_stop_loading_ents_for_count: int,
     privacy_mixin: ImportedObject | None = None,
+    serialization: SerializationContext | None = None,
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.removesuffix("Schema")
@@ -39,9 +47,19 @@ def generate(
     _validate_privacy_config(schema)
     _validate_examples(schema)
     _validate_encrypted_fields(schema)
+    validate_descriptor(schema, serialization)
 
     model_content = generate_model(descriptor=schema, base_name=base_name)
-    api_model_content = generate_api_model(descriptor=schema, base_name=base_name)
+    if serialization:
+        api_model_content = generate_api_models(
+            descriptor=schema, base_name=base_name, ctx=serialization
+        )
+        serialize_content = generate_schema_serialize(
+            schema=schema, base_name=base_name, ctx=serialization
+        )
+    else:
+        api_model_content = generate_api_model(descriptor=schema, base_name=base_name)
+        serialize_content = GeneratedContent(code="")
     pending_content = generate_pending(schema=schema, base_name=base_name)
     base_content = generate_base(
         descriptor=schema,
@@ -76,6 +94,7 @@ def generate(
         + mutator_content.type_checking_imports
         + example_content.type_checking_imports
         + introspection_content.type_checking_imports
+        + serialize_content.type_checking_imports
     )
 
     imports = (
@@ -87,6 +106,7 @@ def generate(
         + mutator_content.imports
         + example_content.imports
         + introspection_content.imports
+        + serialize_content.imports
         + _get_patterns_imports(schema)
     )
     if type_checking_imports:
@@ -119,6 +139,7 @@ privacy_logger = logging.getLogger("entpy.privacy")
 {pending_content.code}
 
 {base_content.code}
+{serialize_content.code}
 
 {query_content.code}
 

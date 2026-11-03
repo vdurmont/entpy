@@ -6,6 +6,7 @@ from entpy.framework.composite_index import CompositeIndex
 from entpy.framework.fields.core import Field, FieldWithDefault
 
 if TYPE_CHECKING:
+    from entpy.framework.computed_field import ComputedField
     from entpy.framework.hooks import EntTrigger
     from entpy.framework.pattern import Pattern
 
@@ -32,6 +33,9 @@ class Descriptor(ABC):
         for pattern in self.get_patterns():
             fields += pattern.get_all_fields()
         return _sort_fields(fields)
+
+    def get_computed_fields(self) -> list["ComputedField"]:
+        return []
 
     def get_composite_indexes(self) -> list[CompositeIndex]:
         return []

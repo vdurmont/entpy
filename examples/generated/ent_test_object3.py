@@ -21,18 +21,18 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
-from entpy.model import APIEntity
+from entpy.model import TieredAPIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_test_object4 import EntTestObject4Model
-    from .ent_test_object4 import EntTestObject4APIModel
     from entpy import Ent
     from .ent_test_object4 import EntTestObject4
     from entpy import Field
@@ -54,8 +54,16 @@ class EntTestObject3Model(EntModel):
     )
 
 
-class EntTestObject3APIModel(APIEntity):
-    other: "EntTestObject4APIModel | None" = APIField(None)
+class EntTestObject3RefAPIModel(TieredAPIEntity):
+    pass
+
+
+class EntTestObject3ItemAPIModel(EntTestObject3RefAPIModel):
+    pass
+
+
+class EntTestObject3DetailedAPIModel(EntTestObject3ItemAPIModel):
+    pass
 
 
 class EntTestObject3Pending(EntPending[EntTestObject3Model]):
@@ -98,6 +106,42 @@ class EntTestObject3(
         vc: ExampleViewerContext,
     ) -> EntTestObject3Query:
         return EntTestObject3Query(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.REF]
+    ) -> EntTestObject3RefAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntTestObject3ItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntTestObject3DetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntTestObject3RefAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntTestObject3RefAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntTestObject3",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+        api_models: dict[Tier, type[EntTestObject3RefAPIModel]] = {
+            Tier.REF: EntTestObject3RefAPIModel,
+            Tier.ITEM: EntTestObject3ItemAPIModel,
+            Tier.DETAILED: EntTestObject3DetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntTestObject3Query(

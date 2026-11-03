@@ -6,6 +6,12 @@ from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
+from entpy.gencode.serialization_generator import (
+    SerializationContext,
+    generate_api_models,
+    generate_pattern_serialize,
+    validate_descriptor,
+)
 from entpy.gencode.utils import ImportedObject, to_snake_case
 
 
@@ -14,12 +20,23 @@ def generate(
     children_schema_classes: list[type[Schema]],
     vc: ImportedObject,
     threshold_to_stop_loading_ents_for_count: int,
+    serialization: SerializationContext | None = None,
 ) -> str:
     pattern = pattern_class()
     base_name = pattern_class.__name__.removesuffix("Pattern")
 
     model = generate_model(descriptor=pattern, base_name=base_name)
-    api_model = generate_api_model(descriptor=pattern, base_name=base_name)
+    validate_descriptor(pattern, serialization)
+    if serialization:
+        api_model = generate_api_models(
+            descriptor=pattern, base_name=base_name, ctx=serialization
+        )
+        serialize_content = generate_pattern_serialize(
+            base_name=base_name, ctx=serialization
+        )
+    else:
+        api_model = generate_api_model(descriptor=pattern, base_name=base_name)
+        serialize_content = GeneratedContent(code="")
     pending_content = _generate_pending(pattern=pattern, base_name=base_name)
 
     child_types = _generate_child_types(children_schema_classes=children_schema_classes)
@@ -76,6 +93,7 @@ def generate(
         + base_content.imports
         + query_content.imports
         + mutator_content.imports
+        + serialize_content.imports
     )
 
     imports = sorted(set(imports))  # Remove duplicates
@@ -116,6 +134,7 @@ if TYPE_CHECKING:
 {pending_content.code}
 
 {base_content.code}
+{serialize_content.code}
 
     @classmethod
     @cache
