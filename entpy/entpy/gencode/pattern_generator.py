@@ -1,6 +1,5 @@
 from entpy import Pattern, Schema
 from entpy.framework.fields.edge_field import EdgeField
-from entpy.gencode.api_model_generator import generate as generate_api_model
 from entpy.gencode.base_generator import _generate_fields
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.generated_content import GeneratedContent
@@ -19,7 +18,6 @@ def generate(
     base_name = pattern_class.__name__.removesuffix("Pattern")
 
     model = generate_model(descriptor=pattern, base_name=base_name)
-    api_model = generate_api_model(descriptor=pattern, base_name=base_name)
     pending_content = _generate_pending(pattern=pattern, base_name=base_name)
 
     child_types = _generate_child_types(children_schema_classes=children_schema_classes)
@@ -71,7 +69,6 @@ def generate(
             "from entpy.framework.errors import UnknownTypeError",
         ]
         + model.imports
-        + api_model.imports
         + pending_content.imports
         + base_content.imports
         + query_content.imports
@@ -83,7 +80,6 @@ def generate(
 
     type_checking_imports = (
         model.type_checking_imports
-        + api_model.type_checking_imports
         + pending_content.type_checking_imports
         + base_content.type_checking_imports
         + query_content.type_checking_imports
@@ -110,8 +106,6 @@ if TYPE_CHECKING:
     from entpy import Ent
 
 {model.code}
-
-{api_model.code}
 
 {pending_content.code}
 

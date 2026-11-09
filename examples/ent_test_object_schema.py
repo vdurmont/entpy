@@ -59,7 +59,7 @@ class EntTestObjectSchema(Schema):
             StringField("lastname", 100).default("Doe"),
             EmailField("email").example("test@example.com"),
             EmailField("contact_email").default("support@example.com"),
-            StringField("city", 100).example("Los Angeles").internal(),
+            StringField("city", 100).example("Los Angeles"),
             EdgeField("self", EntTestObjectSchema),
             EdgeField("some_pattern", EntTestThingPattern),
             EdgeField("required_sub_object", EntTestSubObjectSchema).not_null(),

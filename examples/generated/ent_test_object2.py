@@ -10,13 +10,11 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
-from .ent_test_pattern import EntTestPatternAPIModel
 from .ent_test_pattern import EntTestPatternModel
 from .ent_test_pattern import IEntTestPattern
 from .ent_test_pattern import IEntTestPatternMutatorDeletionAction
 from .ent_test_pattern import IEntTestPatternMutatorUpdateAction
 from .ent_test_pattern import IEntTestPatternPending
-from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
@@ -39,7 +37,6 @@ from entpy.framework.triggers import (
 )
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Index, text
 from sqlalchemy import String
@@ -190,11 +187,6 @@ event.listen(
         "update", "test_thing", "test_object2", ["a_good_thing", "thing_status"]
     ).execute_if(dialect="sqlite"),
 )
-
-
-class EntTestObject2APIModel(EntTestThingAPIModel, EntTestPatternAPIModel):
-    some_deprecated_field: str | None = APIField(None)
-    some_field: str | None = APIField(None)
 
 
 class EntTestObject2Pending(IEntTestThingPending, IEntTestPatternPending):

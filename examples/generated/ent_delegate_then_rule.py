@@ -21,10 +21,8 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
-from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
@@ -34,7 +32,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_privacy_parent import EntPrivacyParentModel
-    from .ent_privacy_parent import EntPrivacyParentAPIModel
     from entpy import Ent
     from .ent_privacy_parent import EntPrivacyParent
     from entpy import Field
@@ -55,11 +52,6 @@ class EntDelegateThenRuleModel(EntModel):
         "EntPrivacyParentModel",
         primaryjoin="EntDelegateThenRuleModel.privacy_parent_id == EntPrivacyParentModel.id",
     )
-
-
-class EntDelegateThenRuleAPIModel(APIEntity):
-    name: str = APIField(..., examples=["Delegate Then Rule Entity"])
-    privacy_parent: "EntPrivacyParentAPIModel" = APIField(...)
 
 
 class EntDelegateThenRulePending(EntPending[EntDelegateThenRuleModel]):

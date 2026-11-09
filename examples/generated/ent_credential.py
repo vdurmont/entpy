@@ -20,10 +20,8 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -41,11 +39,6 @@ class EntCredentialModel(EntModel):
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     slug: Mapped[str | None] = mapped_column(String(100), nullable=True)
-
-
-class EntCredentialAPIModel(APIEntity):
-    name: str = APIField(..., examples=["My Credential"])
-    slug: str | None = APIField(None, examples=["my-credential"])
 
 
 class EntCredentialPending(EntPending[EntCredentialModel]):
