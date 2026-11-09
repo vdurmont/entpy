@@ -19,7 +19,6 @@ class Field(ABC, Generic[T]):
     is_indexed: bool = False
     is_immutable: bool = False
     description: str | None = None
-    is_internal: bool = False
     is_deprecated: bool = False
     _validators: list[FieldValidator[T]]
     _preprocessors: list[FieldPreprocessor[T]]
@@ -55,10 +54,6 @@ class Field(ABC, Generic[T]):
 
     def immutable(self) -> Self:
         self.is_immutable = True
-        return self
-
-    def internal(self) -> Self:
-        self.is_internal = True
         return self
 
     def deprecated(self) -> Self:

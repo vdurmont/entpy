@@ -10,7 +10,6 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
-from .ent_inherited_test_middle import EntInheritedTestMiddleAPIModel
 from .ent_inherited_test_middle import EntInheritedTestMiddleModel
 from .ent_inherited_test_middle import IEntInheritedTestMiddle
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorDeletionAction
@@ -26,7 +25,6 @@ from entpy.framework.mutators import (
 from entpy.framework.query import EntObjectQuery
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -43,10 +41,6 @@ class EntInheritedTestModel(EntInheritedTestMiddleModel):
     __tablename__ = "inherited_test"
 
     schema_field: Mapped[str] = mapped_column(String(100), nullable=False)
-
-
-class EntInheritedTestAPIModel(EntInheritedTestMiddleAPIModel):
-    schema_field: str = APIField(..., examples=["schema value"])
 
 
 class EntInheritedTestPending(IEntInheritedTestMiddlePending):

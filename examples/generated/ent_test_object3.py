@@ -21,10 +21,8 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
-from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
@@ -32,7 +30,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_test_object4 import EntTestObject4Model
-    from .ent_test_object4 import EntTestObject4APIModel
     from entpy import Ent
     from .ent_test_object4 import EntTestObject4
     from entpy import Field
@@ -52,10 +49,6 @@ class EntTestObject3Model(EntModel):
         "EntTestObject4Model",
         primaryjoin="EntTestObject3Model.other_id == EntTestObject4Model.id",
     )
-
-
-class EntTestObject3APIModel(APIEntity):
-    other: "EntTestObject4APIModel | None" = APIField(None)
 
 
 class EntTestObject3Pending(EntPending[EntTestObject3Model]):

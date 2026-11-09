@@ -20,10 +20,8 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -49,13 +47,6 @@ class EntUserModel(EntModel):
     secondary_email: Mapped[str | None] = mapped_column(
         String(255, collation="nocase"), nullable=True
     )
-
-
-class EntUserAPIModel(APIEntity):
-    email: str = APIField(..., examples=["john.doe@example.com"])
-    name: str = APIField(..., examples=["John Doe"])
-    contact_email: str | None = APIField("noreply@example.com")
-    secondary_email: str | None = APIField(None, examples=["john.backup@example.com"])
 
 
 class EntUserPending(EntPending[EntUserModel]):

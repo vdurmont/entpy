@@ -11,7 +11,6 @@ from uuid import UUID
 from datetime import datetime
 from typing import Self
 from evc import ExampleViewerContext
-from .ent_test_thing import EntTestThingAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
@@ -42,8 +41,6 @@ from entpy.framework.types import Uuid
 from entpy.types import DateTime
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import AwareDatetime
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import BigInteger
 from sqlalchemy import Boolean
@@ -65,8 +62,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .ent_test_object5 import EntTestObject5Model
     from .ent_test_sub_object import EntTestSubObjectModel
-    from .ent_test_sub_object import EntTestSubObjectAPIModel
-    from .ent_test_thing import EntTestThingAPIModel
     from entpy import Ent
     from .ent_test_sub_object import EntTestSubObject
     from .ent_test_thing import IEntTestThing
@@ -332,45 +327,6 @@ event.listen(
         "update", "test_thing", "test_object", ["a_good_thing", "thing_status"]
     ).execute_if(dialect="sqlite"),
 )
-
-
-class EntTestObjectAPIModel(EntTestThingAPIModel):
-    firstname: str = APIField(..., examples=["Vincent"])
-    required_sub_object: "EntTestSubObjectAPIModel" = APIField(...)
-    username: str = APIField(
-        ..., description="This is the username that you will use on the platform."
-    )
-    contact_email: str | None = APIField("support@example.com")
-    lastname: str | None = APIField("Doe")
-    retry_count: int | None = APIField(0)
-    sadness: Status | None = APIField(Status.SAD)
-    big_number: int | None = APIField(None, examples=[9000000000])
-    context: str | None = APIField(None, examples=["This is some good context."])
-    correlation_id: UUID | None = APIField(None)
-    dob: date | None = APIField(None, examples=[date.fromisoformat("2000-01-01")])
-    duration: timedelta | None = APIField(None, examples=[timedelta(seconds=123.456)])
-    email: str | None = APIField(None, examples=["test@example.com"])
-    encrypt: bytes | None = APIField(None)
-    end_time: time | None = APIField(None)
-    image: bytes | None = APIField(
-        None, examples=[bytes.fromhex("5035203120310a310a00")]
-    )
-    is_it_true: bool | None = APIField(None, examples=[False])
-    large_text: str | None = APIField(None)
-    limited_json: list[str] | None = APIField(None, examples=[["hello", "world"]])
-    optional_sub_object: "EntTestSubObjectAPIModel | None" = APIField(None)
-    optional_sub_object_no_ex: "EntTestSubObjectAPIModel | None" = APIField(None)
-    preprocessed_field: str | None = APIField(None)
-    secret_hash: bytes | None = APIField(None)
-    self: "EntTestObjectAPIModel | None" = APIField(None)
-    some_json: list[str] | None = APIField(None, examples=[["hello", "world"]])
-    some_pattern: "EntTestThingAPIModel | None" = APIField(None)
-    start_time: time | None = APIField(None, examples=[time.fromisoformat("09:30:00")])
-    status: Status | None = APIField(None, examples=[Status.HAPPY])
-    status_code: int | None = APIField(None, examples=[404])
-    trace_id: UUID | None = APIField(None)
-    validated_field: str | None = APIField(None)
-    when_is_it_cool: AwareDatetime | None = APIField(None)
 
 
 class EntTestObjectPending(IEntTestThingPending):

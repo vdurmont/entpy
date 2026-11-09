@@ -19,9 +19,7 @@ from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.framework.types import Uuid
-from entpy.model import APIEntity
 from evc import ExampleViewerContext
-from pydantic import Field as APIField
 from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
@@ -29,7 +27,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 
 if TYPE_CHECKING:
-    from .ent_test_object5 import EntTestObject5APIModel
     from entpy import Ent
     from entpy.framework.pattern import Pattern
     from .ent_test_object5 import EntTestObject5
@@ -63,16 +60,6 @@ class EntTestThingModel(EntModel):
     thing_status: Mapped[ThingStatus | None] = mapped_column(
         DBEnum(ThingStatus, native_enum=True), nullable=True
     )
-
-
-class EntTestThingAPIModel(APIEntity):
-    a_good_thing: str = APIField(..., examples=["A sunny day"])
-    obj5: "EntTestObject5APIModel" = APIField(...)
-    a_pattern_preprocessed_field: str | None = APIField(None)
-    a_pattern_validated_field: str | None = APIField(None, examples=["vdurmont"])
-    idempotency_key: UUID | None = APIField(None)
-    obj5_opt: "EntTestObject5APIModel | None" = APIField(None)
-    thing_status: ThingStatus | None = APIField(None)
 
 
 class IEntTestThingPending(EntPending[EntTestThingModel]):

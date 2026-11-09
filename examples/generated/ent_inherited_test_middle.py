@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
-from .ent_inherited_test_top import EntInheritedTestTopAPIModel
 from .ent_inherited_test_top import EntInheritedTestTopModel
 from .ent_inherited_test_top import IEntInheritedTestTop
 from .ent_inherited_test_top import IEntInheritedTestTopMutatorDeletionAction
@@ -20,7 +19,6 @@ from ent_inherited_test_middle_pattern import EntInheritedTestMiddlePattern
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from evc import ExampleViewerContext
-from pydantic import Field as APIField
 from sqlalchemy import Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -38,10 +36,6 @@ class EntInheritedTestMiddleModel(EntInheritedTestTopModel):
     __abstract__ = True
 
     middle_field: Mapped[int] = mapped_column(Integer(), nullable=False)
-
-
-class EntInheritedTestMiddleAPIModel(EntInheritedTestTopAPIModel):
-    middle_field: int = APIField(..., examples=[42])
 
 
 class IEntInheritedTestMiddlePending(IEntInheritedTestTopPending):

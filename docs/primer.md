@@ -116,8 +116,7 @@ Common chaining methods include:
   update mutators;
 - `.validators([...])` appends custom value checks;
 - `.preprocessors([...])` appends input normalization steps;
-- `.documentation(text)` feeds generated API documentation;
-- `.internal()` omits the field from the generated API model; and
+- `.documentation(text)` becomes the docstring of the generated accessor; and
 - `.deprecated()` removes a nullable field from the active generated Ent
   surface while allowing a staged database migration.
 

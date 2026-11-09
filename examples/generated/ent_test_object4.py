@@ -10,7 +10,6 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
-from .ent_other_schema_pattern import EntOtherSchemaPatternAPIModel
 from .ent_other_schema_pattern import EntOtherSchemaPatternModel
 from .ent_other_schema_pattern import IEntOtherSchemaPattern
 from .ent_other_schema_pattern import IEntOtherSchemaPatternMutatorDeletionAction
@@ -27,7 +26,6 @@ from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
@@ -35,7 +33,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_test_object3 import EntTestObject3Model
-    from .ent_test_object3 import EntTestObject3APIModel
     from entpy import Ent
     from .ent_test_object3 import EntTestObject3
     from entpy import Field
@@ -56,10 +53,6 @@ class EntTestObject4Model(EntOtherSchemaPatternModel):
         "EntTestObject3Model",
         primaryjoin="EntTestObject4Model.other_id == EntTestObject3Model.id",
     )
-
-
-class EntTestObject4APIModel(EntOtherSchemaPatternAPIModel):
-    other: "EntTestObject3APIModel | None" = APIField(None)
 
 
 class EntTestObject4Pending(IEntOtherSchemaPatternPending):

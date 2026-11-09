@@ -20,10 +20,8 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
-from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
-from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import Boolean
 from sqlalchemy import String
@@ -44,11 +42,6 @@ class EntTestObject5Model(EntModel):
     is_it_true: Mapped[bool] = mapped_column(
         Boolean(), nullable=False, server_default="true"
     )
-
-
-class EntTestObject5APIModel(APIEntity):
-    obj5_field: str = APIField(..., examples=["blah!"])
-    is_it_true: bool = APIField(True)
 
 
 class EntTestObject5Pending(EntPending[EntTestObject5Model]):

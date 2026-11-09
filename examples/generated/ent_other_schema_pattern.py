@@ -15,7 +15,6 @@ from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
-from entpy.model import APIEntity
 from evc import ExampleViewerContext
 
 
@@ -31,10 +30,6 @@ if TYPE_CHECKING:
 class EntOtherSchemaPatternModel(EntModel):
     __abstract__ = True
     __table_args__ = {"schema": "other"}
-
-
-class EntOtherSchemaPatternAPIModel(APIEntity):
-    pass
 
 
 class IEntOtherSchemaPatternPending(EntPending[EntOtherSchemaPatternModel]):

@@ -16,9 +16,7 @@ from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
-from entpy.model import APIEntity
 from evc import ExampleViewerContext
-from pydantic import Field as APIField
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -36,10 +34,6 @@ class EntInheritedTestTopModel(EntModel):
     __abstract__ = True
 
     base_field: Mapped[str] = mapped_column(String(100), nullable=False)
-
-
-class EntInheritedTestTopAPIModel(APIEntity):
-    base_field: str = APIField(..., examples=["base value"])
 
 
 class IEntInheritedTestTopPending(EntPending[EntInheritedTestTopModel]):
