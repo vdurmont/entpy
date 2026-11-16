@@ -6,7 +6,14 @@ from entpy import Pattern, Schema
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
-from entpy.gencode.serialization_generator import SerializationContext
+from entpy.gencode.serialization_generator import (
+    SerializationContext,
+    api_model_names,
+    base_name_of,
+    exposes_fields,
+    generate_ensure_built,
+    get_serialized_enum_types,
+)
 from entpy.gencode.utils import GENERATED_HEADER, ImportedObject
 from entpy.gencode.view_generator import generate as generate_view
 
@@ -40,6 +47,8 @@ def run(
     serialization_context = (
         SerializationContext.load(serialization) if serialization else None
     )
+    api_model_imports: list[tuple[str, str]] = []
+    enum_types: list[ImportedObject] = []
 
     # Gencode all the things!
     examples_list_imports = ""
@@ -100,8 +109,23 @@ def run(
         else:
             raise TypeError(f"Unknown descriptor type: {descriptor_class}")
 
+        if serialization_context and exposes_fields(descriptor_class()):
+            api_model_imports += [
+                (descriptor_output_path.stem, model)
+                for model in api_model_names(
+                    base_name_of(descriptor_class), serialization_context
+                )
+            ]
+            enum_types += get_serialized_enum_types(descriptor_class())
         _write_file(descriptor_output_path, code)
 
+    ensure_built = (
+        generate_ensure_built(api_model_imports, enum_types)
+        if api_model_imports
+        else None
+    )
+    if ensure_built:
+        models_list_imports += "\n" + "\n".join(ensure_built.imports)
     models_list_code = f"""
 from uuid import UUID
 
@@ -120,6 +144,8 @@ def decode_entity_type_from_id(entity_id: UUID) -> type[Ent[{vc.name}, EntModel]
     uuid_type = entity_id.bytes[6:8]
     return UUID_TO_ENT.get(uuid_type)
 """
+    if ensure_built:
+        models_list_code += ensure_built.code
     _write_file(output_path / "all_models.py", models_list_code)
 
     examples_list_code = f"""

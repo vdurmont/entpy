@@ -7,6 +7,7 @@ from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
 from entpy.gencode.serialization_generator import (
     SerializationContext,
+    generate_api_models,
     validate_descriptor,
 )
 from entpy.gencode.utils import ImportedObject, to_snake_case
@@ -24,6 +25,11 @@ def generate(
     base_name = pattern_class.__name__.removesuffix("Pattern")
 
     model = generate_model(descriptor=pattern, base_name=base_name)
+    api_model = (
+        generate_api_models(descriptor=pattern, base_name=base_name, ctx=serialization)
+        if serialization
+        else GeneratedContent(code="")
+    )
     pending_content = _generate_pending(pattern=pattern, base_name=base_name)
 
     child_types = _generate_child_types(children_schema_classes=children_schema_classes)
@@ -75,6 +81,7 @@ def generate(
             "from entpy.framework.errors import UnknownTypeError",
         ]
         + model.imports
+        + api_model.imports
         + pending_content.imports
         + base_content.imports
         + query_content.imports
@@ -86,6 +93,7 @@ def generate(
 
     type_checking_imports = (
         model.type_checking_imports
+        + api_model.type_checking_imports
         + pending_content.type_checking_imports
         + base_content.type_checking_imports
         + query_content.type_checking_imports
@@ -112,6 +120,8 @@ if TYPE_CHECKING:
     from entpy import Ent
 
 {model.code}
+
+{api_model.code}
 
 {pending_content.code}
 

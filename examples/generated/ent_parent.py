@@ -21,8 +21,11 @@ from entpy.framework.mutators import (
 )
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
+from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
+from pydantic import Field as APIField
+from pydantic import SerializeAsAny
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
@@ -32,6 +35,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .ent_grand_parent import EntGrandParentModel
+    from .ent_grand_parent import EntGrandParentItemAPIModel
     from entpy import Ent
     from .ent_grand_parent import EntGrandParent
     from entpy import Field
@@ -52,6 +56,14 @@ class EntParentModel(EntModel):
         "EntGrandParentModel",
         primaryjoin="EntParentModel.grand_parent_id == EntGrandParentModel.id",
     )
+
+
+class EntParentItemAPIModel(APIEntity):
+    name: str = APIField(...)
+
+
+class EntParentDetailedAPIModel(EntParentItemAPIModel):
+    grand_parent: SerializeAsAny[EntGrandParentItemAPIModel] = APIField(...)
 
 
 class EntParentPending(EntPending[EntParentModel]):

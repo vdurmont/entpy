@@ -19,7 +19,9 @@ from entpy.framework.ent import EntPending
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
 from entpy.framework.types import Uuid
+from entpy.model import APIEntity
 from evc import ExampleViewerContext
+from pydantic import Field as APIField
 from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
@@ -60,6 +62,14 @@ class EntTestThingModel(EntModel):
     thing_status: Mapped[ThingStatus | None] = mapped_column(
         DBEnum(ThingStatus, native_enum=True), nullable=True
     )
+
+
+class EntTestThingItemAPIModel(APIEntity):
+    thing_status: ThingStatus | None = APIField(...)
+
+
+class EntTestThingDetailedAPIModel(EntTestThingItemAPIModel):
+    pass
 
 
 class IEntTestThingPending(EntPending[EntTestThingModel]):

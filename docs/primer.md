@@ -222,8 +222,10 @@ Code generation produces several related types from a schema:
 - `EntDocumentModel`: the SQLAlchemy model;
 - `EntDocumentQuery`: a query builder returning privacy-checked Ents;
 - `EntDocumentMutator`: create, update, and delete operations;
-- `EntDocumentPending`: the proposed state visible to write privacy rules; and
-- `EntDocumentExample`: recursively populated test data.
+- `EntDocumentPending`: the proposed state visible to write privacy rules;
+- `EntDocumentExample`: recursively populated test data; and
+- `EntDocumentItemAPIModel` and its siblings: one Pydantic model per
+  serialization tier, when the schema serializes any field.
 
 This split explains some otherwise surprising syntax. Reads happen through
 `EntDocument.gen(vc, id)` while filters use model columns such as

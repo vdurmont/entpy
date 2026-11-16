@@ -10,6 +10,8 @@ from entpy import (
 from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
+from .ent_inherited_test_middle import EntInheritedTestMiddleDetailedAPIModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleItemAPIModel
 from .ent_inherited_test_middle import EntInheritedTestMiddleModel
 from .ent_inherited_test_middle import IEntInheritedTestMiddle
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorDeletionAction
@@ -25,12 +27,15 @@ from entpy.framework.mutators import (
 from entpy.framework.query import EntObjectQuery
 from functools import cache
 from privacy import PrivacyMixin
+from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .ent_grand_parent import EntGrandParentModel
     from entpy import Ent
     from entpy import Field
 
@@ -41,6 +46,20 @@ class EntInheritedTestModel(EntInheritedTestMiddleModel):
     __tablename__ = "inherited_test"
 
     schema_field: Mapped[str] = mapped_column(String(100), nullable=False)
+    grand_parent: Mapped["EntGrandParentModel"] = relationship(
+        "EntGrandParentModel",
+        primaryjoin="EntInheritedTestModel.grand_parent_id == EntGrandParentModel.id",
+    )
+
+
+class EntInheritedTestItemAPIModel(EntInheritedTestMiddleItemAPIModel):
+    schema_field: str = APIField(...)
+
+
+class EntInheritedTestDetailedAPIModel(
+    EntInheritedTestItemAPIModel, EntInheritedTestMiddleDetailedAPIModel
+):
+    pass
 
 
 class EntInheritedTestPending(IEntInheritedTestMiddlePending):
@@ -91,6 +110,8 @@ class EntInheritedTestMutator:
         base_field: str,
         middle_field: int,
         schema_field: str,
+        grand_parent_id: UUID | None = None,
+        happened_at: datetime | None = None,
         id: UUID | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
@@ -103,6 +124,8 @@ class EntInheritedTestMutator:
             base_field=base_field,
             middle_field=middle_field,
             schema_field=schema_field,
+            grand_parent_id=grand_parent_id,
+            happened_at=happened_at,
         )
 
     @classmethod
@@ -144,6 +167,8 @@ class EntInheritedTestMutatorCreationAction(
         base_field: str
         middle_field: int
         schema_field: str
+        grand_parent_id: UUID | None = None
+        happened_at: datetime | None = None
 
 
 class EntInheritedTestMutatorUpdateAction(
@@ -164,6 +189,8 @@ class EntInheritedTestMutatorUpdateAction(
         base_field: str
         middle_field: int
         schema_field: str
+        grand_parent_id: UUID | None = None
+        happened_at: datetime | None = None
 
 
 class EntInheritedTestMutatorDeletionAction(  # type: ignore[misc]
@@ -185,6 +212,8 @@ class EntInheritedTestExample:
         base_field: str | Sentinel = NOTHING,
         middle_field: int | Sentinel = NOTHING,
         schema_field: str | Sentinel = NOTHING,
+        grand_parent_id: UUID | None = None,
+        happened_at: datetime | None = None,
     ) -> EntInheritedTest:
         # TODO make sure we only use this in test mode
 
@@ -202,6 +231,8 @@ class EntInheritedTestExample:
             base_field=base_field,
             middle_field=middle_field,
             schema_field=schema_field,
+            grand_parent_id=grand_parent_id,
+            happened_at=happened_at,
         ).gen_savex()
 
 

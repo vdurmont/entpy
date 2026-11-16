@@ -10,6 +10,7 @@ from entpy.framework.fields.core import (
 from entpy.framework.fields.enum_field import EnumField
 from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.example_generator import generate as generate_example
+from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.introspection_generator import generate as generate_introspection
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.mutator_generator import generate as generate_mutator
@@ -17,6 +18,7 @@ from entpy.gencode.mutator_generator import generate_pending
 from entpy.gencode.query_generator import generate as generate_query
 from entpy.gencode.serialization_generator import (
     SerializationContext,
+    generate_api_models,
     validate_descriptor,
 )
 from entpy.gencode.utils import ImportedObject
@@ -46,6 +48,11 @@ def generate(
     validate_descriptor(schema, serialization)
 
     model_content = generate_model(descriptor=schema, base_name=base_name)
+    api_model_content = (
+        generate_api_models(descriptor=schema, base_name=base_name, ctx=serialization)
+        if serialization
+        else GeneratedContent(code="")
+    )
     pending_content = generate_pending(schema=schema, base_name=base_name)
     base_content = generate_base(
         descriptor=schema,
@@ -73,6 +80,7 @@ def generate(
 
     type_checking_imports = (
         model_content.type_checking_imports
+        + api_model_content.type_checking_imports
         + pending_content.type_checking_imports
         + base_content.type_checking_imports
         + query_content.type_checking_imports
@@ -83,6 +91,7 @@ def generate(
 
     imports = (
         model_content.imports
+        + api_model_content.imports
         + pending_content.imports
         + base_content.imports
         + query_content.imports
@@ -115,6 +124,8 @@ from abc import ABC
 privacy_logger = logging.getLogger("entpy.privacy")
 
 {model_content.code}
+
+{api_model_content.code}
 
 {pending_content.code}
 

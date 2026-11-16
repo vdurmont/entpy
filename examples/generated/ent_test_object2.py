@@ -15,6 +15,8 @@ from .ent_test_pattern import IEntTestPattern
 from .ent_test_pattern import IEntTestPatternMutatorDeletionAction
 from .ent_test_pattern import IEntTestPatternMutatorUpdateAction
 from .ent_test_pattern import IEntTestPatternPending
+from .ent_test_thing import EntTestThingDetailedAPIModel
+from .ent_test_thing import EntTestThingItemAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
@@ -187,6 +189,16 @@ event.listen(
         "update", "test_thing", "test_object2", ["a_good_thing", "thing_status"]
     ).execute_if(dialect="sqlite"),
 )
+
+
+class EntTestObject2ItemAPIModel(EntTestThingItemAPIModel):
+    pass
+
+
+class EntTestObject2DetailedAPIModel(
+    EntTestObject2ItemAPIModel, EntTestThingDetailedAPIModel
+):
+    pass
 
 
 class EntTestObject2Pending(IEntTestThingPending, IEntTestPatternPending):
