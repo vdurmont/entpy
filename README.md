@@ -320,7 +320,17 @@ DatetimeField("archived_at").serialize(Tier.DETAILED),
 
 A field appears in its tier and every tier that includes it. `name=` renames the output key, and `nested=` overrides the tier's `nested` for one edge.
 
-Gencode validates these declarations: the tier belongs to the configured enum, an encrypted field is not serialized, only an edge sets `nested=`, every serialized edge has a nested tier, and no two serialized fields share an output key. It does not generate anything from them yet.
+Gencode validates these declarations: the tier belongs to the configured enum, an encrypted field is not serialized, only an edge sets `nested=`, every serialized edge has a nested tier and points at something that exposes a field, and no two serialized fields share an output key.
+
+From them, gencode emits one Pydantic model per tier, named after the Ent and the tier: `EntMyObjectItemAPIModel`, `EntMyObjectDetailedAPIModel`, and so on.
+
+- Each model inherits from the model of the tier it includes and from its patterns' models of the same tier.
+- Every model carries `id`, `entity_type`, `created_at`, `updated_at` and `soft_deleted_at` (`null` unless the Ent is soft deleted), from `entpy.model.APIEntity`.
+- A serialized edge is typed as its target's model at the edge's nested tier, and dumps as the concrete model, so an edge to a pattern keeps the implementation's fields.
+- Datetimes dump in Python's `isoformat()` form (`+00:00`, not `Z`).
+- A schema or pattern that serializes no field gets no model.
+
+The models reference each other across modules, so they are completed together: call `ensure_api_models_built()` from the generated `all_models.py` before using one.
 
 # Gencode
 

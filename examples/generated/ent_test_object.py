@@ -11,6 +11,8 @@ from uuid import UUID
 from datetime import datetime
 from typing import Self
 from evc import ExampleViewerContext
+from .ent_test_thing import EntTestThingDetailedAPIModel
+from .ent_test_thing import EntTestThingItemAPIModel
 from .ent_test_thing import EntTestThingModel
 from .ent_test_thing import IEntTestThing
 from .ent_test_thing import IEntTestThingMutatorDeletionAction
@@ -327,6 +329,16 @@ event.listen(
         "update", "test_thing", "test_object", ["a_good_thing", "thing_status"]
     ).execute_if(dialect="sqlite"),
 )
+
+
+class EntTestObjectItemAPIModel(EntTestThingItemAPIModel):
+    pass
+
+
+class EntTestObjectDetailedAPIModel(
+    EntTestObjectItemAPIModel, EntTestThingDetailedAPIModel
+):
+    pass
 
 
 class EntTestObjectPending(IEntTestThingPending):

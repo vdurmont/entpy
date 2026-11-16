@@ -54,6 +54,9 @@ class SerializationConfig:
             included = self.tiers[included].includes
         return chain
 
+    def get_ordered_tiers(self) -> list[Enum]:
+        return max((self.get_chain(tier) for tier in self.tiers), key=len)
+
     def _validate_references(self) -> None:
         for tier, config in self.tiers.items():
             for label, ref in (

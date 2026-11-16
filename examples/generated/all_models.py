@@ -23,6 +23,8 @@ from .ent_grand_parent import EntGrandParentModel  # noqa: F401
 from .ent_grand_parent import EntGrandParent
 from .ent_guarded import EntGuardedModel  # noqa: F401
 from .ent_guarded import EntGuarded
+from .ent_inherited_owner import EntInheritedOwnerModel  # noqa: F401
+from .ent_inherited_owner import EntInheritedOwner
 from .ent_inherited_test2 import EntInheritedTest2Model  # noqa: F401
 from .ent_inherited_test2 import EntInheritedTest2
 from .ent_inherited_test_middle_view import ent_inherited_test_middle_view  # noqa: F401
@@ -58,6 +60,37 @@ from .ent_test_sub_object import EntTestSubObject
 from .ent_test_thing_view import ent_test_thing_view  # noqa: F401
 from .ent_user import EntUserModel  # noqa: F401
 from .ent_user import EntUser
+from functools import cache
+from pydantic import BaseModel
+from datetime import date
+from datetime import time
+from datetime import timedelta
+from ent_test_thing_pattern import ThingStatus
+from pydantic import AwareDatetime
+from pydantic import SerializeAsAny
+from typing import Any
+from .ent_child import EntChildItemAPIModel
+from .ent_child import EntChildDetailedAPIModel
+from .ent_grand_parent import EntGrandParentItemAPIModel
+from .ent_grand_parent import EntGrandParentDetailedAPIModel
+from .ent_inherited_owner import EntInheritedOwnerItemAPIModel
+from .ent_inherited_owner import EntInheritedOwnerDetailedAPIModel
+from .ent_inherited_test2 import EntInheritedTest2ItemAPIModel
+from .ent_inherited_test2 import EntInheritedTest2DetailedAPIModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleItemAPIModel
+from .ent_inherited_test_middle import EntInheritedTestMiddleDetailedAPIModel
+from .ent_inherited_test import EntInheritedTestItemAPIModel
+from .ent_inherited_test import EntInheritedTestDetailedAPIModel
+from .ent_inherited_test_top import EntInheritedTestTopItemAPIModel
+from .ent_inherited_test_top import EntInheritedTestTopDetailedAPIModel
+from .ent_parent import EntParentItemAPIModel
+from .ent_parent import EntParentDetailedAPIModel
+from .ent_test_object2 import EntTestObject2ItemAPIModel
+from .ent_test_object2 import EntTestObject2DetailedAPIModel
+from .ent_test_object import EntTestObjectItemAPIModel
+from .ent_test_object import EntTestObjectDetailedAPIModel
+from .ent_test_thing import EntTestThingItemAPIModel
+from .ent_test_thing import EntTestThingDetailedAPIModel
 
 UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x43\x48": EntChild,
@@ -67,6 +100,7 @@ UUID_TO_ENT: dict[bytes, type[Ent[ExampleViewerContext, EntModel]]] = {
     b"\x2a\x0c": EntDelegatingGrandchild,
     b"\x3b\xdf": EntGrandParent,
     b"\x14\x8b": EntGuarded,
+    b"\x3a\x8c": EntInheritedOwner,
     b"\xae\xf7": EntInheritedTest2,
     b"\xb6\x61": EntInheritedTest,
     b"\x6f\xd4": EntMixedList,
@@ -90,3 +124,50 @@ def decode_entity_type_from_id(
 ) -> type[Ent[ExampleViewerContext, EntModel]] | None:
     uuid_type = entity_id.bytes[6:8]
     return UUID_TO_ENT.get(uuid_type)
+
+
+_API_MODELS: list[type[BaseModel]] = [
+    EntChildItemAPIModel,
+    EntChildDetailedAPIModel,
+    EntGrandParentItemAPIModel,
+    EntGrandParentDetailedAPIModel,
+    EntInheritedOwnerItemAPIModel,
+    EntInheritedOwnerDetailedAPIModel,
+    EntInheritedTest2ItemAPIModel,
+    EntInheritedTest2DetailedAPIModel,
+    EntInheritedTestMiddleItemAPIModel,
+    EntInheritedTestMiddleDetailedAPIModel,
+    EntInheritedTestItemAPIModel,
+    EntInheritedTestDetailedAPIModel,
+    EntInheritedTestTopItemAPIModel,
+    EntInheritedTestTopDetailedAPIModel,
+    EntParentItemAPIModel,
+    EntParentDetailedAPIModel,
+    EntTestObject2ItemAPIModel,
+    EntTestObject2DetailedAPIModel,
+    EntTestObjectItemAPIModel,
+    EntTestObjectDetailedAPIModel,
+    EntTestThingItemAPIModel,
+    EntTestThingDetailedAPIModel,
+]
+
+_ANNOTATION_TYPES: dict[str, object] = {
+    "date": date,
+    "time": time,
+    "timedelta": timedelta,
+    "ThingStatus": ThingStatus,
+    "AwareDatetime": AwareDatetime,
+    "SerializeAsAny": SerializeAsAny,
+    "Any": Any,
+    "UUID": UUID,
+}
+
+
+@cache
+def ensure_api_models_built() -> None:
+    namespace = {
+        **_ANNOTATION_TYPES,
+        **{model.__name__: model for model in _API_MODELS},
+    }
+    for model in _API_MODELS:
+        model.model_rebuild(_types_namespace=namespace)

@@ -7,9 +7,12 @@ from abc import abstractmethod
 from datetime import datetime
 from functools import cache
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
+from .ent_inherited_test_top import EntInheritedTestTopDetailedAPIModel
+from .ent_inherited_test_top import EntInheritedTestTopItemAPIModel
 from .ent_inherited_test_top import EntInheritedTestTopModel
 from .ent_inherited_test_top import IEntInheritedTestTop
 from .ent_inherited_test_top import IEntInheritedTestTopMutatorDeletionAction
@@ -18,14 +21,20 @@ from .ent_inherited_test_top import IEntInheritedTestTopPending
 from ent_inherited_test_middle_pattern import EntInheritedTestMiddlePattern
 from entpy.framework.errors import UnknownTypeError
 from entpy.framework.query import EntPatternQuery
+from entpy.framework.types import Uuid
 from evc import ExampleViewerContext
+from pydantic import Field as APIField
+from pydantic import SerializeAsAny
+from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 if TYPE_CHECKING:
+    from .ent_grand_parent import EntGrandParentItemAPIModel
     from entpy import Ent
     from entpy.framework.pattern import Pattern
+    from .ent_grand_parent import EntGrandParent
 
 
 if TYPE_CHECKING:
@@ -36,6 +45,22 @@ class EntInheritedTestMiddleModel(EntInheritedTestTopModel):
     __abstract__ = True
 
     middle_field: Mapped[int] = mapped_column(Integer(), nullable=False)
+    grand_parent_id: Mapped[UUID | None] = mapped_column(
+        Uuid(),
+        ForeignKey("grand_parent.id", deferrable=True, initially="DEFERRED"),
+        nullable=True,
+    )
+
+
+class EntInheritedTestMiddleItemAPIModel(EntInheritedTestTopItemAPIModel):
+    pass
+
+
+class EntInheritedTestMiddleDetailedAPIModel(
+    EntInheritedTestMiddleItemAPIModel, EntInheritedTestTopDetailedAPIModel
+):
+    middle: int = APIField(...)
+    grand_parent: SerializeAsAny[EntGrandParentItemAPIModel] | None = APIField(...)
 
 
 class IEntInheritedTestMiddlePending(IEntInheritedTestTopPending):
@@ -47,14 +72,28 @@ class IEntInheritedTestMiddlePending(IEntInheritedTestTopPending):
         def middle_field(self) -> int:
             pass
 
+        @property
+        def grand_parent_id(self) -> UUID | None:
+            pass
+
 
 class IEntInheritedTestMiddle(IEntInheritedTestTop, IEntInheritedTestMiddlePending):
     m = EntInheritedTestMiddleModel
     descriptor: Pattern = EntInheritedTestMiddlePattern()
 
+    if TYPE_CHECKING:
+
+        async def gen_grand_parent(self) -> "EntGrandParent" | None:
+            pass
+
     @classmethod
     @cache
     def _get_edge_type(cls, edge_name: str) -> tuple[type[Ent], bool]:
+        match edge_name:
+            case "grand_parent":
+                from .ent_grand_parent import EntGrandParent
+
+                return (EntGrandParent, True)
 
         return super()._get_edge_type(edge_name)
 
@@ -174,6 +213,7 @@ class IEntInheritedTestMiddleMutatorUpdateAction(
     ent: IEntInheritedTestMiddle
     if TYPE_CHECKING:
         middle_field: int
+        grand_parent_id: UUID | None
 
     @abstractmethod
     async def gen_savex(self) -> IEntInheritedTestMiddle:
@@ -208,6 +248,8 @@ class IEntInheritedTestMiddleExample:
         created_at: datetime | None = None,
         base_field: str | Sentinel = NOTHING,
         middle_field: int | Sentinel = NOTHING,
+        grand_parent_id: UUID | None = None,
+        happened_at: datetime | None = None,
     ) -> IEntInheritedTestMiddle:
         # TODO make sure we only use this in test mode
 
@@ -218,4 +260,6 @@ class IEntInheritedTestMiddleExample:
             created_at=created_at,
             base_field=base_field,
             middle_field=middle_field,
+            grand_parent_id=grand_parent_id,
+            happened_at=happened_at,
         )

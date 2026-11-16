@@ -20,8 +20,10 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
+from entpy.model import APIEntity
 from functools import cache
 from privacy import PrivacyMixin
+from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -38,6 +40,14 @@ class EntGrandParentModel(EntModel):
     __tablename__ = "grand_parent"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+class EntGrandParentItemAPIModel(APIEntity):
+    name: str = APIField(...)
+
+
+class EntGrandParentDetailedAPIModel(EntGrandParentItemAPIModel):
+    pass
 
 
 class EntGrandParentPending(EntPending[EntGrandParentModel]):

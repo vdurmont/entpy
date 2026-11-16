@@ -88,6 +88,16 @@ class EdgeWithoutNestingSchema(_Base):
         return [EdgeField("target", TargetSchema).serialize(Level.LOW)]
 
 
+class SilentSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [StringField("name", 10)]
+
+
+class PointsAtSilentSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [EdgeField("silent", SilentSchema).serialize(Level.HIGH)]
+
+
 class DuplicateKeySchema(_Base):
     def get_fields(self) -> list[Field]:
         return [
@@ -161,3 +171,8 @@ def test_edge_needs_a_nested_tier() -> None:
 def test_output_keys_must_be_unique() -> None:
     with pytest.raises(ValueError, match="same name: label"):
         validate_descriptor(DuplicateKeySchema(), CTX)
+
+
+def test_edge_to_an_ent_exposing_no_field_is_rejected() -> None:
+    with pytest.raises(ValueError, match="SilentSchema exposes no fields"):
+        validate_descriptor(PointsAtSilentSchema(), CTX)
