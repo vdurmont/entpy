@@ -15,6 +15,10 @@ from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.mutator_generator import generate as generate_mutator
 from entpy.gencode.mutator_generator import generate_pending
 from entpy.gencode.query_generator import generate as generate_query
+from entpy.gencode.serialization_generator import (
+    SerializationContext,
+    validate_descriptor,
+)
 from entpy.gencode.utils import ImportedObject
 
 
@@ -23,6 +27,7 @@ def generate(
     vc: ImportedObject,
     threshold_to_stop_loading_ents_for_count: int,
     privacy_mixin: ImportedObject | None = None,
+    serialization: SerializationContext | None = None,
 ) -> str:
     schema = schema_class()
     base_name = schema_class.__name__.removesuffix("Schema")
@@ -38,6 +43,7 @@ def generate(
     _validate_privacy_config(schema)
     _validate_examples(schema)
     _validate_encrypted_fields(schema)
+    validate_descriptor(schema, serialization)
 
     model_content = generate_model(descriptor=schema, base_name=base_name)
     pending_content = generate_pending(schema=schema, base_name=base_name)
