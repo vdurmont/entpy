@@ -116,7 +116,9 @@ Common chaining methods include:
   update mutators;
 - `.validators([...])` appends custom value checks;
 - `.preprocessors([...])` appends input normalization steps;
-- `.documentation(text)` becomes the docstring of the generated accessor; and
+- `.documentation(text)` becomes the docstring of the generated accessor;
+- `.serialize(tier, ...)` opts the field into one of the project's serialization
+  tiers (see the README); and
 - `.deprecated()` removes a nullable field from the active generated Ent
   surface while allowing a staged database migration.
 

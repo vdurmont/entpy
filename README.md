@@ -216,6 +216,7 @@ Fields have a set of common attributes, such as:
 - `unique()`, which sets a unique index on that field and generates additional functions to get an Ent from that field: `gen_from_xxxx` and `genx_from_xxxx`.
 - `validators([...])`, which rejects a value: each `FieldValidator` returns whether the value is acceptable, and a mutation raises `ValidationError` if any of them says no.
 - `preprocessors([...])`, which rewrites a value on its way in: each `FieldPreprocessor` takes the value and returns the one to keep.
+- `serialize(tier, name=None, nested=None)`, which exposes the field from `tier` up. See [Serialization](#serialization).
 
 ```python
 class LowercasePreprocessor(FieldPreprocessor[str]):
@@ -287,6 +288,40 @@ def is_immutable(self) -> bool:
     return True
 ```
 
+# Serialization
+
+A project describes how its Ents are serialized in tiers it defines, for example a cheap `ITEM` shape for lists and a richer `DETAILED` one for a single object. The tiers are your own enum, described by a `SerializationConfig` and passed to the gencode `run()`:
+
+```python
+class Tier(Enum):
+    ITEM = "ITEM"
+    DETAILED = "DETAILED"
+
+
+SERIALIZATION = SerializationConfig(
+    tiers={
+        Tier.ITEM: TierConfig(nested=Tier.ITEM),
+        Tier.DETAILED: TierConfig(includes=Tier.ITEM, nested=Tier.ITEM),
+    },
+)
+```
+
+- `includes`: a tier contains every field of the tier it includes. The tiers form a single chain, and every member of the enum needs a `TierConfig`.
+- `nested`: the tier an edge renders at when it is serialized in this tier.
+
+Fields opt in with `serialize()`; a field without it is not serialized:
+
+```python
+StringField("name", 100).not_null().serialize(Tier.ITEM),
+IntField("cached_likes_count").not_null().serialize(Tier.ITEM, name="likes_count"),
+EdgeField("owner", EntAccountPattern).not_null().serialize(Tier.ITEM, nested=Tier.ITEM),
+DatetimeField("archived_at").serialize(Tier.DETAILED),
+```
+
+A field appears in its tier and every tier that includes it. `name=` renames the output key, and `nested=` overrides the tier's `nested` for one edge.
+
+Gencode validates these declarations: the tier belongs to the configured enum, an encrypted field is not serialized, only an edge sets `nested=`, every serialized edge has a nested tier, and no two serialized fields share an output key. It does not generate anything from them yet.
+
 # Gencode
 
 // TODO write me: explain how the gencode works, and how to configure your gencode script
@@ -316,6 +351,7 @@ Here are some details for the arguments:
 - `base_import`: an import statement to be used to import the `Base` model from SQLAlchemy in your project. See `examples/database.py` for an example.
 - `session_getter_import`: an import statement used to import a function that will enable the framework to obtain a database session. See `examples/database.py` for an example.
 - `session_getter_fn_name`: the name of the function imported above.
+- `serialization`: an `ImportedObject` pointing at your `SerializationConfig`. See [Serialization](#serialization).
 
 # Contributing
 

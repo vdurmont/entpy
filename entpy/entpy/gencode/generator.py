@@ -6,6 +6,7 @@ from entpy import Pattern, Schema
 from entpy.gencode.model_base_template import generate as generate_base_model
 from entpy.gencode.pattern_generator import generate as generate_pattern
 from entpy.gencode.schema_generator import generate as generate_schema
+from entpy.gencode.serialization_generator import SerializationContext
 from entpy.gencode.utils import GENERATED_HEADER, ImportedObject
 from entpy.gencode.view_generator import generate as generate_view
 
@@ -17,6 +18,7 @@ def run(
     vc: ImportedObject,
     privacy_mixin: ImportedObject | None = None,
     threshold_to_stop_loading_ents_for_count: int = 50,
+    serialization: ImportedObject | None = None,
 ) -> None:
     print("EntGenerator is running...")
     schemas_path = Path(schemas_directory).resolve()
@@ -35,6 +37,9 @@ def run(
         schemas_path=schemas_path, output_path=output_path
     )
     print(f"Found {len(configs)} schema(s) and pattern(s).")
+    serialization_context = (
+        SerializationContext.load(serialization) if serialization else None
+    )
 
     # Gencode all the things!
     examples_list_imports = ""
@@ -63,6 +68,7 @@ def run(
                 vc=vc,
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
                 privacy_mixin=privacy_mixin,
+                serialization=serialization_context,
             )
         elif issubclass(descriptor_class, Pattern):
             children = get_children_schema_classes(
@@ -73,6 +79,7 @@ def run(
                 children_schema_classes=children,
                 vc=vc,
                 threshold_to_stop_loading_ents_for_count=threshold_to_stop_loading_ents_for_count,
+                serialization=serialization_context,
             )
             view_code = generate_view(
                 pattern_class=descriptor_class,

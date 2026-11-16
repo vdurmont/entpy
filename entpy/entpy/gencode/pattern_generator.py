@@ -5,6 +5,10 @@ from entpy.gencode.base_generator import generate as generate_base
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.model_generator import generate as generate_model
 from entpy.gencode.query_generator import generate as generate_query
+from entpy.gencode.serialization_generator import (
+    SerializationContext,
+    validate_descriptor,
+)
 from entpy.gencode.utils import ImportedObject, to_snake_case
 
 
@@ -13,8 +17,10 @@ def generate(
     children_schema_classes: list[type[Schema]],
     vc: ImportedObject,
     threshold_to_stop_loading_ents_for_count: int,
+    serialization: SerializationContext | None = None,
 ) -> str:
     pattern = pattern_class()
+    validate_descriptor(pattern, serialization)
     base_name = pattern_class.__name__.removesuffix("Pattern")
 
     model = generate_model(descriptor=pattern, base_name=base_name)
