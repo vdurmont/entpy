@@ -28,6 +28,8 @@ from pydantic import SerializeAsAny
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Literal, overload
 
 
 if TYPE_CHECKING:
@@ -103,6 +105,23 @@ class IEntInheritedTestMiddle(IEntInheritedTestTop, IEntInheritedTestMiddlePendi
         vc: ExampleViewerContext,
     ) -> IEntInheritedTestMiddleQuery:
         return IEntInheritedTestMiddleQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntInheritedTestMiddleItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntInheritedTestMiddleDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTestMiddleItemAPIModel: ...
+
+    @abstractmethod
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTestMiddleItemAPIModel:
+        pass
 
     @classmethod
     @cache

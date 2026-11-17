@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from importlib import import_module
@@ -9,6 +10,7 @@ from entpy import (
     EnumField,
     Field,
     IntervalField,
+    Pattern,
     Schema,
     TimeField,
 )
@@ -37,6 +39,9 @@ class SerializationContext:
             config=config,
             tier_enum=ImportedObject(module=enum.__module__, name=enum.__name__),
         )
+
+
+type Node = tuple[type[Schema], Enum]
 
 
 def base_name_of(descriptor_class: type[Descriptor]) -> str:
@@ -117,6 +122,55 @@ def validate_descriptor(
                 f"{name} serializes several fields under the same name: "
                 + ", ".join(duplicates)
             )
+
+
+def validate_no_cycles(
+    schema_classes: list[type[Schema]],
+    get_children: Callable[[type[Pattern]], list[type[Schema]]],
+    ctx: SerializationContext,
+) -> None:
+    def get_targets(node: Node) -> list[tuple[str, Node]]:
+        schema_class, tier = node
+        chain = ctx.config.get_chain(tier)
+        targets = []
+        for field in schema_class().get_all_fields():
+            if not isinstance(field, EdgeField) or field.serialization is None:
+                continue
+            if field.serialization.tier not in chain:
+                continue
+            nested = _nested_tier(field, ctx)
+            if nested is None:
+                raise ValueError(f"Edge {field.original_name} has no nested tier.")
+            edge_class = field.edge_class
+            if issubclass(edge_class, Pattern):
+                target_classes = get_children(edge_class)
+            elif issubclass(edge_class, Schema):
+                target_classes = [edge_class]
+            else:
+                raise TypeError(f"Unknown edge target: {edge_class}")
+            for target_class in target_classes:
+                targets.append((field.original_name, (target_class, nested)))
+        return targets
+
+    def describe(node: Node) -> str:
+        return f"{base_name_of(node[0])}[{node[1].name}]"
+
+    done: set[Node] = set()
+
+    def visit(node: Node, path: list[str], on_path: list[Node]) -> None:
+        if node in on_path:
+            start = on_path.index(node)
+            cycle = " -> ".join(path[start * 2 :] + [describe(node)])
+            raise ValueError(f"Serialization nests in a cycle: {cycle}")
+        if node in done:
+            return
+        for edge_name, target in get_targets(node):
+            visit(target, path + [describe(node), edge_name], on_path + [node])
+        done.add(node)
+
+    for schema_class in schema_classes:
+        for tier in ctx.config.get_ordered_tiers():
+            visit((schema_class, tier), [], [])
 
 
 def _python_type(field: Field, ctx: SerializationContext) -> GeneratedContent:
@@ -212,6 +266,111 @@ class {api_model_name(base_name, tier)}({", ".join(bases)}):
     ]
     return GeneratedContent(
         code=code, imports=imports, type_checking_imports=type_checking_imports
+    )
+
+
+def _tier_ref(ctx: SerializationContext, tier: Enum) -> str:
+    return f"{ctx.tier_enum.name}.{tier.name}"
+
+
+def _generate_signature(
+    base_name: str, ctx: SerializationContext, abstract: bool
+) -> str:
+    tiers = ctx.config.get_ordered_tiers()
+    tier_type = ctx.tier_enum.name
+    base_model = api_model_name(base_name, tiers[0])
+    overloads = ""
+    if len(tiers) > 1:
+        for tier in tiers:
+            overloads += f"""
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[{_tier_ref(ctx, tier)}]
+    ) -> {api_model_name(base_name, tier)}: ...
+"""
+        overloads += f"""
+    @overload
+    async def gen_serialize(self, tier: {tier_type}) -> {base_model}: ...
+"""
+    decorator = "\n    @abstractmethod" if abstract else ""
+    return f"""{overloads}{decorator}
+    async def gen_serialize(self, tier: {tier_type}) -> {base_model}:"""
+
+
+def generate_pattern_serialize(
+    pattern: Pattern, base_name: str, ctx: SerializationContext
+) -> GeneratedContent:
+    if not exposes_fields(pattern):
+        return GeneratedContent(code="")
+    signature = _generate_signature(base_name, ctx, abstract=True)
+    return GeneratedContent(
+        code=f"{signature}\n        pass\n",
+        imports=[
+            "from abc import abstractmethod",
+            "from typing import Literal, overload",
+            str(ctx.tier_enum),
+        ],
+    )
+
+
+def generate_schema_serialize(
+    schema: Schema, base_name: str, ctx: SerializationContext
+) -> GeneratedContent:
+    if not exposes_fields(schema):
+        return GeneratedContent(code="")
+    fields = [f for f in schema.get_all_fields() if f.serialization is not None]
+    tiers = ctx.config.get_ordered_tiers()
+    blocks = ""
+    for tier in tiers:
+        lines = ""
+        for field in fields:
+            if field.serialization is None or field.serialization.tier != tier:
+                continue
+            key = _output_key(field)
+            if isinstance(field, EdgeField):
+                nested = _nested_tier(field, ctx)
+                if nested is None:
+                    raise ValueError(f"Edge {field.original_name} has no nested tier.")
+                variable = f"edge_{field.original_name}"
+                value = f"await {variable}.gen_serialize({_tier_ref(ctx, nested)})"
+                if field.nullable:
+                    value = f"None if {variable} is None else {value}"
+                lines += (
+                    f"            {variable} = await self.gen_{field.original_name}()\n"
+                )
+                lines += f'            values["{key}"] = {value}\n'
+            else:
+                lines += f'            values["{key}"] = self.{field.name}\n'
+        if lines:
+            including = ", ".join(
+                _tier_ref(ctx, t) for t in tiers if tier in ctx.config.get_chain(t)
+            )
+            blocks += f"        if tier in ({including},):\n{lines}"
+
+    tier_type = ctx.tier_enum.name
+    base_model = api_model_name(base_name, tiers[0])
+    models_by_tier = ", ".join(
+        f"{_tier_ref(ctx, tier)}: {api_model_name(base_name, tier)}" for tier in tiers
+    )
+    signature = _generate_signature(base_name, ctx, abstract=False)
+    code = f"""{signature}
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {{
+            "id": self.id,
+            "entity_type": "{base_name}",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "soft_deleted_at": self.soft_deleted_at,
+        }}
+{blocks}
+        api_models: dict[{tier_type}, type[{base_model}]] = {{{models_by_tier}}}
+        return api_models[tier].model_validate(values)
+"""
+    return GeneratedContent(
+        code=code,
+        imports=["from typing import Any, Literal, overload", str(ctx.tier_enum)],
     )
 
 

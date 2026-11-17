@@ -1,93 +1,147 @@
 from datetime import UTC, datetime
-from typing import Any
-from uuid import uuid4
 
-import pytest
 from entpy.model import APIEntity
+from evc import ExampleTestViewerContext, ExampleViewerContext
 from generated import ent_test_object3
-from generated.all_models import ensure_api_models_built
-from generated.ent_inherited_owner import EntInheritedOwnerDetailedAPIModel
-from generated.ent_inherited_test import (
-    EntInheritedTestDetailedAPIModel,
-    EntInheritedTestItemAPIModel,
-)
-from generated.ent_inherited_test2 import EntInheritedTest2ItemAPIModel
-from generated.ent_test_object import EntTestObjectItemAPIModel
+from generated.ent_child import EntChild, EntChildExample, EntChildMutator
+from generated.ent_grand_parent import EntGrandParentExample
+from generated.ent_inherited_owner import EntInheritedOwnerExample
+from generated.ent_inherited_test import EntInheritedTestExample
+from generated.ent_inherited_test2 import EntInheritedTest2Example
+from generated.ent_inherited_test_middle import IEntInheritedTestMiddle
+from generated.ent_parent import EntParentExample
+from generated.ent_test_object import EntTestObjectExample
+from tiers import Tier
 
 from ent_test_thing_pattern import ThingStatus
 
-IDENTITY = {"id", "entity_type", "created_at", "updated_at", "soft_deleted_at"}
-AT = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
 
+async def test_item_carries_the_identity_and_item_fields(
+    vc: ExampleViewerContext,
+) -> None:
+    grand_parent = await EntGrandParentExample.gen_create(vc, name="Anne")
 
-@pytest.fixture(autouse=True)
-def built() -> None:
-    ensure_api_models_built()
+    result = (await grand_parent.gen_serialize(Tier.ITEM)).model_dump(mode="json")
 
-
-def identity(entity_type: str) -> dict[str, Any]:
-    return {
-        "id": uuid4(),
-        "entity_type": entity_type,
-        "created_at": AT,
-        "updated_at": AT,
+    assert result == {
+        "id": str(grand_parent.id),
+        "entity_type": "EntGrandParent",
+        "created_at": grand_parent.created_at.isoformat(),
+        "updated_at": grand_parent.updated_at.isoformat(),
         "soft_deleted_at": None,
+        "name": "Anne",
     }
 
 
-def test_each_tier_carries_its_fields_and_the_lower_tiers() -> None:
-    item = set(EntInheritedTestItemAPIModel.model_fields)
-    detailed = set(EntInheritedTestDetailedAPIModel.model_fields)
-
-    assert item == IDENTITY | {"base_field", "happened_at", "schema_field"}
-    assert detailed == item | {"middle", "grand_parent"}
-
-
-def test_inherited_pattern_fields_validate_and_dump() -> None:
-    model = EntInheritedTestDetailedAPIModel.model_validate(
-        {
-            **identity("EntInheritedTest"),
-            "base_field": "base",
-            "happened_at": AT,
-            "schema_field": "schema",
-            "middle": 7,
-            "grand_parent": None,
-        }
+async def test_soft_deleted_ent_carries_its_deletion_time(
+    vc: ExampleViewerContext,
+) -> None:
+    child = await EntChildExample.gen_create(vc)
+    await EntChildMutator.soft_delete(vc, child).gen_save()
+    deleted = await EntChild.genx(
+        ExampleTestViewerContext(), child.id, include_soft_deleted=True
     )
 
-    result = model.model_dump(mode="json")
+    result = (await deleted.gen_serialize(Tier.ITEM)).model_dump(mode="json")
 
-    assert result["happened_at"] == "2026-01-02T03:04:05+00:00"
-    assert result["created_at"] == "2026-01-02T03:04:05+00:00"
-    assert result["middle"] == 7
-    assert "middle_field" not in result
+    assert deleted.soft_deleted_at is not None
+    assert result["soft_deleted_at"] == deleted.soft_deleted_at.isoformat()
 
 
-def test_edge_to_a_pattern_dumps_the_concrete_model() -> None:
-    target = EntInheritedTest2ItemAPIModel.model_validate(
-        {
-            **identity("EntInheritedTest2"),
-            "base_field": "base",
-            "happened_at": None,
-            "schema_field": "concrete",
-        }
+async def test_edges_nest_at_their_tier(vc: ExampleViewerContext) -> None:
+    grand_parent = await EntGrandParentExample.gen_create(vc, name="Anne")
+    parent = await EntParentExample.gen_create(
+        vc, name="Vincent", grand_parent_id=grand_parent.id
     )
-    owner = EntInheritedOwnerDetailedAPIModel.model_validate(
-        {**identity("EntInheritedOwner"), "name": "owner", "inherited": target}
+    child = await EntChildExample.gen_create(vc, name="Benjamin", parent_id=parent.id)
+
+    child_item = (await child.gen_serialize(Tier.ITEM)).model_dump(mode="json")
+    parent_detailed = (await parent.gen_serialize(Tier.DETAILED)).model_dump(
+        mode="json"
     )
 
-    result = owner.model_dump(mode="json")
+    assert child_item["parent"]["name"] == "Vincent"
+    assert "grand_parent" not in child_item["parent"]
+    assert parent_detailed["grand_parent"]["name"] == "Anne"
+    assert parent_detailed["grand_parent"]["entity_type"] == "EntGrandParent"
+
+
+async def test_detailed_adds_its_fields_to_item(vc: ExampleViewerContext) -> None:
+    parent = await EntParentExample.gen_create(vc, name="Vincent")
+
+    item = (await parent.gen_serialize(Tier.ITEM)).model_dump(mode="json")
+    detailed = (await parent.gen_serialize(Tier.DETAILED)).model_dump(mode="json")
+
+    assert "grand_parent" not in item
+    assert detailed == {**item, "grand_parent": detailed["grand_parent"]}
+
+
+async def test_pattern_fields_are_inherited_and_renamed(
+    vc: ExampleViewerContext,
+) -> None:
+    grand_parent = await EntGrandParentExample.gen_create(vc, name="Anne")
+    ent = await EntInheritedTestExample.gen_create(
+        vc,
+        base_field="base",
+        middle_field=7,
+        schema_field="schema",
+        happened_at=datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC),
+        grand_parent_id=grand_parent.id,
+    )
+
+    item = (await ent.gen_serialize(Tier.ITEM)).model_dump(mode="json")
+    detailed = (await ent.gen_serialize(Tier.DETAILED)).model_dump(mode="json")
+
+    assert item["base_field"] == "base"
+    assert item["schema_field"] == "schema"
+    assert item["happened_at"] == "2026-01-02T03:04:05+00:00"
+    assert "middle" not in item
+    assert detailed["middle"] == 7
+    assert "middle_field" not in detailed
+    assert detailed["grand_parent"]["name"] == "Anne"
+
+
+async def test_a_missing_nullable_edge_is_null(vc: ExampleViewerContext) -> None:
+    ent = await EntInheritedTestExample.gen_create(vc)
+
+    result = (await ent.gen_serialize(Tier.DETAILED)).model_dump(mode="json")
+
+    assert result["grand_parent"] is None
+
+
+async def test_edge_to_a_pattern_serializes_the_concrete_ent(
+    vc: ExampleViewerContext,
+) -> None:
+    target = await EntInheritedTest2Example.gen_create(
+        vc, base_field="base", schema_field="concrete"
+    )
+    owner = await EntInheritedOwnerExample.gen_create(vc, inherited_id=target.id)
+
+    result = (await owner.gen_serialize(Tier.DETAILED)).model_dump(mode="json")
 
     assert result["inherited"]["entity_type"] == "EntInheritedTest2"
+    assert result["inherited"]["base_field"] == "base"
     assert result["inherited"]["schema_field"] == "concrete"
 
 
-def test_enum_fields_dump_their_value() -> None:
-    model = EntTestObjectItemAPIModel.model_validate(
-        {**identity("EntTestObject"), "thing_status": ThingStatus.GOOD}
-    )
+async def test_a_pattern_serializes_as_its_implementation(
+    vc: ExampleViewerContext,
+) -> None:
+    created = await EntInheritedTest2Example.gen_create(vc, schema_field="concrete")
+    ent = await IEntInheritedTestMiddle.genx(vc, created.id)
 
-    assert model.model_dump(mode="json")["thing_status"] == "GOOD"
+    result = (await ent.gen_serialize(Tier.ITEM)).model_dump(mode="json")
+
+    assert result["entity_type"] == "EntInheritedTest2"
+    assert result["schema_field"] == "concrete"
+
+
+async def test_enum_fields_dump_their_value(vc: ExampleViewerContext) -> None:
+    ent = await EntTestObjectExample.gen_create(vc, thing_status=ThingStatus.GOOD)
+
+    result = (await ent.gen_serialize(Tier.ITEM)).model_dump(mode="json")
+
+    assert result["thing_status"] == "GOOD"
 
 
 def test_an_ent_exposing_no_field_gets_no_api_model() -> None:

@@ -19,6 +19,7 @@ from entpy.gencode.query_generator import generate as generate_query
 from entpy.gencode.serialization_generator import (
     SerializationContext,
     generate_api_models,
+    generate_schema_serialize,
     validate_descriptor,
 )
 from entpy.gencode.utils import ImportedObject
@@ -53,6 +54,11 @@ def generate(
         if serialization
         else GeneratedContent(code="")
     )
+    serialize_content = (
+        generate_schema_serialize(schema=schema, base_name=base_name, ctx=serialization)
+        if serialization
+        else GeneratedContent(code="")
+    )
     pending_content = generate_pending(schema=schema, base_name=base_name)
     base_content = generate_base(
         descriptor=schema,
@@ -81,6 +87,7 @@ def generate(
     type_checking_imports = (
         model_content.type_checking_imports
         + api_model_content.type_checking_imports
+        + serialize_content.type_checking_imports
         + pending_content.type_checking_imports
         + base_content.type_checking_imports
         + query_content.type_checking_imports
@@ -92,6 +99,7 @@ def generate(
     imports = (
         model_content.imports
         + api_model_content.imports
+        + serialize_content.imports
         + pending_content.imports
         + base_content.imports
         + query_content.imports
@@ -130,6 +138,7 @@ privacy_logger = logging.getLogger("entpy.privacy")
 {pending_content.code}
 
 {base_content.code}
+{serialize_content.code}
 
 {query_content.code}
 

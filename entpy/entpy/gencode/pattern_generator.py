@@ -8,6 +8,7 @@ from entpy.gencode.query_generator import generate as generate_query
 from entpy.gencode.serialization_generator import (
     SerializationContext,
     generate_api_models,
+    generate_pattern_serialize,
     validate_descriptor,
 )
 from entpy.gencode.utils import ImportedObject, to_snake_case
@@ -27,6 +28,13 @@ def generate(
     model = generate_model(descriptor=pattern, base_name=base_name)
     api_model = (
         generate_api_models(descriptor=pattern, base_name=base_name, ctx=serialization)
+        if serialization
+        else GeneratedContent(code="")
+    )
+    serialize_content = (
+        generate_pattern_serialize(
+            pattern=pattern, base_name=base_name, ctx=serialization
+        )
         if serialization
         else GeneratedContent(code="")
     )
@@ -82,6 +90,7 @@ def generate(
         ]
         + model.imports
         + api_model.imports
+        + serialize_content.imports
         + pending_content.imports
         + base_content.imports
         + query_content.imports
@@ -126,6 +135,7 @@ if TYPE_CHECKING:
 {pending_content.code}
 
 {base_content.code}
+{serialize_content.code}
 
     @classmethod
     @cache

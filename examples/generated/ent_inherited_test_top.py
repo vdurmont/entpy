@@ -23,6 +23,8 @@ from pydantic import AwareDatetime
 from pydantic import Field as APIField
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Literal, overload
 
 
 if TYPE_CHECKING:
@@ -83,6 +85,23 @@ class IEntInheritedTestTop(
         vc: ExampleViewerContext,
     ) -> IEntInheritedTestTopQuery:
         return IEntInheritedTestTopQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntInheritedTestTopItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntInheritedTestTopDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTestTopItemAPIModel: ...
+
+    @abstractmethod
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTestTopItemAPIModel:
+        pass
 
     @classmethod
     @cache

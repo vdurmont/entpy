@@ -45,6 +45,8 @@ from sqlalchemy import String
 from sqlalchemy import event
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -244,6 +246,42 @@ class EntTestObject2(
         vc: ExampleViewerContext,
     ) -> EntTestObject2Query:
         return EntTestObject2Query(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntTestObject2ItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntTestObject2DetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntTestObject2ItemAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntTestObject2ItemAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntTestObject2",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "soft_deleted_at": self.soft_deleted_at,
+        }
+        if tier in (
+            Tier.ITEM,
+            Tier.DETAILED,
+        ):
+            values["thing_status"] = self.thing_status
+
+        api_models: dict[Tier, type[EntTestObject2ItemAPIModel]] = {
+            Tier.ITEM: EntTestObject2ItemAPIModel,
+            Tier.DETAILED: EntTestObject2DetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntTestObject2Query(
