@@ -1,5 +1,6 @@
 from .framework.action import Action  # noqa: F401
 from .framework.composite_index import CompositeIndex  # noqa: F401
+from .framework.computed_api_fields import ComputedApiFieldsConfig  # noqa: F401
 from .framework.database import (
     db,
     event_subscription,  # noqa: F401
@@ -37,6 +38,7 @@ from .framework.fields.time_field import TimeField  # noqa: F401
 from .framework.fields.uuid_field import UuidField  # noqa: F401
 from .framework.fields.validator import FieldValidator  # noqa: F401
 from .framework.hooks import EntTrigger  # noqa: F401
+from .framework.imported_object import ImportedObject  # noqa: F401
 from .framework.pattern import Pattern  # noqa: F401
 from .framework.privacy_rule import EdgeDelegate, PrivacyRule  # noqa: F401
 from .framework.query import EntQuery  # noqa: F401

@@ -17,6 +17,7 @@ from .ent_inherited_test_middle import IEntInheritedTestMiddle
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorDeletionAction
 from .ent_inherited_test_middle import IEntInheritedTestMiddleMutatorUpdateAction
 from .ent_inherited_test_middle import IEntInheritedTestMiddlePending
+from computed_models import TopComputedItem
 from ent_inherited_test2_schema import EntInheritedTest2Schema
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.mutators import (
@@ -25,8 +26,10 @@ from entpy.framework.mutators import (
     EntMutatorDeletionAction,
 )
 from entpy.framework.query import EntObjectQuery
+from entpy.model import get_computed_api_field_values
 from functools import cache
 from privacy import PrivacyMixin
+from pydantic import BaseModel
 from pydantic import Field as APIField
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
@@ -135,6 +138,17 @@ class EntInheritedTest2(
                 None
                 if edge_grand_parent is None
                 else await edge_grand_parent.gen_serialize(Tier.ITEM)
+            )
+        computed_models_0: dict[Tier, type[BaseModel]] = {
+            Tier.ITEM: TopComputedItem,
+            Tier.DETAILED: TopComputedItem,
+        }
+        if tier in computed_models_0:
+            from resolvers import gen_top_computed_api_fields
+
+            computed = await gen_top_computed_api_fields([self], tier)
+            values.update(
+                get_computed_api_field_values(computed, computed_models_0[tier], 1)[0]
             )
 
         api_models: dict[Tier, type[EntInheritedTest2ItemAPIModel]] = {

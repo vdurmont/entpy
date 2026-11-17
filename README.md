@@ -330,6 +330,43 @@ From them, gencode emits one Pydantic model per tier, named after the Ent and th
 - Datetimes dump in Python's `isoformat()` form (`+00:00`, not `Z`).
 - A schema or pattern that serializes no field gets no model.
 
+## Computed API fields
+
+Values that are not columns come from one config per schema or pattern: one Pydantic model per tier holding the values that tier adds, and a resolver computing them.
+
+```python
+# computed_models.py -- plain Pydantic, imports no generated code
+class AgentComputedItem(BaseModel):
+    full_name: str
+
+
+class AgentComputedDetailed(AgentComputedItem):
+    viewer_can_edit: bool
+
+
+# EntAgentSchema
+def get_computed_api_fields_config(self) -> ComputedApiFieldsConfig:
+    return ComputedApiFieldsConfig(
+        models={Tier.ITEM: AgentComputedItem, Tier.DETAILED: AgentComputedDetailed},
+        resolver=ImportedObject(module="myapp.resolvers", name="gen_agent_computed_api_fields"),
+    )
+
+
+# myapp/resolvers.py
+async def gen_agent_computed_api_fields(
+    agents: list[EntAgent], tier: Tier
+) -> list[AgentComputedItem]: ...
+```
+
+- The generated model of a tier inherits that tier's computed model, so the values join the tier and every tier above it.
+- Each tier's model subclasses the one of the tier below it. A tier without a model uses the closest one below.
+- The resolver takes every Ent being serialized and the tier, and returns one instance per Ent of that tier's model. `gen_serialize` checks the count and type.
+- The resolver is named by import path because it imports the generated Ent. The models are imported directly, so they must not import generated code.
+- A pattern's config serves every schema implementing it: `gen_serialize` calls the resolver of each descriptor it inherits one from.
+- A schema with computed fields and no serialized column still exposes fields. Computed names cannot repeat a serialized field's output key, nor one of the fields every model carries.
+
+## gen_serialize
+
 Every Ent that serializes a field gets `gen_serialize(tier)`, which returns the model of that tier, typed per tier:
 
 ```python
