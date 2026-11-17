@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -39,3 +40,20 @@ class APIEntity(BaseModel):
         if isinstance(value, BaseModel):
             return value.model_dump(mode="json")
         return handler(value)
+
+
+def get_computed_api_field_values(
+    results: Sequence[BaseModel], model: type[BaseModel], count: int
+) -> list[dict[str, Any]]:
+    if len(results) != count:
+        raise ValueError(
+            f"Computed API fields resolver returned {len(results)} results "
+            + f"for {count} Ents."
+        )
+    for result in results:
+        if not isinstance(result, model):
+            raise TypeError(
+                f"Computed API fields resolver returned {type(result).__name__}, "
+                + f"expected {model.__name__}."
+            )
+    return [dict(result) for result in results]

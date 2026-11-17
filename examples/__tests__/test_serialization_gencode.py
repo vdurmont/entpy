@@ -2,10 +2,13 @@ from enum import Enum
 
 import pytest
 
+from pydantic import BaseModel
+
 from entpy import (
     Action,
     AllowAll,
     BytesField,
+    ComputedApiFieldsConfig,
     EdgeDelegate,
     EdgeField,
     Field,
@@ -109,6 +112,74 @@ class CycleBSchema(_Base):
         return [EdgeField("a", CycleASchema).serialize(Level.LOW, nested=Level.LOW)]
 
 
+RESOLVER = ImportedObject(module="resolvers", name="unused")
+
+
+class LowComputed(BaseModel):
+    score: int
+
+
+class UnrelatedHighComputed(BaseModel):
+    rank: int
+
+
+class IdComputed(BaseModel):
+    id: str
+
+
+class ScoreComputed(BaseModel):
+    name: str
+
+
+def _computed(models: dict[Enum, type[BaseModel]]) -> ComputedApiFieldsConfig:
+    return ComputedApiFieldsConfig(models=models, resolver=RESOLVER)
+
+
+class ComputedOnlySchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [StringField("name", 10)]
+
+    def get_computed_api_fields_config(self) -> ComputedApiFieldsConfig:
+        return _computed({Level.LOW: LowComputed})
+
+
+class BrokenChainSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [StringField("name", 10)]
+
+    def get_computed_api_fields_config(self) -> ComputedApiFieldsConfig:
+        return _computed({Level.LOW: LowComputed, Level.HIGH: UnrelatedHighComputed})
+
+
+class ReservedComputedSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [StringField("name", 10)]
+
+    def get_computed_api_fields_config(self) -> ComputedApiFieldsConfig:
+        return _computed({Level.LOW: IdComputed})
+
+
+class ClashingComputedSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [StringField("name", 10).serialize(Level.LOW)]
+
+    def get_computed_api_fields_config(self) -> ComputedApiFieldsConfig:
+        return _computed({Level.LOW: ScoreComputed})
+
+
+class ForeignComputedSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [StringField("name", 10)]
+
+    def get_computed_api_fields_config(self) -> ComputedApiFieldsConfig:
+        return _computed({Other.LOW: LowComputed})
+
+
+class PointsAtComputedOnlySchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [EdgeField("target", ComputedOnlySchema).serialize(Level.HIGH)]
+
+
 class DuplicateKeySchema(_Base):
     def get_fields(self) -> list[Field]:
         return [
@@ -206,3 +277,32 @@ def test_no_cycle_passes() -> None:
         get_children=lambda _pattern: [],
         ctx=CTX,
     )
+
+
+def test_computed_fields_alone_make_a_schema_exposed() -> None:
+    validate_descriptor(PointsAtComputedOnlySchema(), CTX)
+
+
+def test_computed_fields_without_config_are_rejected() -> None:
+    with pytest.raises(ValueError, match="no serialization config"):
+        validate_descriptor(ComputedOnlySchema(), None)
+
+
+def test_computed_tier_models_must_extend_the_lower_tier() -> None:
+    with pytest.raises(ValueError, match="must subclass LowComputed"):
+        validate_descriptor(BrokenChainSchema(), CTX)
+
+
+def test_computed_fields_cannot_reuse_an_identity_field() -> None:
+    with pytest.raises(ValueError, match="already carries: id"):
+        validate_descriptor(ReservedComputedSchema(), CTX)
+
+
+def test_computed_fields_cannot_clash_with_serialized_fields() -> None:
+    with pytest.raises(ValueError, match="same name: name"):
+        validate_descriptor(ClashingComputedSchema(), CTX)
+
+
+def test_computed_fields_must_use_configured_tiers() -> None:
+    with pytest.raises(ValueError, match="are not tiers of Level"):
+        validate_descriptor(ForeignComputedSchema(), CTX)

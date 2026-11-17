@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from enum import Enum
 from importlib import import_module
 
+from pydantic import BaseModel
+
 from entpy import (
     DateField,
     DatetimeField,
@@ -14,11 +16,13 @@ from entpy import (
     Schema,
     TimeField,
 )
+from entpy.framework.computed_api_fields import ComputedApiFieldsConfig
 from entpy.framework.descriptor import Descriptor
 from entpy.framework.fields.bytes_field import BytesField
 from entpy.framework.serialization import SerializationConfig
 from entpy.gencode.generated_content import GeneratedContent
 from entpy.gencode.utils import ImportedObject, to_snake_case
+from entpy.model import APIEntity
 
 
 @dataclass(frozen=True)
@@ -57,8 +61,36 @@ def api_model_names(base_name: str, ctx: SerializationContext) -> list[str]:
     return [api_model_name(base_name, tier) for tier in ctx.config.get_ordered_tiers()]
 
 
+def get_computed_configs(
+    descriptor: Descriptor,
+) -> list[tuple[Descriptor, ComputedApiFieldsConfig]]:
+    configs: dict[type[Descriptor], tuple[Descriptor, ComputedApiFieldsConfig]] = {}
+    config = descriptor.get_computed_api_fields_config()
+    if config is not None:
+        configs[type(descriptor)] = (descriptor, config)
+    for pattern in descriptor.get_patterns():
+        for pattern_descriptor, pattern_config in get_computed_configs(pattern):
+            configs.setdefault(
+                type(pattern_descriptor), (pattern_descriptor, pattern_config)
+            )
+    return list(configs.values())
+
+
 def exposes_fields(descriptor: Descriptor) -> bool:
-    return any(field.serialization for field in descriptor.get_all_fields())
+    return any(field.serialization for field in descriptor.get_all_fields()) or bool(
+        get_computed_configs(descriptor)
+    )
+
+
+def _computed_models_by_tier(
+    config: ComputedApiFieldsConfig, ctx: SerializationContext
+) -> dict[Enum, type[BaseModel]]:
+    by_tier = {}
+    for tier in ctx.config.get_ordered_tiers():
+        configured = [t for t in ctx.config.get_chain(tier) if t in config.models]
+        if configured:
+            by_tier[tier] = config.models[configured[-1]]
+    return by_tier
 
 
 def _output_key(field: Field) -> str:
@@ -114,14 +146,64 @@ def validate_descriptor(
         elif serialization.nested is not None:
             raise ValueError(f"{label} is not an edge and cannot set nested=.")
 
+    _validate_computed_config(descriptor, ctx)
+
     if isinstance(descriptor, Schema):
         keys = [_output_key(f) for f in descriptor.get_all_fields() if f.serialization]
+        if ctx is not None:
+            for _, config in get_computed_configs(descriptor):
+                models = _computed_models_by_tier(config, ctx).values()
+                keys += list(max(models, key=lambda m: len(m.__mro__)).model_fields)
         duplicates = sorted({key for key in keys if keys.count(key) > 1})
         if duplicates:
             raise ValueError(
                 f"{name} serializes several fields under the same name: "
                 + ", ".join(duplicates)
             )
+        reserved = sorted(set(keys) & set(APIEntity.model_fields))
+        if reserved:
+            raise ValueError(
+                f"{name} serializes a field under a name every model already "
+                + f"carries: {', '.join(reserved)}"
+            )
+
+
+def _validate_computed_config(
+    descriptor: Descriptor, ctx: SerializationContext | None
+) -> None:
+    config = descriptor.get_computed_api_fields_config()
+    if config is None:
+        return
+    label = type(descriptor).__name__
+    if ctx is None:
+        raise ValueError(
+            f"{label} has computed API fields, but no serialization config was "
+            + "passed to the generator."
+        )
+    if not config.models:
+        raise ValueError(f"{label} has a computed API fields config with no model.")
+    unknown = [repr(tier) for tier in config.models if tier not in ctx.config.tiers]
+    if unknown:
+        raise ValueError(
+            f"{label} has computed API fields in {', '.join(unknown)}, which "
+            + f"are not tiers of {ctx.config.tier_enum.__name__}."
+        )
+    previous: type[BaseModel] | None = None
+    for tier in ctx.config.get_ordered_tiers():
+        model = config.models.get(tier)
+        if model is None:
+            continue
+        if not (isinstance(model, type) and issubclass(model, BaseModel)):
+            raise ValueError(
+                f"{label}'s computed API fields for {tier.name} must be a "
+                + "Pydantic model."
+            )
+        if previous is not None and not issubclass(model, previous):
+            raise ValueError(
+                f"{label}'s computed API fields model for {tier.name}, "
+                + f"{model.__name__}, must subclass {previous.__name__}."
+            )
+        previous = model
 
 
 def validate_no_cycles(
@@ -239,6 +321,13 @@ def generate_api_models(
         if not bases:
             bases.append("APIEntity")
             imports.append("from entpy.model import APIEntity")
+        own_config = descriptor.get_computed_api_fields_config()
+        computed_model = own_config.models.get(tier) if own_config else None
+        if computed_model is not None:
+            bases.append(computed_model.__name__)
+            imports.append(
+                f"from {computed_model.__module__} import {computed_model.__name__}"
+            )
 
         fields_code = ""
         for field in fields:
@@ -347,6 +436,27 @@ def generate_schema_serialize(
             )
             blocks += f"        if tier in ({including},):\n{lines}"
 
+    model_imports: list[str] = []
+    for index, (_, config) in enumerate(get_computed_configs(schema)):
+        by_tier = _computed_models_by_tier(config, ctx)
+        for model in by_tier.values():
+            model_imports.append(f"from {model.__module__} import {model.__name__}")
+        mapping = ", ".join(
+            f"{_tier_ref(ctx, tier)}: {model.__name__}"
+            for tier, model in by_tier.items()
+        )
+        variable = f"computed_models_{index}"
+        resolver = config.resolver
+        blocks += f"""        {variable}: dict[{ctx.tier_enum.name}, type[BaseModel]] = {{{mapping}}}
+        if tier in {variable}:
+            {resolver}
+
+            computed = await {resolver.name}([self], tier)
+            values.update(
+                get_computed_api_field_values(computed, {variable}[tier], 1)[0]
+            )
+"""
+
     tier_type = ctx.tier_enum.name
     base_model = api_model_name(base_name, tiers[0])
     models_by_tier = ", ".join(
@@ -370,7 +480,16 @@ def generate_schema_serialize(
 """
     return GeneratedContent(
         code=code,
-        imports=["from typing import Any, Literal, overload", str(ctx.tier_enum)],
+        imports=["from typing import Any, Literal, overload", str(ctx.tier_enum)]
+        + (
+            [
+                "from pydantic import BaseModel",
+                "from entpy.model import get_computed_api_field_values",
+            ]
+            + model_imports
+            if model_imports
+            else []
+        ),
     )
 
 

@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
-from entpy.model import APIEntity
+import pytest
+from entpy.model import APIEntity, get_computed_api_field_values
 from evc import ExampleTestViewerContext, ExampleViewerContext
 from generated import ent_test_object3
 from generated.ent_child import EntChild, EntChildExample, EntChildMutator
@@ -13,6 +14,7 @@ from generated.ent_parent import EntParentExample
 from generated.ent_test_object import EntTestObjectExample
 from tiers import Tier
 
+from computed_models import ChildComputedDetailed, ChildComputedItem
 from ent_test_thing_pattern import ThingStatus
 
 
@@ -152,3 +154,41 @@ def test_an_ent_exposing_no_field_gets_no_api_model() -> None:
     ]
 
     assert api_models == []
+
+
+async def test_computed_fields_join_their_tier(vc: ExampleViewerContext) -> None:
+    child = await EntChildExample.gen_create(vc, name="Benjamin")
+
+    item = (await child.gen_serialize(Tier.ITEM)).model_dump(mode="json")
+    detailed = (await child.gen_serialize(Tier.DETAILED)).model_dump(mode="json")
+
+    assert item["shout"] == "BENJAMIN"
+    assert "name_length" not in item
+    assert detailed["shout"] == "BENJAMIN"
+    assert detailed["name_length"] == 8
+
+
+async def test_a_patterns_computed_fields_reach_every_implementation(
+    vc: ExampleViewerContext,
+) -> None:
+    first = await EntInheritedTestExample.gen_create(vc, base_field="one")
+    second = await EntInheritedTest2Example.gen_create(vc, base_field="two")
+
+    first_item = (await first.gen_serialize(Tier.ITEM)).model_dump(mode="json")
+    second_item = (await second.gen_serialize(Tier.ITEM)).model_dump(mode="json")
+
+    assert first_item["label"] == "one!"
+    assert second_item["label"] == "two!"
+    assert first_item["computed_at"].endswith("+00:00")
+
+
+def test_computed_values_must_match_the_tier_model() -> None:
+    with pytest.raises(TypeError, match="expected ChildComputedDetailed"):
+        get_computed_api_field_values(
+            [ChildComputedItem(shout="A")], ChildComputedDetailed, 1
+        )
+
+
+def test_computed_values_must_cover_every_ent() -> None:
+    with pytest.raises(ValueError, match="returned 0 results for 1 Ents"):
+        get_computed_api_field_values([], ChildComputedItem, 1)

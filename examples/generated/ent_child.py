@@ -11,6 +11,8 @@ from uuid import UUID
 from datetime import datetime
 from evc import ExampleViewerContext
 from .ent_model import EntModel
+from computed_models import ChildComputedDetailed
+from computed_models import ChildComputedItem
 from ent_child_schema import EntChildSchema
 from entpy.framework.ent import EntObjectBase
 from entpy.framework.ent import EntPending
@@ -22,8 +24,10 @@ from entpy.framework.mutators import (
 from entpy.framework.query import EntObjectQuery
 from entpy.framework.types import Uuid
 from entpy.model import APIEntity
+from entpy.model import get_computed_api_field_values
 from functools import cache
 from privacy import PrivacyMixin
+from pydantic import BaseModel
 from pydantic import Field as APIField
 from pydantic import SerializeAsAny
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
@@ -59,12 +63,12 @@ class EntChildModel(EntModel):
     )
 
 
-class EntChildItemAPIModel(APIEntity):
+class EntChildItemAPIModel(APIEntity, ChildComputedItem):
     name: str = APIField(...)
     parent: SerializeAsAny[EntParentItemAPIModel] = APIField(...)
 
 
-class EntChildDetailedAPIModel(EntChildItemAPIModel):
+class EntChildDetailedAPIModel(EntChildItemAPIModel, ChildComputedDetailed):
     pass
 
 
@@ -140,6 +144,17 @@ class EntChild(
             values["name"] = self.name
             edge_parent = await self.gen_parent()
             values["parent"] = await edge_parent.gen_serialize(Tier.ITEM)
+        computed_models_0: dict[Tier, type[BaseModel]] = {
+            Tier.ITEM: ChildComputedItem,
+            Tier.DETAILED: ChildComputedDetailed,
+        }
+        if tier in computed_models_0:
+            from resolvers import gen_child_computed_api_fields
+
+            computed = await gen_child_computed_api_fields([self], tier)
+            values.update(
+                get_computed_api_field_values(computed, computed_models_0[tier], 1)[0]
+            )
 
         api_models: dict[Tier, type[EntChildItemAPIModel]] = {
             Tier.ITEM: EntChildItemAPIModel,

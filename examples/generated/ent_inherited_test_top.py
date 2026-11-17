@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from sentinels import Sentinel, NOTHING  # type: ignore[import-untyped]
 
 from .ent_model import EntModel
+from computed_models import TopComputedItem
 from ent_inherited_test_top_pattern import EntInheritedTestTopPattern
 from entpy.framework.ent import EntPatternBase
 from entpy.framework.ent import EntPending
@@ -43,7 +44,7 @@ class EntInheritedTestTopModel(EntModel):
     happened_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
 
 
-class EntInheritedTestTopItemAPIModel(APIEntity):
+class EntInheritedTestTopItemAPIModel(APIEntity, TopComputedItem):
     base_field: str = APIField(...)
     happened_at: AwareDatetime | None = APIField(...)
 

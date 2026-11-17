@@ -200,8 +200,10 @@ A schema can also:
 - disable all generated updates with `is_immutable()`;
 - describe the Ent with `get_description()`;
 - customize its table name or database schema with `get_table_name()` and
-  `get_table_schema()`; and
-- declare event payload fields with `get_event_fields()`.
+  `get_table_schema()`;
+- declare event payload fields with `get_event_fields()`; and
+- add serialized values that are not columns with
+  `get_computed_api_fields_config()`.
 
 Patterns and triggers have dedicated sections below. These methods belong in
 the descriptor because code generation needs them; application code should
