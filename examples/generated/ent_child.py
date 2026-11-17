@@ -31,6 +31,8 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -108,6 +110,42 @@ class EntChild(
         vc: ExampleViewerContext,
     ) -> EntChildQuery:
         return EntChildQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(self, tier: Literal[Tier.ITEM]) -> EntChildItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntChildDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntChildItemAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntChildItemAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntChild",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "soft_deleted_at": self.soft_deleted_at,
+        }
+        if tier in (
+            Tier.ITEM,
+            Tier.DETAILED,
+        ):
+            values["name"] = self.name
+            edge_parent = await self.gen_parent()
+            values["parent"] = await edge_parent.gen_serialize(Tier.ITEM)
+
+        api_models: dict[Tier, type[EntChildItemAPIModel]] = {
+            Tier.ITEM: EntChildItemAPIModel,
+            Tier.DETAILED: EntChildDetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntChildQuery(EntObjectQuery[ExampleViewerContext, EntChild, EntChildModel]):

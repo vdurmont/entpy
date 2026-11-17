@@ -225,7 +225,8 @@ Code generation produces several related types from a schema:
 - `EntDocumentPending`: the proposed state visible to write privacy rules;
 - `EntDocumentExample`: recursively populated test data; and
 - `EntDocumentItemAPIModel` and its siblings: one Pydantic model per
-  serialization tier, when the schema serializes any field.
+  serialization tier, when the schema serializes any field, returned by
+  `EntDocument.gen_serialize(tier)`.
 
 This split explains some otherwise surprising syntax. Reads happen through
 `EntDocument.gen(vc, id)` while filters use model columns such as

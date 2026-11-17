@@ -26,6 +26,8 @@ from sqlalchemy import Enum as DBEnum
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Literal, overload
 
 
 if TYPE_CHECKING:
@@ -195,6 +197,23 @@ class IEntTestThing(
         vc: ExampleViewerContext,
     ) -> IEntTestThingQuery:
         return IEntTestThingQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntTestThingItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntTestThingDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntTestThingItemAPIModel: ...
+
+    @abstractmethod
+    async def gen_serialize(self, tier: Tier) -> EntTestThingItemAPIModel:
+        pass
 
     @classmethod
     @cache

@@ -330,7 +330,18 @@ From them, gencode emits one Pydantic model per tier, named after the Ent and th
 - Datetimes dump in Python's `isoformat()` form (`+00:00`, not `Z`).
 - A schema or pattern that serializes no field gets no model.
 
-The models reference each other across modules, so they are completed together: call `ensure_api_models_built()` from the generated `all_models.py` before using one.
+Every Ent that serializes a field gets `gen_serialize(tier)`, which returns the model of that tier, typed per tier:
+
+```python
+model = await my_object.gen_serialize(Tier.ITEM)  # EntMyObjectItemAPIModel
+model.model_dump(mode="json")
+```
+
+- Edges load under the Ent's viewer context and serialize at their nested tier. A nullable edge that is unset, or that the viewer cannot read, is `None`; a non-null edge that cannot be read raises, as `genx` does.
+- On a pattern, `gen_serialize` is abstract, so an Ent loaded through its pattern serializes as its implementation.
+- Gencode fails if serialization nests in a cycle, and names the path: `EntUser[ITEM] -> workspace -> EntWorkspace[ITEM] -> creator -> EntUser[ITEM]`.
+
+The models reference each other across modules, so they are completed together by `ensure_api_models_built()` in the generated `all_models.py`. `gen_serialize` calls it; call it yourself only to use a model class directly.
 
 # Gencode
 

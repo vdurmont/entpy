@@ -18,6 +18,7 @@ from entpy import (
 from entpy.gencode.serialization_generator import (
     SerializationContext,
     validate_descriptor,
+    validate_no_cycles,
 )
 from entpy.gencode.utils import ImportedObject
 
@@ -98,6 +99,16 @@ class PointsAtSilentSchema(_Base):
         return [EdgeField("silent", SilentSchema).serialize(Level.HIGH)]
 
 
+class CycleASchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [EdgeField("b", CycleBSchema).serialize(Level.LOW, nested=Level.LOW)]
+
+
+class CycleBSchema(_Base):
+    def get_fields(self) -> list[Field]:
+        return [EdgeField("a", CycleASchema).serialize(Level.LOW, nested=Level.LOW)]
+
+
 class DuplicateKeySchema(_Base):
     def get_fields(self) -> list[Field]:
         return [
@@ -176,3 +187,22 @@ def test_output_keys_must_be_unique() -> None:
 def test_edge_to_an_ent_exposing_no_field_is_rejected() -> None:
     with pytest.raises(ValueError, match="SilentSchema exposes no fields"):
         validate_descriptor(PointsAtSilentSchema(), CTX)
+
+
+def test_nesting_cycles_are_rejected() -> None:
+    with pytest.raises(
+        ValueError, match=r"CycleA\[LOW\] -> b -> CycleB\[LOW\] -> a -> CycleA\[LOW\]"
+    ):
+        validate_no_cycles(
+            schema_classes=[CycleASchema, CycleBSchema],
+            get_children=lambda _pattern: [],
+            ctx=CTX,
+        )
+
+
+def test_no_cycle_passes() -> None:
+    validate_no_cycles(
+        schema_classes=[ValidSchema, TargetSchema],
+        get_children=lambda _pattern: [],
+        ctx=CTX,
+    )

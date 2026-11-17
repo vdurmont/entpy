@@ -29,6 +29,8 @@ from pydantic import SerializeAsAny
 from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -99,6 +101,45 @@ class EntInheritedOwner(
         vc: ExampleViewerContext,
     ) -> EntInheritedOwnerQuery:
         return EntInheritedOwnerQuery(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntInheritedOwnerItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntInheritedOwnerDetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntInheritedOwnerItemAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntInheritedOwnerItemAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntInheritedOwner",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "soft_deleted_at": self.soft_deleted_at,
+        }
+        if tier in (
+            Tier.ITEM,
+            Tier.DETAILED,
+        ):
+            values["name"] = self.name
+        if tier in (Tier.DETAILED,):
+            edge_inherited = await self.gen_inherited()
+            values["inherited"] = await edge_inherited.gen_serialize(Tier.ITEM)
+
+        api_models: dict[Tier, type[EntInheritedOwnerItemAPIModel]] = {
+            Tier.ITEM: EntInheritedOwnerItemAPIModel,
+            Tier.DETAILED: EntInheritedOwnerDetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntInheritedOwnerQuery(

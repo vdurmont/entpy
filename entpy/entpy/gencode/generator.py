@@ -13,6 +13,7 @@ from entpy.gencode.serialization_generator import (
     exposes_fields,
     generate_ensure_built,
     get_serialized_enum_types,
+    validate_no_cycles,
 )
 from entpy.gencode.utils import GENERATED_HEADER, ImportedObject
 from entpy.gencode.view_generator import generate as generate_view
@@ -47,6 +48,12 @@ def run(
     serialization_context = (
         SerializationContext.load(serialization) if serialization else None
     )
+    if serialization_context:
+        validate_no_cycles(
+            schema_classes=[c[0] for c in configs if issubclass(c[0], Schema)],
+            get_children=get_children_schema_classes,
+            ctx=serialization_context,
+        )
     api_model_imports: list[tuple[str, str]] = []
     enum_types: list[ImportedObject] = []
 

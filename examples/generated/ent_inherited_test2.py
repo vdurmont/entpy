@@ -32,6 +32,8 @@ from sentinels import NOTHING, Sentinel  # type: ignore[import-untyped]
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
+from tiers import Tier
+from typing import Any, Literal, overload
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -94,6 +96,52 @@ class EntInheritedTest2(
         vc: ExampleViewerContext,
     ) -> EntInheritedTest2Query:
         return EntInheritedTest2Query(vc=vc)
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.ITEM]
+    ) -> EntInheritedTest2ItemAPIModel: ...
+
+    @overload
+    async def gen_serialize(
+        self, tier: Literal[Tier.DETAILED]
+    ) -> EntInheritedTest2DetailedAPIModel: ...
+
+    @overload
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTest2ItemAPIModel: ...
+
+    async def gen_serialize(self, tier: Tier) -> EntInheritedTest2ItemAPIModel:
+        from .all_models import ensure_api_models_built
+
+        ensure_api_models_built()
+        values: dict[str, Any] = {
+            "id": self.id,
+            "entity_type": "EntInheritedTest2",
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "soft_deleted_at": self.soft_deleted_at,
+        }
+        if tier in (
+            Tier.ITEM,
+            Tier.DETAILED,
+        ):
+            values["base_field"] = self.base_field
+            values["schema_field"] = self.schema_field
+            values["happened_at"] = self.happened_at
+        if tier in (Tier.DETAILED,):
+            values["middle"] = self.middle_field
+            edge_grand_parent = await self.gen_grand_parent()
+            values["grand_parent"] = (
+                None
+                if edge_grand_parent is None
+                else await edge_grand_parent.gen_serialize(Tier.ITEM)
+            )
+
+        api_models: dict[Tier, type[EntInheritedTest2ItemAPIModel]] = {
+            Tier.ITEM: EntInheritedTest2ItemAPIModel,
+            Tier.DETAILED: EntInheritedTest2DetailedAPIModel,
+        }
+        return api_models[tier].model_validate(values)
 
 
 class EntInheritedTest2Query(
